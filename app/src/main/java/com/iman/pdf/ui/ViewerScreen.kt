@@ -5,20 +5,28 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,7 +48,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
@@ -53,6 +63,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+private const val MAX_ZOOM = 3f
+private const val MAX_RENDER_WIDTH = 2200
+
 @Composable
 fun ViewerScreen(
     engine: PdfEngine,
@@ -62,12 +75,21 @@ fun ViewerScreen(
     BackHandler(onBack = onBack)
 
     val listState = rememberLazyListState()
+    val horizontalState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
-    val renderWidth = remember(configuration.screenWidthDp, density.density) {
-        minOf((configuration.screenWidthDp * density.density * 1.5f).toInt(), 1800)
+    val screenWidthPx = configuration.screenWidthDp * density.density
+
+    var scale by remember { mutableFloatStateOf(1f) }
+    var renderScale by remember { mutableFloatStateOf(1f) }
+
+    LaunchedEffect(scale) {
+        delay(350)
+        renderScale = scale
     }
+
+    val renderWidth = minOf((screenWidthPx * 1.5f * renderScale).toInt(), MAX_RENDER_WIDTH)
 
     val pillHeight = 40.dp
     val pillHeightPx = with(density) { pillHeight.toPx() }
@@ -145,20 +167,56 @@ fun ViewerScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .onSizeChanged { containerHeightPx = it.height.toFloat() }
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(
+                            requireUnconsumed = false,
+                            pass = PointerEventPass.Initial
+                        )
+                        do {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (event.changes.size >= 2) {
+                                val zoomChange = event.calculateZoom()
+                                if (zoomChange != 1f) {
+                                    scale = (scale * zoomChange).coerceIn(1f, MAX_ZOOM)
+                                }
+                                event.changes.forEach { change ->
+                                    if (change.positionChanged()) {
+                                        change.consume()
+                                    }
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+                    }
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            scale = if (scale > 1.05f) 1f else 2f
+                        }
+                    )
+                }
         ) {
-            LazyColumn(
-                state = listState,
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .horizontalScroll(horizontalState)
             ) {
-                items(count = engine.pageCount, key = { it }) { index ->
-                    PdfPageItem(
-                        engine = engine,
-                        index = index,
-                        renderWidth = renderWidth
-                    )
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width((configuration.screenWidthDp * scale).dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(count = engine.pageCount, key = { it }) { index ->
+                        PdfPageItem(
+                            engine = engine,
+                            index = index,
+                            renderWidth = renderWidth
+                        )
+                    }
                 }
             }
 
@@ -190,9 +248,18 @@ fun ViewerScreen(
                                         (containerHeightPx - pillHeightPx).coerceAtLeast(1f)
                                     dragProgress =
                                         (dragProgress + dragAmount / travelPx).coerceIn(0f, 1f)
-                                    val page =
-                                        (dragProgress * (engine.pageCount - 1)).roundToInt()
-                                    scope.launch { listState.scrollToItem(page) }
+                                    val position = dragProgress * (engine.pageCount - 1)
+                                    val index = position.toInt()
+                                        .coerceIn(0, engine.pageCount - 1)
+                                    val fraction = position - index
+                                    val size = listState.layoutInfo.visibleItemsInfo
+                                        .firstOrNull()?.size ?: 0
+                                    scope.launch {
+                                        listState.scrollToItem(
+                                            index,
+                                            (fraction * size).roundToInt()
+                                        )
+                                    }
                                 }
                             )
                         }
@@ -216,7 +283,7 @@ private fun PdfPageItem(
     index: Int,
     renderWidth: Int
 ) {
-    var bitmap by remember(index, renderWidth) { mutableStateOf<Bitmap?>(null) }
+    var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
 
     LaunchedEffect(index, renderWidth) {
