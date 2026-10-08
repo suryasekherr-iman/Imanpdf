@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PictureAsPdf
@@ -60,15 +59,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.iman.pdf.R
 import com.iman.pdf.data.DeviceFiles
 import com.iman.pdf.data.DevicePdf
 import com.iman.pdf.data.FileStore
@@ -93,7 +95,10 @@ private fun formatDate(millis: Long): String {
 }
 
 @Composable
-fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
+fun HomeScreen(
+    onOpen: (Uri) -> Unit = {},
+    onOpenSettings: () -> Unit = {}
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { UserPrefs(context) }
@@ -161,12 +166,21 @@ fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
                 .padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Outlined.MenuBook,
-                contentDescription = "Iman",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.iman_logo),
+                    contentDescription = "Iman",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(scaleX = 1.65f, scaleY = 1.65f),
+                    contentScale = ContentScale.Fit
+                )
+            }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { }) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
@@ -178,10 +192,11 @@ fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { onOpenSettings() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Outlined.Person, contentDescription = "Profile")
+                Icon(Icons.Outlined.Person, contentDescription = "Settings")
             }
         }
 
