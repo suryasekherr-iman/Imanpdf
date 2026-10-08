@@ -77,6 +77,7 @@ fun MainScreen(incomingUri: Uri? = null) {
     val scope = rememberCoroutineScope()
     val store = remember { FileStore(context) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
     var engine by remember { mutableStateOf<PdfEngine?>(null) }
     var title by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
@@ -136,6 +137,8 @@ fun MainScreen(incomingUri: Uri? = null) {
                 engine = null
             }
         )
+    } else if (showSettings) {
+        SettingsScreen(onBack = { showSettings = false })
     } else {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -167,7 +170,10 @@ fun MainScreen(incomingUri: Uri? = null) {
                     .padding(padding)
             ) {
                 if (selected == 0) {
-                    HomeScreen(onOpen = { openUri(it) })
+                    HomeScreen(
+                        onOpen = { openUri(it) },
+                        onOpenSettings = { showSettings = true }
+                    )
                 } else {
                     Box(
                         modifier = Modifier.fillMaxSize(),
