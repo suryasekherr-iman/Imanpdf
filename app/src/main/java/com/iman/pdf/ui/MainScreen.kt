@@ -174,6 +174,16 @@ fun MainScreen(incomingUri: Uri? = null) {
                         onOpen = { openUri(it) },
                         onOpenSettings = { showSettings = true }
                     )
+                } else if (selected == 3) {
+                    ToolsScreen(
+                        onToolClick = { tool ->
+                            Toast.makeText(
+                                context,
+                                tool.title + " will be added soon",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    )
                 } else {
                     Box(
                         modifier = Modifier.fillMaxSize(),
