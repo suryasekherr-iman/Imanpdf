@@ -174,6 +174,11 @@ fun MainScreen(incomingUri: Uri? = null) {
                         onOpen = { openUri(it) },
                         onOpenSettings = { showSettings = true }
                     )
+                } else if (selected == 2) {
+                    FilesScreen(
+                        onOpen = { openUri(it) },
+                        onBrowse = { picker.launch(arrayOf("application/pdf")) }
+                    )
                 } else if (selected == 3) {
                     ToolsScreen(
                         onToolClick = { tool ->
