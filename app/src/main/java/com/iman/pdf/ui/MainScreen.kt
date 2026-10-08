@@ -37,7 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import com.iman.pdf.data.FileStore
 import com.iman.pdf.pdf.PdfEngine
+import com.iman.pdf.pdf.Thumbnails
 import kotlinx.coroutines.launch
 
 enum class Tab(val label: String, val icon: ImageVector) {
@@ -73,6 +75,7 @@ private fun fileNameOf(context: Context, uri: Uri): String {
 fun MainScreen(incomingUri: Uri? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val store = remember { FileStore(context) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var engine by remember { mutableStateOf<PdfEngine?>(null) }
     var title by remember { mutableStateOf("") }
@@ -90,17 +93,21 @@ fun MainScreen(incomingUri: Uri? = null) {
             } catch (_: Exception) {
             }
             val opened = PdfEngine.open(context, uri)
-            loading = false
             if (opened == null) {
+                loading = false
                 Toast.makeText(
                     context,
                     "Could not open this PDF. It may be password protected or damaged.",
                     Toast.LENGTH_LONG
                 ).show()
             } else {
+                val displayName = fileNameOf(context, uri)
+                val thumb = Thumbnails.create(context, opened, uri.toString())
+                store.recordOpened(uri.toString(), displayName, thumb)
+                loading = false
                 engine?.close()
                 engine = opened
-                title = fileNameOf(context, uri)
+                title = displayName
             }
         }
     }
@@ -160,7 +167,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                     .padding(padding)
             ) {
                 if (selected == 0) {
-                    HomeScreen()
+                    HomeScreen(onOpen = { openUri(it) })
                 } else {
                     Box(
                         modifier = Modifier.fillMaxSize(),
