@@ -1,7 +1,9 @@
 package com.iman.pdf.ui
 
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,9 +19,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +34,8 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -39,6 +45,8 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.Tab as TabItem
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,13 +62,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.iman.pdf.data.DeviceFiles
+import com.iman.pdf.data.DevicePdf
 import com.iman.pdf.data.FileStore
 import com.iman.pdf.data.PdfEntry
 import com.iman.pdf.data.UserPrefs
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private fun formatSize(bytes: Long): String {
+    if (bytes < 1024L) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024.0) return String.format(Locale.US, "%.0f KB", kb)
+    val mb = kb / 1024.0
+    if (mb < 1024.0) return String.format(Locale.US, "%.1f MB", mb)
+    return String.format(Locale.US, "%.2f GB", mb / 1024.0)
+}
+
+private fun formatDate(millis: Long): String {
+    return SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(millis))
+}
 
 @Composable
 fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
@@ -73,6 +103,42 @@ fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf("Recent", "Starred", "On device")
 
+    var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess()) }
+    var scanning by remember { mutableStateOf(false) }
+    var deviceFiles by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasAccess = DeviceFiles.hasAllFilesAccess()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(selectedTab, hasAccess) {
+        if (selectedTab == 2 && hasAccess) {
+            scanning = true
+            deviceFiles = DeviceFiles.scan(context)
+            scanning = false
+        }
+    }
+
+    fun requestAccess() {
+        try {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            intent.data = Uri.parse("package:" + context.packageName)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     val shown: List<PdfEntry> = when (selectedTab) {
         0 -> entries
         1 -> entries.filter { it.starred }
@@ -81,8 +147,7 @@ fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
 
     val emptyText = when (selectedTab) {
         0 -> "No files yet. Tap + to open a PDF."
-        1 -> "No starred files yet."
-        else -> "On device files will appear here."
+        else -> "No starred files yet."
     }
 
     Column(
@@ -146,7 +211,15 @@ fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (shown.isEmpty()) {
+        if (selectedTab == 2) {
+            DeviceTab(
+                hasAccess = hasAccess,
+                scanning = scanning,
+                files = deviceFiles,
+                onGrant = { requestAccess() },
+                onOpen = onOpen
+            )
+        } else if (shown.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -175,6 +248,92 @@ fun HomeScreen(onOpen: (Uri) -> Unit = {}) {
                             scope.launch { store.remove(entry.uri) }
                         }
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeviceTab(
+    hasAccess: Boolean,
+    scanning: Boolean,
+    files: List<DevicePdf>,
+    onGrant: () -> Unit,
+    onOpen: (Uri) -> Unit
+) {
+    if (!hasAccess) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Allow access to all files so Iman can find the PDF files on your phone.",
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onGrant) {
+                Text("Allow access")
+            }
+        }
+    } else if (scanning && files.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else if (files.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No PDF files found on this phone.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 96.dp)
+        ) {
+            items(files, key = { it.uri.toString() }) { file ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpen(file.uri) }
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.PictureAsPdf,
+                        contentDescription = null,
+                        tint = Color(0xFFE53935),
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 14.dp)
+                    ) {
+                        Text(
+                            text = file.name,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = formatSize(file.size) + "  •  " + formatDate(file.modified),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
