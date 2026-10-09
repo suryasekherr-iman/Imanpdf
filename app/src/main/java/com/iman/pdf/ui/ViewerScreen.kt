@@ -1,6 +1,7 @@
 package com.iman.pdf.ui
 
 import android.graphics.Bitmap
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -35,19 +37,28 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -74,6 +85,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfText
+import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.SearchHit
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -81,6 +93,11 @@ import kotlin.math.roundToInt
 
 private const val MAX_ZOOM = 3f
 private const val MAX_RENDER_WIDTH = 2200
+
+private val speedValues = listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+private val speedLabels = listOf("0.75x", "1x", "1.25x", "1.5x", "2x")
+private val voiceTags = listOf("system", "en", "hi", "bn")
+private val voiceLabels = listOf("System", "English", "Hindi", "Bengali")
 
 @Composable
 fun ViewerScreen(
@@ -107,6 +124,18 @@ fun ViewerScreen(
     var searching by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
 
+    val reader = remember { ReadAloud(context) }
+    var readerOpen by remember { mutableStateOf(false) }
+    var reading by remember { mutableStateOf(false) }
+    var readPage by remember { mutableIntStateOf(0) }
+    var speedIndex by remember { mutableIntStateOf(1) }
+    var voiceIndex by remember { mutableIntStateOf(0) }
+    var voiceMenuOpen by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        onDispose { reader.shutdown() }
+    }
+
     fun closeSearch() {
         searchOpen = false
         hits = emptyList()
@@ -129,10 +158,61 @@ fun ViewerScreen(
         }
     }
 
+    fun speakPage(page: Int) {
+        scope.launch {
+            if (!reading) {
+                return@launch
+            }
+            if (page >= engine.pageCount) {
+                reading = false
+                return@launch
+            }
+            readPage = page
+            listState.animateScrollToItem(page)
+            val text = PdfText.pageText(context, engine.file, page)
+            if (!reading) {
+                return@launch
+            }
+            if (text.isBlank()) {
+                speakPage(page + 1)
+                return@launch
+            }
+            val started = reader.speak(text)
+            if (!started) {
+                reading = false
+                Toast.makeText(
+                    context,
+                    "Voice is not ready yet. Please try again.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    fun stopReading() {
+        reading = false
+        reader.stop()
+    }
+
+    fun closeReader() {
+        stopReading()
+        readerOpen = false
+    }
+
+    SideEffect {
+        reader.onPageFinished = {
+            if (reading) {
+                speakPage(readPage + 1)
+            }
+        }
+    }
+
     BackHandler(
         onBack = {
             if (searchOpen) {
                 closeSearch()
+            } else if (readerOpen) {
+                closeReader()
             } else {
                 onBack()
             }
@@ -258,6 +338,17 @@ fun ViewerScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                IconButton(
+                    onClick = {
+                        if (readerOpen) {
+                            closeReader()
+                        } else {
+                            readerOpen = true
+                        }
+                    }
+                ) {
+                    Icon(Icons.Outlined.Headphones, contentDescription = "Read aloud")
+                }
                 IconButton(onClick = { searchOpen = true }) {
                     Icon(Icons.Outlined.Search, contentDescription = "Search")
                 }
@@ -266,7 +357,8 @@ fun ViewerScreen(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .onSizeChanged { containerHeightPx = it.height.toFloat() }
                 .pointerInput(Unit) {
                     awaitEachGesture {
@@ -410,67 +502,4 @@ fun ViewerScreen(
                                 items(hits) { hit ->
                                     Column(
                                         modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                val target = hit.page
-                                                closeSearch()
-                                                scope.launch {
-                                                    listState.scrollToItem(target)
-                                                }
-                                            }
-                                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                                    ) {
-                                        Text(
-                                            text = "Page " + (hit.page + 1),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = hit.snippet,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onBackground
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PdfPageItem(
-    engine: PdfEngine,
-    index: Int,
-    renderWidth: Int
-) {
-    var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
-    var ratio by remember(index) { mutableFloatStateOf(1.414f) }
-
-    LaunchedEffect(index, renderWidth) {
-        ratio = engine.pageAspectRatio(index)
-        bitmap = engine.renderPage(index, renderWidth)
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f / ratio)
-            .background(Color.White)
-    ) {
-        val current = bitmap
-        if (current != null) {
-            Image(
-                bitmap = current.asImageBitmap(),
-                contentDescription = "Page ${index + 1}",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
-        }
-    }
-}
+                                            .fillMaxW
