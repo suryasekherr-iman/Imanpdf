@@ -8,6 +8,9 @@ import android.net.Uri
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
+import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -68,6 +71,79 @@ object PdfTools {
                 null
             } finally {
                 document.close()
+            }
+        }
+
+    suspend fun needsPassword(context: Context, source: Uri): Boolean =
+        withContext(Dispatchers.IO) {
+            var copy: File? = null
+            try {
+                PDFBoxResourceLoader.init(context.applicationContext)
+                copy = UriActions.copyToCache(context, source)
+                if (copy == null) {
+                    false
+                } else {
+                    PDDocument.load(copy).use { false }
+                }
+            } catch (e: Exception) {
+                e.javaClass.simpleName == "InvalidPasswordException"
+            } finally {
+                copy?.delete()
+            }
+        }
+
+    suspend fun protect(context: Context, source: Uri, password: String): File? =
+        withContext(Dispatchers.IO) {
+            var copy: File? = null
+            try {
+                PDFBoxResourceLoader.init(context.applicationContext)
+                copy = UriActions.copyToCache(context, source)
+                if (copy == null) {
+                    null
+                } else {
+                    PDDocument.load(copy).use { document ->
+                        val permissions = AccessPermission()
+                        val policy = StandardProtectionPolicy(password, password, permissions)
+                        policy.encryptionKeyLength = 128
+                        document.protect(policy)
+                        val out = File(
+                            context.cacheDir,
+                            "protected_" + System.nanoTime() + ".pdf"
+                        )
+                        document.save(out)
+                        out
+                    }
+                }
+            } catch (e: Exception) {
+                null
+            } finally {
+                copy?.delete()
+            }
+        }
+
+    suspend fun unlock(context: Context, source: Uri, password: String): File? =
+        withContext(Dispatchers.IO) {
+            var copy: File? = null
+            try {
+                PDFBoxResourceLoader.init(context.applicationContext)
+                copy = UriActions.copyToCache(context, source)
+                if (copy == null) {
+                    null
+                } else {
+                    PDDocument.load(copy, password).use { document ->
+                        document.isAllSecurityToBeRemoved = true
+                        val out = File(
+                            context.cacheDir,
+                            "unlocked_" + System.nanoTime() + ".pdf"
+                        )
+                        document.save(out)
+                        out
+                    }
+                }
+            } catch (e: Exception) {
+                null
+            } finally {
+                copy?.delete()
             }
         }
 
