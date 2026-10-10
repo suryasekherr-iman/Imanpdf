@@ -78,6 +78,7 @@ fun MainScreen(incomingUri: Uri? = null) {
     val store = remember { FileStore(context) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    var tool by rememberSaveable { mutableStateOf("") }
     var engine by remember { mutableStateOf<PdfEngine?>(null) }
     var title by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
@@ -139,6 +140,22 @@ fun MainScreen(incomingUri: Uri? = null) {
         )
     } else if (showSettings) {
         SettingsScreen(onBack = { showSettings = false })
+    } else if (tool == "combine") {
+        CombineScreen(
+            onBack = { tool = "" },
+            onOpen = {
+                tool = ""
+                openUri(it)
+            }
+        )
+    } else if (tool == "create_pdf") {
+        ImagesToPdfScreen(
+            onBack = { tool = "" },
+            onOpen = {
+                tool = ""
+                openUri(it)
+            }
+        )
     } else {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -181,12 +198,16 @@ fun MainScreen(incomingUri: Uri? = null) {
                     )
                 } else if (selected == 3) {
                     ToolsScreen(
-                        onToolClick = { tool ->
-                            Toast.makeText(
-                                context,
-                                tool.title + " will be added soon",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                        onToolClick = { item ->
+                            if (item.id == "combine" || item.id == "create_pdf") {
+                                tool = item.id
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    item.title + " will be added soon",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     )
                 } else {
