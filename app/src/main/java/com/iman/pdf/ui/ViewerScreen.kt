@@ -2,6 +2,8 @@ package com.iman.pdf.ui
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -69,6 +71,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfText
 import com.iman.pdf.pdf.ReadAloud
@@ -116,6 +119,20 @@ fun ViewerScreen(
     var readPage by remember { mutableIntStateOf(0) }
     var speedIndex by remember { mutableIntStateOf(1) }
     var voiceIndex by remember { mutableIntStateOf(0) }
+
+    val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
+    val saveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri ->
+        if (uri != null) {
+            val ok = PdfActions.saveCopy(context, engine.file, uri)
+            Toast.makeText(
+                context,
+                if (ok) "Copy saved" else "Could not save the copy",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose { reader.shutdown() }
@@ -317,7 +334,7 @@ fun ViewerScreen(
                     text = title,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 12.dp),
+                        .padding(end = 4.dp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
@@ -337,6 +354,11 @@ fun ViewerScreen(
                 IconButton(onClick = { searchOpen = true }) {
                     Icon(Icons.Outlined.Search, contentDescription = "Search")
                 }
+                ViewerMenu(
+                    onShare = { PdfActions.share(context, engine.file, title) },
+                    onPrint = { PdfActions.print(context, engine.file, title) },
+                    onSave = { saveLauncher.launch(fileName) }
+                )
             }
         }
 
@@ -493,7 +515,7 @@ fun ViewerScreen(
                         voiceIndex = index
                         if (reading) {
                             speakPage(readPage)
-                        }
+                       }
                     } else {
                         Toast.makeText(
                             context,
