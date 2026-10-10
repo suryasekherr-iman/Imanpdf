@@ -1,7 +1,6 @@
 package com.iman.pdf.ui
 
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.Image
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,16 +25,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -253,7 +246,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(shown, key = { it.uri }) { entry ->
-                    FileCard(
+                    RecentCard(
                         entry = entry,
                         onOpen = { onOpen(Uri.parse(entry.uri)) },
                         onToggleStar = {
@@ -349,119 +342,6 @@ private fun DeviceTab(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FileCard(
-    entry: PdfEntry,
-    onOpen: () -> Unit,
-    onToggleStar: () -> Unit,
-    onRemove: () -> Unit
-) {
-    var menuOpen by remember { mutableStateOf(false) }
-    val thumb = remember(entry.thumb) {
-        entry.thumb?.let { path ->
-            try {
-                BitmapFactory.decodeFile(path)?.asImageBitmap()
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onOpen() }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(0.75f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            if (thumb != null) {
-                Image(
-                    bitmap = thumb,
-                    contentDescription = entry.name,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentScale = ContentScale.Fit
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Outlined.PictureAsPdf,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (entry.starred) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = "Starred",
-                    tint = Color(0xFFFFC107),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(20.dp)
-                )
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(top = 8.dp)
-            ) {
-                Text(
-                    text = entry.name,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "PDF",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Box {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Outlined.MoreVert, contentDescription = "More")
-                }
-                DropdownMenu(
-                    expanded = menuOpen,
-                    onDismissRequest = { menuOpen = false }
-                ) {
-                    DropdownMenuItem(
-                        text = {
-                            Text(if (entry.starred) "Remove star" else "Add star")
-                        },
-                        onClick = {
-                            menuOpen = false
-                            onToggleStar()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Remove from list") },
-                        onClick = {
-                            menuOpen = false
-                            onRemove()
-                        }
-                    )
                 }
             }
         }
