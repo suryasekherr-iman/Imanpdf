@@ -56,8 +56,6 @@ enum class Tab(val label: String, val icon: ImageVector) {
     TOOLS("Tools", Icons.Outlined.GridView)
 }
 
-private val readyTools = listOf("combine", "create_pdf", "password", "organize")
-
 private fun fileNameOf(context: Context, uri: Uri): String {
     var name: String? = null
     try {
@@ -157,30 +155,10 @@ fun MainScreen(incomingUri: Uri? = null) {
         )
     } else if (showSettings) {
         SettingsScreen(onBack = { showSettings = false })
-    } else if (tool == "combine") {
-        CombineScreen(
-            onBack = { tool = "" },
-            onOpen = {
-                tool = ""
-                openUri(it)
-            }
-        )
-    } else if (tool == "create_pdf") {
-        ImagesToPdfScreen(
-            onBack = { tool = "" },
-            onOpen = {
-                tool = ""
-                openUri(it)
-            }
-        )
-    } else if (tool == "password") {
-        ProtectScreen(
-            onBack = { tool = "" },
-            onOpen = { }
-        )
-    } else if (tool == "organize") {
-        OrganizeScreen(
-            onBack = { tool = "" },
+    } else if (implementedTools.contains(tool)) {
+        ToolHost(
+            tool = tool,
+            onClose = { tool = "" },
             onOpen = {
                 tool = ""
                 openUri(it)
@@ -229,7 +207,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 } else if (selected == 3) {
                     ToolsScreen(
                         onToolClick = { item ->
-                            if (readyTools.contains(item.id)) {
+                            if (implementedTools.contains(item.id)) {
                                 tool = item.id
                             } else {
                                 Toast.makeText(
