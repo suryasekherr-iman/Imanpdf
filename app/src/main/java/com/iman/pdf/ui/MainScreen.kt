@@ -56,7 +56,7 @@ enum class Tab(val label: String, val icon: ImageVector) {
     TOOLS("Tools", Icons.Outlined.GridView)
 }
 
-private val readyTools = listOf("combine", "create_pdf", "password")
+private val readyTools = listOf("combine", "create_pdf", "password", "organize")
 
 private fun fileNameOf(context: Context, uri: Uri): String {
     var name: String? = null
@@ -177,6 +177,14 @@ fun MainScreen(incomingUri: Uri? = null) {
         ProtectScreen(
             onBack = { tool = "" },
             onOpen = { }
+        )
+    } else if (tool == "organize") {
+        OrganizeScreen(
+            onBack = { tool = "" },
+            onOpen = {
+                tool = ""
+                openUri(it)
+            }
         )
     } else {
         Scaffold(
