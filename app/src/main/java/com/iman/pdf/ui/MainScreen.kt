@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -16,14 +17,17 @@ import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,10 +41,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.iman.pdf.data.FileStore
 import com.iman.pdf.pdf.PdfEngine
+import com.iman.pdf.pdf.PdfTools
 import com.iman.pdf.pdf.Thumbnails
 import kotlinx.coroutines.launch
+import java.io.File
 
 enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Outlined.Home),
@@ -48,6 +55,8 @@ enum class Tab(val label: String, val icon: ImageVector) {
     FILES("Files", Icons.Outlined.Folder),
     TOOLS("Tools", Icons.Outlined.GridView)
 }
+
+private val readyTools = listOf("combine", "create_pdf", "password")
 
 private fun fileNameOf(context: Context, uri: Uri): String {
     var name: String? = null
@@ -82,9 +91,11 @@ fun MainScreen(incomingUri: Uri? = null) {
     var engine by remember { mutableStateOf<PdfEngine?>(null) }
     var title by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
+    var passwordUri by remember { mutableStateOf<Uri?>(null) }
+    var passwordWrong by remember { mutableStateOf(false) }
     val tabs = Tab.entries
 
-    fun openUri(uri: Uri) {
+    fun openUri(uri: Uri, unlocked: File? = null) {
         scope.launch {
             loading = true
             try {
@@ -94,14 +105,20 @@ fun MainScreen(incomingUri: Uri? = null) {
                 )
             } catch (_: Exception) {
             }
-            val opened = PdfEngine.open(context, uri)
+            val source = if (unlocked != null) Uri.fromFile(unlocked) else uri
+            val opened = PdfEngine.open(context, source)
             if (opened == null) {
                 loading = false
-                Toast.makeText(
-                    context,
-                    "Could not open this PDF. It may be password protected or damaged.",
-                    Toast.LENGTH_LONG
-                ).show()
+                if (unlocked == null && PdfTools.needsPassword(context, uri)) {
+                    passwordWrong = false
+                    passwordUri = uri
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Could not open this PDF. It may be damaged.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             } else {
                 val displayName = fileNameOf(context, uri)
                 val thumb = Thumbnails.create(context, opened, uri.toString())
@@ -156,6 +173,11 @@ fun MainScreen(incomingUri: Uri? = null) {
                 openUri(it)
             }
         )
+    } else if (tool == "password") {
+        ProtectScreen(
+            onBack = { tool = "" },
+            onOpen = { }
+        )
     } else {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -199,7 +221,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 } else if (selected == 3) {
                     ToolsScreen(
                         onToolClick = { item ->
-                            if (item.id == "combine" || item.id == "create_pdf") {
+                            if (readyTools.contains(item.id)) {
                                 tool = item.id
                             } else {
                                 Toast.makeText(
@@ -232,5 +254,56 @@ fun MainScreen(incomingUri: Uri? = null) {
                 }
             }
         }
+    }
+
+    val askFor = passwordUri
+    if (askFor != null) {
+        var typed by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { passwordUri = null },
+            title = { Text("Password required") },
+            text = {
+                Column {
+                    Text("Enter the password to open this PDF.")
+                    OutlinedTextField(
+                        value = typed,
+                        onValueChange = {
+                            typed = it
+                            passwordWrong = false
+                        },
+                        singleLine = true,
+                        isError = passwordWrong,
+                        supportingText = {
+                            if (passwordWrong) {
+                                Text("Wrong password")
+                            }
+                        },
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val file = PdfTools.unlock(context, askFor, typed)
+                            if (file == null) {
+                                passwordWrong = true
+                            } else {
+                                passwordUri = null
+                                openUri(askFor, file)
+                            }
+                        }
+                    }
+                ) {
+                    Text("Open")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { passwordUri = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
