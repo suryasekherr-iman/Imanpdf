@@ -8,7 +8,9 @@ val implementedTools = listOf(
     "create_pdf",
     "password",
     "organize",
-    "crop"
+    "crop",
+    "compress",
+    "scan"
 )
 
 @Composable
@@ -23,5 +25,7 @@ fun ToolHost(
         "password" -> ProtectScreen(onBack = onClose, onOpen = { })
         "organize" -> OrganizeScreen(onBack = onClose, onOpen = onOpen)
         "crop" -> CropScreen(onBack = onClose, onOpen = onOpen)
+        "compress" -> CompressScreen(onBack = onClose, onOpen = onOpen)
+        "scan" -> ScanScreen(onBack = onClose, onOpen = onOpen)
     }
 }
