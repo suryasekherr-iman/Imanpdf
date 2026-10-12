@@ -15,32 +15,19 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Headphones
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -57,8 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
@@ -67,8 +52,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.pdf.PdfActions
@@ -119,6 +102,7 @@ fun ViewerScreen(
     var readPage by remember { mutableIntStateOf(0) }
     var speedIndex by remember { mutableIntStateOf(1) }
     var voiceIndex by remember { mutableIntStateOf(0) }
+    var liquidOpen by remember { mutableStateOf(false) }
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
     val saveLauncher = rememberLauncherForActivityResult(
@@ -281,248 +265,216 @@ fun ViewerScreen(
         label = "pillAlpha"
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Row(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .statusBarsPadding()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            if (searchOpen) {
-                IconButton(onClick = { closeSearch() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search")
-                }
-                TextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = { Text("Search in PDF") },
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { runSearch() }),
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(focusRequester)
-                )
-                if (query.isNotEmpty()) {
-                    IconButton(
-                        onClick = {
-                            query = ""
-                            hits = emptyList()
-                            searched = false
-                        }
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Clear")
+            ViewerTopBar(
+                title = title,
+                searchOpen = searchOpen,
+                query = query,
+                focusRequester = focusRequester,
+                onQueryChange = { query = it },
+                onSearchSubmit = { runSearch() },
+                onClearQuery = {
+                    query = ""
+                    hits = emptyList()
+                    searched = false
+                },
+                onBack = onBack,
+                onCloseSearch = { closeSearch() },
+                onOpenSearch = { searchOpen = true },
+                onLiquid = {
+                    stopReading()
+                    liquidOpen = true
+                },
+                onReadAloud = {
+                    if (readerOpen) {
+                        closeReader()
+                    } else {
+                        readerOpen = true
                     }
-                }
-            } else {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-                Text(
-                    text = title,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                IconButton(
-                    onClick = {
-                        if (readerOpen) {
-                            closeReader()
-                        } else {
-                            readerOpen = true
-                        }
-                    }
-                ) {
-                    Icon(Icons.Outlined.Headphones, contentDescription = "Read aloud")
-                }
-                IconButton(onClick = { searchOpen = true }) {
-                    Icon(Icons.Outlined.Search, contentDescription = "Search")
-                }
-                ViewerMenu(
-                    onShare = { PdfActions.share(context, engine.file, title) },
-                    onPrint = { PdfActions.print(context, engine.file, title) },
-                    onSave = { saveLauncher.launch(fileName) }
-                )
-            }
-        }
+                },
+                onShare = { PdfActions.share(context, engine.file, title) },
+                onPrint = { PdfActions.print(context, engine.file, title) },
+                onSave = { saveLauncher.launch(fileName) }
+            )
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .onSizeChanged { containerHeightPx = it.height.toFloat() }
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        awaitFirstDown(
-                            requireUnconsumed = false,
-                            pass = PointerEventPass.Initial
-                        )
-                        do {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            if (event.changes.size >= 2) {
-                                val zoomChange = event.calculateZoom()
-                                if (zoomChange != 1f) {
-                                    scale = (scale * zoomChange).coerceIn(1f, MAX_ZOOM)
-                                }
-                                event.changes.forEach { change ->
-                                    if (change.positionChanged()) {
-                                        change.consume()
-                                    }
-                                }
-                            }
-                        } while (event.changes.any { it.pressed })
-                    }
-                }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onDoubleTap = {
-                            scale = if (scale > 1.05f) 1f else 2f
-                        }
-                    )
-                }
-        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .horizontalScroll(horizontalState)
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .onSizeChanged { containerHeightPx = it.height.toFloat() }
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            awaitFirstDown(
+                                requireUnconsumed = false,
+                                pass = PointerEventPass.Initial
+                            )
+                            do {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.changes.size >= 2) {
+                                    val zoomChange = event.calculateZoom()
+                                    if (zoomChange != 1f) {
+                                        scale = (scale * zoomChange).coerceIn(1f, MAX_ZOOM)
+                                    }
+                                    event.changes.forEach { change ->
+                                        if (change.positionChanged()) {
+                                            change.consume()
+                                        }
+                                    }
+                                }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                scale = if (scale > 1.05f) 1f else 2f
+                            }
+                        )
+                    }
             ) {
-                LazyColumn(
-                    state = listState,
+                Box(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .width((configuration.screenWidthDp * scale).dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .fillMaxSize()
+                        .horizontalScroll(horizontalState)
                 ) {
-                    items(count = engine.pageCount, key = { it }) { index ->
-                        PdfPageItem(
-                            engine = engine,
-                            index = index,
-                            renderWidth = renderWidth
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width((configuration.screenWidthDp * scale).dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(count = engine.pageCount, key = { it }) { index ->
+                            PdfPageItem(
+                                engine = engine,
+                                index = index,
+                                renderWidth = renderWidth
+                            )
+                        }
+                    }
+                }
+
+                if (pillAlpha > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset {
+                                val travel = (containerHeightPx - pillHeightPx).coerceAtLeast(0f)
+                                IntOffset(0, (progress * travel).roundToInt())
+                            }
+                            .alpha(pillAlpha)
+                            .height(pillHeight)
+                            .background(
+                                MaterialTheme.colorScheme.inverseSurface,
+                                RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
+                            )
+                            .pointerInput(engine.pageCount) {
+                                detectVerticalDragGestures(
+                                    onDragStart = {
+                                        dragging = true
+                                        dragProgress = progress
+                                    },
+                                    onDragEnd = { dragging = false },
+                                    onDragCancel = { dragging = false },
+                                    onVerticalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        val travelPx =
+                                            (containerHeightPx - pillHeightPx).coerceAtLeast(1f)
+                                        dragProgress =
+                                            (dragProgress + dragAmount / travelPx).coerceIn(0f, 1f)
+                                        val position = dragProgress * (engine.pageCount - 1)
+                                        val index = position.toInt()
+                                            .coerceIn(0, engine.pageCount - 1)
+                                        val fraction = position - index
+                                        val size = listState.layoutInfo.visibleItemsInfo
+                                            .firstOrNull()?.size ?: 0
+                                        scope.launch {
+                                            listState.scrollToItem(
+                                                index,
+                                                (fraction * size).roundToInt()
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${currentPage + 1}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.inverseOnSurface
                         )
                     }
                 }
-            }
 
-            if (pillAlpha > 0f) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset {
-                            val travel = (containerHeightPx - pillHeightPx).coerceAtLeast(0f)
-                            IntOffset(0, (progress * travel).roundToInt())
+                if (searchOpen && (searching || searched)) {
+                    SearchResults(
+                        searching = searching,
+                        hits = hits,
+                        onPick = { page ->
+                            closeSearch()
+                            scope.launch { listState.scrollToItem(page) }
                         }
-                        .alpha(pillAlpha)
-                        .height(pillHeight)
-                        .background(
-                            MaterialTheme.colorScheme.inverseSurface,
-                            RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
-                        )
-                        .pointerInput(engine.pageCount) {
-                            detectVerticalDragGestures(
-                                onDragStart = {
-                                    dragging = true
-                                    dragProgress = progress
-                                },
-                                onDragEnd = { dragging = false },
-                                onDragCancel = { dragging = false },
-                                onVerticalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    val travelPx =
-                                        (containerHeightPx - pillHeightPx).coerceAtLeast(1f)
-                                    dragProgress =
-                                        (dragProgress + dragAmount / travelPx).coerceIn(0f, 1f)
-                                    val position = dragProgress * (engine.pageCount - 1)
-                                    val index = position.toInt()
-                                        .coerceIn(0, engine.pageCount - 1)
-                                    val fraction = position - index
-                                    val size = listState.layoutInfo.visibleItemsInfo
-                                        .firstOrNull()?.size ?: 0
-                                    scope.launch {
-                                        listState.scrollToItem(
-                                            index,
-                                            (fraction * size).roundToInt()
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "${currentPage + 1}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.inverseOnSurface
                     )
                 }
             }
 
-            if (searchOpen && (searching || searched)) {
-                SearchResults(
-                    searching = searching,
-                    hits = hits,
-                    onPick = { page ->
-                        closeSearch()
-                        scope.launch { listState.scrollToItem(page) }
+            if (readerOpen) {
+                ReaderBar(
+                    reading = reading,
+                    pageNumber = (if (reading) readPage else currentPage) + 1,
+                    speedLabel = speedLabels[speedIndex],
+                    voiceLabel = voiceLabels[voiceIndex],
+                    voiceLabels = voiceLabels,
+                    onClose = { closeReader() },
+                    onToggle = {
+                        if (reading) {
+                            stopReading()
+                        } else {
+                            reading = true
+                            speakPage(currentPage)
+                        }
+                    },
+                    onSpeed = {
+                        speedIndex = (speedIndex + 1) % speedValues.size
+                        reader.setSpeed(speedValues[speedIndex])
+                        if (reading) {
+                            speakPage(readPage)
+                        }
+                    },
+                    onVoice = { index ->
+                        val worked = reader.setLanguage(voiceTags[index])
+                        if (worked) {
+                            voiceIndex = index
+                            if (reading) {
+                                speakPage(readPage)
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "This voice is not installed on your phone.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 )
             }
         }
 
-        if (readerOpen) {
-            ReaderBar(
-                reading = reading,
-                pageNumber = (if (reading) readPage else currentPage) + 1,
-                speedLabel = speedLabels[speedIndex],
-                voiceLabel = voiceLabels[voiceIndex],
-                voiceLabels = voiceLabels,
-                onClose = { closeReader() },
-                onToggle = {
-                    if (reading) {
-                        stopReading()
-                    } else {
-                        reading = true
-                        speakPage(currentPage)
-                    }
-                },
-                onSpeed = {
-                    speedIndex = (speedIndex + 1) % speedValues.size
-                    reader.setSpeed(speedValues[speedIndex])
-                    if (reading) {
-                        speakPage(readPage)
-                    }
-                },
-                onVoice = { index ->
-                    val worked = reader.setLanguage(voiceTags[index])
-                    if (worked) {
-                        voiceIndex = index
-                        if (reading) {
-                            speakPage(readPage)
-                       }
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "This voice is not installed on your phone.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+        if (liquidOpen) {
+            LiquidScreen(
+                engine = engine,
+                startPage = currentPage,
+                onClose = { page ->
+                    liquidOpen = false
+                    scope.launch { listState.scrollToItem(page) }
                 }
             )
         }
