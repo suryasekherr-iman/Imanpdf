@@ -37,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -199,12 +198,26 @@ fun MainScreen(incomingUri: Uri? = null) {
                         onOpen = { openUri(it) },
                         onOpenSettings = { showSettings = true }
                     )
+                } else if (selected == 1) {
+                    CreateScreen(
+                        onAction = { id ->
+                            if (implementedTools.contains(id)) {
+                                tool = id
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "This will be added soon",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
                 } else if (selected == 2) {
                     FilesScreen(
                         onOpen = { openUri(it) },
                         onBrowse = { picker.launch(arrayOf("application/pdf")) }
                     )
-                } else if (selected == 3) {
+                } else {
                     ToolsScreen(
                         onToolClick = { item ->
                             if (implementedTools.contains(item.id)) {
@@ -218,22 +231,11 @@ fun MainScreen(incomingUri: Uri? = null) {
                             }
                         }
                     )
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = tabs[selected].label,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
                 }
                 if (loading) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = androidx.compose.ui.Alignment.Center
                     ) {
                         CircularProgressIndicator()
                     }
