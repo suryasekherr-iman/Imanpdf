@@ -18,13 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.pdf.PdfEngine
 
 @Composable
 fun PdfPageItem(
     engine: PdfEngine,
     index: Int,
-    renderWidth: Int
+    renderWidth: Int,
+    annot: AnnotController? = null
 ) {
     var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
@@ -47,6 +49,13 @@ fun PdfPageItem(
                 contentDescription = "Page ${index + 1}",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
+            )
+        }
+        if (annot != null) {
+            AnnotationLayer(
+                page = index,
+                annot = annot,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
