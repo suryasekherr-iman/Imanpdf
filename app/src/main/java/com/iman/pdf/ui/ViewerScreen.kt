@@ -54,6 +54,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.iman.pdf.annot.AnnotController
+import com.iman.pdf.annot.AnnotTool
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfText
@@ -103,6 +105,10 @@ fun ViewerScreen(
     var speedIndex by remember { mutableIntStateOf(1) }
     var voiceIndex by remember { mutableIntStateOf(0) }
     var liquidOpen by remember { mutableStateOf(false) }
+
+    val annot = remember { AnnotController() }
+    var annotOpen by remember { mutableStateOf(false) }
+    val drawing = annot.tool != AnnotTool.NONE
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
     val saveLauncher = rememberLauncherForActivityResult(
@@ -197,6 +203,17 @@ fun ViewerScreen(
         onBack = {
             if (searchOpen) {
                 closeSearch()
+            } else if (annotOpen) {
+                if (annot.marks.isEmpty()) {
+                    annot.select(AnnotTool.NONE)
+                    annotOpen = false
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Tap the X on the toolbar to close editing",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             } else if (readerOpen) {
                 closeReader()
             } else {
@@ -251,8 +268,8 @@ fun ViewerScreen(
     }
 
     val scrolling = listState.isScrollInProgress
-    LaunchedEffect(scrolling, dragging) {
-        if (scrolling || dragging) {
+    LaunchedEffect(scrolling, dragging, drawing) {
+        if (scrolling || dragging || drawing) {
             pillVisible = true
         } else {
             delay(1500)
@@ -286,6 +303,11 @@ fun ViewerScreen(
                 onBack = onBack,
                 onCloseSearch = { closeSearch() },
                 onOpenSearch = { searchOpen = true },
+                onAnnotate = {
+                    stopReading()
+                    readerOpen = false
+                    annotOpen = true
+                },
                 onLiquid = {
                     stopReading()
                     liquidOpen = true
@@ -332,7 +354,9 @@ fun ViewerScreen(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onDoubleTap = {
-                                scale = if (scale > 1.05f) 1f else 2f
+                                if (annot.tool == AnnotTool.NONE) {
+                                    scale = if (scale > 1.05f) 1f else 2f
+                                }
                             }
                         )
                     }
@@ -340,10 +364,11 @@ fun ViewerScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .horizontalScroll(horizontalState)
+                        .horizontalScroll(horizontalState, enabled = !drawing)
                 ) {
                     LazyColumn(
                         state = listState,
+                        userScrollEnabled = !drawing,
                         modifier = Modifier
                             .fillMaxHeight()
                             .width((configuration.screenWidthDp * scale).dp)
@@ -354,7 +379,8 @@ fun ViewerScreen(
                             PdfPageItem(
                                 engine = engine,
                                 index = index,
-                                renderWidth = renderWidth
+                                renderWidth = renderWidth,
+                                annot = annot
                             )
                         }
                     }
@@ -424,6 +450,18 @@ fun ViewerScreen(
                         }
                     )
                 }
+            }
+
+            if (annotOpen) {
+                AnnotToolbar(
+                    annot = annot,
+                    engine = engine,
+                    title = title,
+                    onClose = {
+                        annot.select(AnnotTool.NONE)
+                        annotOpen = false
+                    }
+                )
             }
 
             if (readerOpen) {
