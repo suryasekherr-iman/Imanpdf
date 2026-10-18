@@ -4,12 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.WaterDrop
@@ -41,6 +43,7 @@ fun ViewerTopBar(
     onBack: () -> Unit,
     onCloseSearch: () -> Unit,
     onOpenSearch: () -> Unit,
+    onAnnotate: () -> Unit,
     onLiquid: () -> Unit,
     onReadAloud: () -> Unit,
     onShare: () -> Unit,
@@ -82,26 +85,44 @@ fun ViewerTopBar(
                 }
             }
         } else {
-            IconButton(onClick = onBack) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.size(40.dp)
+            ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
             Text(
                 text = title,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 4.dp),
+                    .padding(horizontal = 4.dp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            IconButton(onClick = onLiquid) {
+            IconButton(
+                onClick = onAnnotate,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(Icons.Outlined.Edit, contentDescription = "Annotate")
+            }
+            IconButton(
+                onClick = onLiquid,
+                modifier = Modifier.size(40.dp)
+            ) {
                 Icon(Icons.Outlined.WaterDrop, contentDescription = "Liquid mode")
             }
-            IconButton(onClick = onReadAloud) {
+            IconButton(
+                onClick = onReadAloud,
+                modifier = Modifier.size(40.dp)
+            ) {
                 Icon(Icons.Outlined.Headphones, contentDescription = "Read aloud")
             }
-            IconButton(onClick = onOpenSearch) {
+            IconButton(
+                onClick = onOpenSearch,
+                modifier = Modifier.size(40.dp)
+            ) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
             }
             ViewerMenu(
