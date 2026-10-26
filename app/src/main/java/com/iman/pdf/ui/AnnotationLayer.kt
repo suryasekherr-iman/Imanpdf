@@ -14,7 +14,6 @@ import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
 import com.iman.pdf.annot.HighlightMark
 import com.iman.pdf.annot.MarkPainter
-import com.iman.pdf.annot.PendingText
 import com.iman.pdf.annot.StrokeMark
 
 @Composable
@@ -108,19 +107,12 @@ fun AnnotationLayer(
                     )
                 }
 
-                AnnotTool.TEXT, AnnotTool.NOTE -> {
+                else -> {
                     detectTapGestures(
                         onTap = { position ->
-                            annot.pendingText = PendingText(
-                                page,
-                                position.x / w,
-                                position.y / h
-                            )
+                            annot.placeAt(page, position.x / w, position.y / h)
                         }
                     )
-                }
-
-                AnnotTool.NONE -> {
                 }
             }
         }
