@@ -9,8 +9,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-enum class AnnotTool { NONE, HIGHLIGHT, DRAW, TEXT, NOTE }
+enum class AnnotTool { NONE, HIGHLIGHT, DRAW, TEXT, NOTE, SIGN, CHECK, CROSS, DATE }
+
+class SignatureData(
+    val strokes: List<List<Pair<Float, Float>>>,
+    val aspect: Float
+)
 
 sealed class Mark {
     abstract val page: Int
@@ -42,6 +50,15 @@ data class TextMark(
     val boxed: Boolean
 ) : Mark()
 
+data class SignMark(
+    override val page: Int,
+    val x: Float,
+    val y: Float,
+    val width: Float,
+    val color: Int,
+    val signature: SignatureData
+) : Mark()
+
 data class PendingText(
     val page: Int,
     val x: Float,
@@ -55,6 +72,8 @@ class AnnotController {
     var textSize by mutableFloatStateOf(0.03f)
     var live by mutableStateOf<Mark?>(null)
     var pendingText by mutableStateOf<PendingText?>(null)
+    var signature by mutableStateOf<SignatureData?>(null)
+    var needSignature by mutableStateOf(false)
     val marks = mutableStateListOf<Mark>()
 
     fun select(newTool: AnnotTool) {
@@ -65,8 +84,44 @@ class AnnotController {
             AnnotTool.DRAW -> color = 0xFF1E88E5.toInt()
             AnnotTool.TEXT -> color = 0xFF000000.toInt()
             AnnotTool.NOTE -> color = 0xFF000000.toInt()
+            AnnotTool.SIGN -> color = 0xFF1A237E.toInt()
+            AnnotTool.CHECK -> color = 0xFF000000.toInt()
+            AnnotTool.CROSS -> color = 0xFF000000.toInt()
+            AnnotTool.DATE -> color = 0xFF000000.toInt()
             AnnotTool.NONE -> {
             }
+        }
+        if (newTool == AnnotTool.SIGN && signature == null) {
+            needSignature = true
+        }
+    }
+
+    fun placeAt(page: Int, x: Float, y: Float) {
+        when (tool) {
+            AnnotTool.CHECK -> add(TextMark(page, x - 0.025f, y - 0.025f, "✓", color, 0.05f, false))
+            AnnotTool.CROSS -> add(TextMark(page, x - 0.025f, y - 0.025f, "✗", color, 0.05f, false))
+            AnnotTool.DATE -> {
+                val today = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+                add(TextMark(page, x, y, today, color, textSize, false))
+            }
+            AnnotTool.SIGN -> {
+                val sig = signature
+                if (sig == null) {
+                    needSignature = true
+                } else {
+                    add(
+                        SignMark(
+                            page,
+                            (x - 0.15f).coerceAtLeast(0f),
+                            (y - 0.04f).coerceAtLeast(0f),
+                            0.3f,
+                            color,
+                            sig
+                        )
+                    )
+                }
+            }
+            else -> pendingText = PendingText(page, x, y)
         }
     }
 
@@ -107,6 +162,7 @@ object MarkPainter {
             is StrokeMark -> drawStroke(canvas, width, height, mark)
             is HighlightMark -> drawHighlight(canvas, width, height, mark)
             is TextMark -> drawText(canvas, width, height, mark)
+            is SignMark -> drawSign(canvas, width, height, mark)
         }
     }
 
@@ -179,6 +235,43 @@ object MarkPainter {
 
         lines.forEachIndexed { index, line ->
             canvas.drawText(line, left, top - metrics.ascent + index * lineHeight, paint)
+        }
+    }
+
+    private fun drawSign(canvas: Canvas, width: Float, height: Float, mark: SignMark) {
+        val boxWidth = mark.width * width
+        val boxHeight = boxWidth / mark.signature.aspect
+        val left = mark.x * width
+        val top = mark.y * height
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = mark.color
+        paint.strokeWidth = boxWidth * 0.015f
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeJoin = Paint.Join.ROUND
+        mark.signature.strokes.forEach { stroke ->
+            if (stroke.size == 1) {
+                paint.style = Paint.Style.FILL
+                canvas.drawCircle(
+                    left + stroke[0].first * boxWidth,
+                    top + stroke[0].second * boxHeight,
+                    paint.strokeWidth / 2f,
+                    paint
+                )
+            } else if (stroke.size > 1) {
+                paint.style = Paint.Style.STROKE
+                val path = Path()
+                path.moveTo(
+                    left + stroke[0].first * boxWidth,
+                    top + stroke[0].second * boxHeight
+                )
+                for (i in 1 until stroke.size) {
+                    path.lineTo(
+                        left + stroke[i].first * boxWidth,
+                        top + stroke[i].second * boxHeight
+                    )
+                }
+                canvas.drawPath(path, paint)
+            }
         }
     }
 }
