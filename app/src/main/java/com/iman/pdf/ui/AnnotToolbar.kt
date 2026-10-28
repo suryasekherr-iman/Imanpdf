@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,11 +16,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Draw
+import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.Highlight
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.StickyNote2
@@ -34,6 +40,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.iman.pdf.annot.AnnotBake
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
+import com.iman.pdf.annot.SignatureStore
 import com.iman.pdf.annot.TextMark
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
@@ -80,6 +88,12 @@ fun AnnotToolbar(
     var pending by remember { mutableStateOf<File?>(null) }
     var confirmClose by remember { mutableStateOf(false) }
     var typed by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        if (annot.signature == null) {
+            annot.signature = SignatureStore.load(context)
+        }
+    }
 
     val saver = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
@@ -114,20 +128,38 @@ fun AnnotToolbar(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ToolButton(Icons.Outlined.Highlight, annot.tool == AnnotTool.HIGHLIGHT) {
-                annot.select(toggle(annot.tool, AnnotTool.HIGHLIGHT))
-            }
-            ToolButton(Icons.Outlined.Draw, annot.tool == AnnotTool.DRAW) {
-                annot.select(toggle(annot.tool, AnnotTool.DRAW))
-            }
-            ToolButton(Icons.Outlined.TextFields, annot.tool == AnnotTool.TEXT) {
-                annot.select(toggle(annot.tool, AnnotTool.TEXT))
-            }
-            ToolButton(Icons.Outlined.StickyNote2, annot.tool == AnnotTool.NOTE) {
-                annot.select(toggle(annot.tool, AnnotTool.NOTE))
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ToolButton(Icons.Outlined.Highlight, annot.tool == AnnotTool.HIGHLIGHT) {
+                    annot.select(toggle(annot.tool, AnnotTool.HIGHLIGHT))
+                }
+                ToolButton(Icons.Outlined.Draw, annot.tool == AnnotTool.DRAW) {
+                    annot.select(toggle(annot.tool, AnnotTool.DRAW))
+                }
+                ToolButton(Icons.Outlined.TextFields, annot.tool == AnnotTool.TEXT) {
+                    annot.select(toggle(annot.tool, AnnotTool.TEXT))
+                }
+                ToolButton(Icons.Outlined.StickyNote2, annot.tool == AnnotTool.NOTE) {
+                    annot.select(toggle(annot.tool, AnnotTool.NOTE))
+                }
+                ToolButton(Icons.Outlined.Gesture, annot.tool == AnnotTool.SIGN) {
+                    annot.select(toggle(annot.tool, AnnotTool.SIGN))
+                }
+                ToolButton(Icons.Outlined.Check, annot.tool == AnnotTool.CHECK) {
+                    annot.select(toggle(annot.tool, AnnotTool.CHECK))
+                }
+                ToolButton(Icons.Outlined.Cancel, annot.tool == AnnotTool.CROSS) {
+                    annot.select(toggle(annot.tool, AnnotTool.CROSS))
+                }
+                ToolButton(Icons.Outlined.CalendarToday, annot.tool == AnnotTool.DATE) {
+                    annot.select(toggle(annot.tool, AnnotTool.DATE))
+                }
             }
             IconButton(
                 onClick = { annot.undo() },
@@ -208,6 +240,30 @@ fun AnnotToolbar(
             }
         }
 
+        if (annot.tool == AnnotTool.SIGN) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Tap on the page to place your signature",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                TextButton(onClick = { annot.needSignature = true }) {
+                    Text("Change")
+                }
+            }
+        }
+
+        if (annot.tool == AnnotTool.CHECK || annot.tool == AnnotTool.CROSS) {
+            Text(
+                "Tap on the page to place the mark",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+
         if (annot.tool == AnnotTool.DRAW) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -223,7 +279,10 @@ fun AnnotToolbar(
             }
         }
 
-        if (annot.tool == AnnotTool.TEXT || annot.tool == AnnotTool.NOTE) {
+        if (annot.tool == AnnotTool.TEXT ||
+            annot.tool == AnnotTool.NOTE ||
+            annot.tool == AnnotTool.DATE
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -237,6 +296,22 @@ fun AnnotToolbar(
                 )
             }
         }
+    }
+
+    if (annot.needSignature) {
+        SignaturePadDialog(
+            onSave = { data ->
+                SignatureStore.save(context, data)
+                annot.signature = data
+                annot.needSignature = false
+            },
+            onDismiss = {
+                annot.needSignature = false
+                if (annot.signature == null) {
+                    annot.select(AnnotTool.NONE)
+                }
+            }
+        )
     }
 
     val place = annot.pendingText
