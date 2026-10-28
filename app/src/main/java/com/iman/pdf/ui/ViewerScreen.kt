@@ -6,11 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,15 +14,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -42,17 +33,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChanged
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
@@ -63,9 +50,7 @@ import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.SearchHit
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
-private const val MAX_ZOOM = 3f
 private const val MAX_RENDER_WIDTH = 2200
 
 private val speedValues = listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
@@ -89,7 +74,8 @@ fun ViewerScreen(
     val focusRequester = remember { FocusRequester() }
     val screenWidthPx = configuration.screenWidthDp * density.density
 
-    var scale by remember { mutableFloatStateOf(1f) }
+    val zoom = remember { ZoomState() }
+    val scale = zoom.scale
     var renderScale by remember { mutableFloatStateOf(1f) }
 
     var searchOpen by remember { mutableStateOf(false) }
@@ -227,6 +213,10 @@ fun ViewerScreen(
         renderScale = scale
     }
 
+    LaunchedEffect(scale) {
+        zoom.settle(listState, horizontalState)
+    }
+
     LaunchedEffect(searchOpen) {
         if (searchOpen) {
             try {
@@ -238,11 +228,8 @@ fun ViewerScreen(
 
     val renderWidth = minOf((screenWidthPx * 1.5f * renderScale).toInt(), MAX_RENDER_WIDTH)
 
-    val pillHeight = 40.dp
-    val pillHeightPx = with(density) { pillHeight.toPx() }
-    var containerHeightPx by remember { mutableFloatStateOf(0f) }
+    val containerHeightPx = zoom.height
     var dragging by remember { mutableStateOf(false) }
-    var dragProgress by remember { mutableFloatStateOf(0f) }
     var pillVisible by remember { mutableStateOf(true) }
 
     val currentPage by remember {
@@ -328,42 +315,18 @@ fun ViewerScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .onSizeChanged { containerHeightPx = it.height.toFloat() }
-                    .pointerInput(Unit) {
-                        awaitEachGesture {
-                            awaitFirstDown(
-                                requireUnconsumed = false,
-                                pass = PointerEventPass.Initial
-                            )
-                            do {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                if (event.changes.size >= 2) {
-                                    val zoomChange = event.calculateZoom()
-                                    if (zoomChange != 1f) {
-                                        scale = (scale * zoomChange).coerceIn(1f, MAX_ZOOM)
-                                    }
-                                    event.changes.forEach { change ->
-                                        if (change.positionChanged()) {
-                                            change.consume()
-                                        }
-                                    }
-                                }
-                            } while (event.changes.any { it.pressed })
-                        }
-                    }
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onDoubleTap = {
-                                if (annot.tool == AnnotTool.NONE) {
-                                    scale = if (scale > 1.05f) 1f else 2f
-                                }
-                            }
-                        )
+                    .zoomGestures(zoom, listState, horizontalState, scope) {
+                        annot.tool == AnnotTool.NONE
                     }
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = zoom.gesture
+                            scaleY = zoom.gesture
+                            transformOrigin = TransformOrigin(zoom.originX, zoom.originY)
+                        }
                         .horizontalScroll(horizontalState, enabled = !drawing)
                 ) {
                     LazyColumn(
@@ -387,57 +350,15 @@ fun ViewerScreen(
                 }
 
                 if (pillAlpha > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .offset {
-                                val travel = (containerHeightPx - pillHeightPx).coerceAtLeast(0f)
-                                IntOffset(0, (progress * travel).roundToInt())
-                            }
-                            .alpha(pillAlpha)
-                            .height(pillHeight)
-                            .background(
-                                MaterialTheme.colorScheme.inverseSurface,
-                                RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
-                            )
-                            .pointerInput(engine.pageCount) {
-                                detectVerticalDragGestures(
-                                    onDragStart = {
-                                        dragging = true
-                                        dragProgress = progress
-                                    },
-                                    onDragEnd = { dragging = false },
-                                    onDragCancel = { dragging = false },
-                                    onVerticalDrag = { change, dragAmount ->
-                                        change.consume()
-                                        val travelPx =
-                                            (containerHeightPx - pillHeightPx).coerceAtLeast(1f)
-                                        dragProgress =
-                                            (dragProgress + dragAmount / travelPx).coerceIn(0f, 1f)
-                                        val position = dragProgress * (engine.pageCount - 1)
-                                        val index = position.toInt()
-                                            .coerceIn(0, engine.pageCount - 1)
-                                        val fraction = position - index
-                                        val size = listState.layoutInfo.visibleItemsInfo
-                                            .firstOrNull()?.size ?: 0
-                                        scope.launch {
-                                            listState.scrollToItem(
-                                                index,
-                                                (fraction * size).roundToInt()
-                                            )
-                                        }
-                                    }
-                                )
-                            }
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${currentPage + 1}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.inverseOnSurface
-                        )
-                    }
+                    PagePill(
+                        pageNumber = currentPage + 1,
+                        pageCount = engine.pageCount,
+                        progress = progress,
+                        containerHeightPx = containerHeightPx,
+                        alpha = pillAlpha,
+                        listState = listState,
+                        onDragging = { dragging = it }
+                    )
                 }
 
                 if (searchOpen && (searching || searched)) {
