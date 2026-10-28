@@ -99,6 +99,7 @@ fun HomeScreen(
     val name by prefs.userName.collectAsState(initial = "Indrajit")
     val entries by store.entries.collectAsState(initial = emptyList())
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var searching by rememberSaveable { mutableStateOf(false) }
     val tabs = listOf("Recent", "Starred", "On device")
 
     var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess()) }
@@ -148,6 +149,7 @@ fun HomeScreen(
         else -> "No starred files yet."
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -175,7 +177,7 @@ fun HomeScreen(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { }) {
+            IconButton(onClick = { searching = true }) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
             }
             IconButton(onClick = { }) {
@@ -259,6 +261,15 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    if (searching) {
+        HomeSearch(
+            entries = entries,
+            onOpen = onOpen,
+            onClose = { searching = false }
+        )
+    }
     }
 }
 
