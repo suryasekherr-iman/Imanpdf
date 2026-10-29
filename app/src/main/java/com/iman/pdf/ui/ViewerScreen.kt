@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
+import com.iman.pdf.annot.SignatureStore
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfText
@@ -62,6 +63,7 @@ private val voiceLabels = listOf("System", "English", "Hindi", "Bengali")
 fun ViewerScreen(
     engine: PdfEngine,
     title: String,
+    startMode: String = "",
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -182,6 +184,22 @@ fun ViewerScreen(
             if (reading) {
                 speakPage(readPage + 1)
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        when (startMode) {
+            "fill_sign" -> {
+                annot.signature = SignatureStore.load(context)
+                annotOpen = true
+                annot.select(AnnotTool.SIGN)
+            }
+            "comment" -> {
+                annotOpen = true
+                annot.select(AnnotTool.HIGHLIGHT)
+            }
+            "liquid" -> liquidOpen = true
+            "read_aloud" -> readerOpen = true
         }
     }
 
