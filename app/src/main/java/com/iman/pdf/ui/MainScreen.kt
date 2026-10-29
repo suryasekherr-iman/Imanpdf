@@ -48,6 +48,8 @@ import com.iman.pdf.pdf.Thumbnails
 import kotlinx.coroutines.launch
 import java.io.File
 
+private val viewerTools = listOf("fill_sign", "comment", "liquid", "read_aloud")
+
 enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Outlined.Home),
     CREATE("Create", Icons.Outlined.Create),
@@ -90,6 +92,8 @@ fun MainScreen(incomingUri: Uri? = null) {
     var loading by remember { mutableStateOf(false) }
     var passwordUri by remember { mutableStateOf<Uri?>(null) }
     var passwordWrong by remember { mutableStateOf(false) }
+    var pendingMode by remember { mutableStateOf("") }
+    var viewerMode by remember { mutableStateOf("") }
     val tabs = Tab.entries
 
     fun openUri(uri: Uri, unlocked: File? = null) {
@@ -122,6 +126,8 @@ fun MainScreen(incomingUri: Uri? = null) {
                 store.recordOpened(uri.toString(), displayName, thumb)
                 loading = false
                 engine?.close()
+                viewerMode = pendingMode
+                pendingMode = ""
                 engine = opened
                 title = displayName
             }
@@ -133,6 +139,8 @@ fun MainScreen(incomingUri: Uri? = null) {
     ) { uri ->
         if (uri != null) {
             openUri(uri)
+        } else {
+            pendingMode = ""
         }
     }
 
@@ -147,6 +155,7 @@ fun MainScreen(incomingUri: Uri? = null) {
         ViewerScreen(
             engine = current,
             title = title,
+            startMode = viewerMode,
             onBack = {
                 current.close()
                 engine = null
@@ -220,7 +229,10 @@ fun MainScreen(incomingUri: Uri? = null) {
                 } else {
                     ToolsScreen(
                         onToolClick = { item ->
-                            if (implementedTools.contains(item.id)) {
+                            if (viewerTools.contains(item.id)) {
+                                pendingMode = item.id
+                                picker.launch(arrayOf("application/pdf"))
+                            } else if (implementedTools.contains(item.id)) {
                                 tool = item.id
                             } else {
                                 Toast.makeText(
