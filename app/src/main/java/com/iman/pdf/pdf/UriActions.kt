@@ -27,6 +27,26 @@ object UriActions {
             }
         }
 
+    suspend fun importCopy(context: Context, uri: Uri, name: String): File? =
+        withContext(Dispatchers.IO) {
+            try {
+                val dir = File(context.filesDir, "imported")
+                dir.mkdirs()
+                val safe = name.filterNot { it in "\\/:*?\"<>|" }.ifBlank { "Document.pdf" }
+                val target = File(dir, System.currentTimeMillis().toString() + "_" + safe)
+                val input = context.contentResolver.openInputStream(uri)
+                    ?: return@withContext null
+                input.use { source ->
+                    target.outputStream().use { out ->
+                        source.copyTo(out)
+                    }
+                }
+                target
+            } catch (e: Exception) {
+                null
+            }
+        }
+
     suspend fun saveUriCopy(context: Context, source: Uri, destination: Uri): Boolean =
         withContext(Dispatchers.IO) {
             try {
