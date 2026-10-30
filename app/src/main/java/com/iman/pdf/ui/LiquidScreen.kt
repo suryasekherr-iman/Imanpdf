@@ -1,6 +1,5 @@
 package com.iman.pdf.ui
 
-import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,11 +19,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,39 +33,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.iman.pdf.pdf.LiquidLoader
 import com.iman.pdf.pdf.PdfEngine
-import com.iman.pdf.pdf.PdfText
-import java.io.File
-
-private fun reflow(raw: String): List<String> {
-    val lines = raw.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-    if (lines.isEmpty()) {
-        return emptyList()
-    }
-    val longest = lines.maxOf { it.length }
-    val result = ArrayList<String>()
-    val current = StringBuilder()
-    for (line in lines) {
-        if (current.isNotEmpty()) {
-            if (current.endsWith("-")) {
-                current.setLength(current.length - 1)
-            } else {
-                current.append(' ')
-            }
-        }
-        current.append(line)
-        val endsSentence = line.endsWith(".") || line.endsWith("?") ||
-            line.endsWith("!") || line.endsWith(":") || line.endsWith("।")
-        if (endsSentence && line.length < longest * 0.6) {
-            result.add(current.toString())
-            current.setLength(0)
-        }
-    }
-    if (current.isNotEmpty()) {
-        result.add(current.toString())
-    }
-    return result
-}
 
 @Composable
 fun LiquidScreen(
@@ -74,12 +43,27 @@ fun LiquidScreen(
     onClose: (Int) -> Unit
 ) {
     val context = LocalContext.current
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = startPage.coerceIn(0, engine.pageCount - 1)
-    )
+    val first = startPage.coerceIn(0, engine.pageCount - 1)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = first)
     var fontSize by remember { mutableFloatStateOf(18f) }
+    val loader = remember { LiquidLoader(context, engine.file) }
+    val pages = remember { mutableStateMapOf<Int, List<String>>() }
     val currentPage by remember {
         derivedStateOf { listState.firstVisibleItemIndex }
+    }
+
+    DisposableEffect(loader) {
+        onDispose { loader.close() }
+    }
+
+    LaunchedEffect(loader) {
+        val total = engine.pageCount
+        for (step in 0 until total) {
+            val index = (first + step) % total
+            if (pages[index] == null) {
+                pages[index] = loader.page(index)
+            }
+        }
     }
 
     BackHandler(onBack = { onClose(currentPage) })
@@ -122,10 +106,14 @@ fun LiquidScreen(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 items(count = engine.pageCount, key = { it }) { index ->
+                    LaunchedEffect(index) {
+                        if (pages[index] == null) {
+                            pages[index] = loader.page(index)
+                        }
+                    }
                     LiquidPage(
-                        context = context,
-                        file = engine.file,
                         index = index,
+                        paragraphs = pages[index],
                         fontSize = fontSize
                     )
                 }
@@ -136,17 +124,10 @@ fun LiquidScreen(
 
 @Composable
 private fun LiquidPage(
-    context: Context,
-    file: File,
     index: Int,
+    paragraphs: List<String>?,
     fontSize: Float
 ) {
-    var paragraphs by remember(index) { mutableStateOf<List<String>?>(null) }
-
-    LaunchedEffect(index) {
-        paragraphs = reflow(PdfText.pageText(context, file, index))
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -157,21 +138,20 @@ private fun LiquidPage(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary
         )
-        val list = paragraphs
-        if (list == null) {
+        if (paragraphs == null) {
             Text(
                 text = "Loading...",
                 modifier = Modifier.padding(top = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        } else if (list.isEmpty()) {
+        } else if (paragraphs.isEmpty()) {
             Text(
                 text = "No text on this page (it may be an image).",
                 modifier = Modifier.padding(top = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            list.forEach { paragraph ->
+            paragraphs.forEach { paragraph ->
                 Text(
                     text = paragraph,
                     modifier = Modifier.padding(top = 10.dp),
