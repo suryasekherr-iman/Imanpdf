@@ -7,13 +7,25 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 object FileOps {
 
     suspend fun rename(context: Context, uri: Uri, newName: String): Uri? =
         withContext(Dispatchers.IO) {
             try {
-                if (DocumentsContract.isDocumentUri(context, uri)) {
+                if (uri.scheme == "file") {
+                    val old = File(uri.path ?: return@withContext null)
+                    val raw = old.name
+                    val cut = raw.indexOf('_')
+                    val prefix = if (cut > 0 && raw.substring(0, cut).all { it.isDigit() }) {
+                        raw.substring(0, cut + 1)
+                    } else {
+                        ""
+                    }
+                    val target = File(old.parentFile, prefix + newName)
+                    if (old.renameTo(target)) Uri.fromFile(target) else null
+                } else if (DocumentsContract.isDocumentUri(context, uri)) {
                     DocumentsContract.renameDocument(context.contentResolver, uri, newName)
                 } else {
                     val values = ContentValues()
@@ -29,7 +41,9 @@ object FileOps {
     suspend fun delete(context: Context, uri: Uri): Boolean =
         withContext(Dispatchers.IO) {
             try {
-                if (DocumentsContract.isDocumentUri(context, uri)) {
+                if (uri.scheme == "file") {
+                    File(uri.path ?: "").delete()
+                } else if (DocumentsContract.isDocumentUri(context, uri)) {
                     DocumentsContract.deleteDocument(context.contentResolver, uri)
                 } else {
                     context.contentResolver.delete(uri, null, null) > 0
