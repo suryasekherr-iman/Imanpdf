@@ -5,22 +5,27 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,10 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.data.FileStore
 import com.iman.pdf.data.PdfEntry
@@ -50,12 +57,17 @@ import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.UriActions
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecentCard(
     entry: PdfEntry,
     onOpen: () -> Unit,
     onToggleStar: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    listMode: Boolean = false,
+    selectMode: Boolean = false,
+    selected: Boolean = false,
+    onSelectToggle: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -95,73 +107,93 @@ fun RecentCard(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onOpen() }
-    ) {
-        Box(
+    val tap: () -> Unit = {
+        if (selectMode) onSelectToggle() else onOpen()
+    }
+
+    if (listMode) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(0.75f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+                .combinedClickable(onClick = tap, onLongClick = onSelectToggle)
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            if (thumb != null) {
-                Image(
-                    bitmap = thumb,
-                    contentDescription = entry.name,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentScale = ContentScale.Fit
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Outlined.PictureAsPdf,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (entry.starred) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = "Starred",
-                    tint = Color(0xFFFFC107),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(20.dp)
-                )
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
-        ) {
+            Thumb(
+                thumb = thumb,
+                name = entry.name,
+                starred = entry.starred,
+                selectMode = selectMode,
+                selected = selected,
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(80.dp),
+                pad = 6.dp
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(top = 8.dp)
+                    .padding(start = 14.dp)
             ) {
                 Text(
                     text = entry.name,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "PDF",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "PDF  •  " + formatDate(entry.lastOpened),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             IconButton(onClick = { sheetOpen = true }) {
                 Icon(Icons.Outlined.MoreVert, contentDescription = "More")
+            }
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = tap, onLongClick = onSelectToggle)
+        ) {
+            Thumb(
+                thumb = thumb,
+                name = entry.name,
+                starred = entry.starred,
+                selectMode = selectMode,
+                selected = selected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.75f),
+                pad = 16.dp
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = entry.name,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "PDF",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = { sheetOpen = true }) {
+                    Icon(Icons.Outlined.MoreVert, contentDescription = "More")
+                }
             }
         }
     }
@@ -305,5 +337,63 @@ fun RecentCard(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun Thumb(
+    thumb: ImageBitmap?,
+    name: String,
+    starred: Boolean,
+    selectMode: Boolean,
+    selected: Boolean,
+    modifier: Modifier,
+    pad: Dp
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        if (thumb != null) {
+            Image(
+                bitmap = thumb,
+                contentDescription = name,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(pad),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.PictureAsPdf,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (starred) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Starred",
+                tint = Color(0xFFFFC107),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(18.dp)
+            )
+        }
+        if (selectMode) {
+            Icon(
+                imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(6.dp)
+                    .size(22.dp)
+            )
+        }
     }
 }
