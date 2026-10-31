@@ -14,6 +14,7 @@ class UserPrefs(private val context: Context) {
     private val nameKey = stringPreferencesKey("user_name")
     private val themeKey = stringPreferencesKey("theme_mode")
     private val languageKey = stringPreferencesKey("language")
+    private val photoKey = stringPreferencesKey("photo_path")
 
     val userName: Flow<String> =
         context.dataStore.data.map { it[nameKey] ?: "Indrajit" }
@@ -23,6 +24,9 @@ class UserPrefs(private val context: Context) {
 
     val language: Flow<String> =
         context.dataStore.data.map { it[languageKey] ?: "system" }
+
+    val photoPath: Flow<String> =
+        context.dataStore.data.map { it[photoKey] ?: "" }
 
     suspend fun setUserName(value: String) {
         context.dataStore.edit { it[nameKey] = value }
@@ -34,5 +38,9 @@ class UserPrefs(private val context: Context) {
 
     suspend fun setLanguage(value: String) {
         context.dataStore.edit { it[languageKey] = value }
+    }
+
+    suspend fun setPhotoPath(value: String) {
+        context.dataStore.edit { it[photoKey] = value }
     }
 }
