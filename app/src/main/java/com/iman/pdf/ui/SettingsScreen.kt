@@ -2,6 +2,8 @@ package com.iman.pdf.ui
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,7 +63,23 @@ fun SettingsScreen(onBack: () -> Unit) {
     val prefs = remember { UserPrefs(context) }
     val theme by prefs.themeMode.collectAsState(initial = "SYSTEM")
     val language by prefs.language.collectAsState(initial = "system")
+    val photo by prefs.photoPath.collectAsState(initial = "")
     var nameField by remember { mutableStateOf("") }
+
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val path = ProfilePhoto.save(context, uri)
+                if (path != null) {
+                    prefs.setPhotoPath(path)
+                } else {
+                    Toast.makeText(context, "Could not use this photo", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         nameField = prefs.userName.first()
@@ -105,6 +124,35 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             SectionTitle("Profile")
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Avatar(
+                    path = photo,
+                    size = 80.dp,
+                    modifier = Modifier.clickable { picker.launch("image/*") }
+                )
+                Column(modifier = Modifier.padding(start = 16.dp)) {
+                    TextButton(onClick = { picker.launch("image/*") }) {
+                        Text(if (photo.isEmpty()) "Add photo" else "Change photo")
+                    }
+                    if (photo.isNotEmpty()) {
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    prefs.setPhotoPath("")
+                                    ProfilePhoto.clear(context)
+                                }
+                            }
+                        ) {
+                            Text("Remove photo")
+                        }
+                    }
+                }
+            }
             OutlinedTextField(
                 value = nameField,
                 onValueChange = { nameField = it },
