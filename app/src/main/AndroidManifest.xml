@@ -19,7 +19,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:label="Iman"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+        android:theme="@style/Theme.Iman">
 
         <activity
             android:name=".MainActivity"
