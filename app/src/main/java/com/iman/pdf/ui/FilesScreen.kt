@@ -3,6 +3,8 @@ package com.iman.pdf.ui
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,75 +17,99 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Tab as TabItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.iman.pdf.R
 import com.iman.pdf.data.DeviceFiles
 import com.iman.pdf.data.DevicePdf
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
-private fun formatFileSize(bytes: Long): String {
-    if (bytes < 1024L) return "$bytes B"
-    val kb = bytes / 1024.0
-    if (kb < 1024.0) return String.format(Locale.US, "%.0f KB", kb)
-    val mb = kb / 1024.0
-    if (mb < 1024.0) return String.format(Locale.US, "%.1f MB", mb)
-    return String.format(Locale.US, "%.2f GB", mb / 1024.0)
-}
-
-private fun formatFileDate(millis: Long): String {
-    return SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(millis))
-}
+import com.iman.pdf.data.FileStore
+import com.iman.pdf.data.PdfEntry
+import com.iman.pdf.data.UserPrefs
+import kotlinx.coroutines.launch
 
 @Composable
-fun FilesScreen(
-    onOpen: (Uri) -> Unit,
-    onBrowse: () -> Unit
+fun HomeScreen(
+    onOpen: (Uri) -> Unit = {},
+    onOpenSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val prefs = remember { UserPrefs(context) }
+    val store = remember { FileStore(context) }
+    val name by prefs.userName.collectAsState(initial = "Indrajit")
+    val photo by prefs.photoPath.collectAsState(initial = "")
+    val entries by store.entries.collectAsState(initial = emptyList())
+    val tabs = listOf("Recent", "Starred", "On device")
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
+    val selectedTab = pagerState.currentPage
+    var searching by rememberSaveable { mutableStateOf(false) }
+    var listView by rememberSaveable { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var clearOpen by remember { mutableStateOf(false) }
+    var selectMode by remember { mutableStateOf(false) }
+    val selected = remember { mutableStateListOf<String>() }
+
     var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess()) }
     var scanning by remember { mutableStateOf(false) }
-    var files by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
-    var query by rememberSaveable { mutableStateOf("") }
-    var sort by rememberSaveable { mutableIntStateOf(0) }
-    var sortMenuOpen by remember { mutableStateOf(false) }
-    val sortLabels = listOf("Date", "Name", "Size")
+    var deviceFiles by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
+
+    fun exitSelect() {
+        selectMode = false
+        selected.clear()
+    }
+
+    fun toggle(uri: String) {
+        if (selected.contains(uri)) selected.remove(uri) else selected.add(uri)
+        selectMode = selected.isNotEmpty()
+    }
+
+    BackHandler(enabled = selectMode) { exitSelect() }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -96,10 +122,11 @@ fun FilesScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(hasAccess) {
-        if (hasAccess) {
+    LaunchedEffect(selectedTab, hasAccess) {
+        if (selectMode) exitSelect()
+        if (selectedTab == 2 && hasAccess) {
             scanning = true
-            files = DeviceFiles.scan(context)
+            deviceFiles = DeviceFiles.scan(context)
             scanning = false
         }
     }
@@ -117,166 +144,226 @@ fun FilesScreen(
         }
     }
 
-    val shown = remember(files, query, sort) {
-        val filtered = if (query.isBlank()) {
-            files
-        } else {
-            files.filter { it.name.contains(query.trim(), ignoreCase = true) }
-        }
-        when (sort) {
-            1 -> filtered.sortedBy { it.name.lowercase() }
-            2 -> filtered.sortedByDescending { it.size }
-            else -> filtered.sortedByDescending { it.modified }
-        }
-    }
+    val starredList = entries.filter { it.starred }
+    val currentList: List<PdfEntry> = if (selectedTab == 0) entries else starredList
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        Text(
-            text = "Files",
-            modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        OutlinedButton(
-            onClick = onBrowse,
-            modifier = Modifier.fillMaxWidth()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
         ) {
-            Icon(
-                imageVector = Icons.Outlined.FolderOpen,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = "Browse other locations",
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (!hasAccess) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Allow access to all files so Iman can find the PDF files on your phone.",
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { requestAccess() }) {
-                    Text("Allow access")
-                }
-            }
-        } else {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text("Search files") },
-                leadingIcon = {
-                    Icon(Icons.Outlined.Search, contentDescription = null)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = shown.size.toString() + " files",
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Box {
-                    TextButton(onClick = { sortMenuOpen = true }) {
-                        Text("Sort: " + sortLabels[sort])
+            if (selectMode) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { exitSelect() }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close")
                     }
-                    DropdownMenu(
-                        expanded = sortMenuOpen,
-                        onDismissRequest = { sortMenuOpen = false }
+                    Text(
+                        text = selected.size.toString() + " selected",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    IconButton(
+                        onClick = {
+                            selected.clear()
+                            selected.addAll(currentList.map { it.uri })
+                        }
                     ) {
-                        sortLabels.forEachIndexed { index, label ->
+                        Icon(Icons.Outlined.SelectAll, contentDescription = "Select all")
+                    }
+                    IconButton(
+                        onClick = {
+                            val allStarred = selected.all { uri ->
+                                entries.firstOrNull { it.uri == uri }?.starred == true
+                            }
+                            val list = selected.toList()
+                            scope.launch {
+                                list.forEach { store.setStarred(it, !allStarred) }
+                            }
+                            exitSelect()
+                        }
+                    ) {
+                        Icon(Icons.Outlined.StarBorder, contentDescription = "Star")
+                    }
+                    IconButton(
+                        onClick = {
+                            val list = selected.toList()
+                            scope.launch { list.forEach { store.remove(it) } }
+                            exitSelect()
+                        }
+                    ) {
+                        Icon(
+                            Icons.Outlined.RemoveCircleOutline,
+                            contentDescription = "Remove from recent"
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.iman_logo),
+                            contentDescription = "Iman",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer(scaleX = 1.65f, scaleY = 1.65f),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = { searching = true }) {
+                        Icon(Icons.Outlined.Search, contentDescription = "Search")
+                    }
+                    IconButton(onClick = { }) {
+                        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
+                    }
+                    Avatar(
+                        path = photo,
+                        size = 36.dp,
+                        modifier = Modifier.clickable { onOpenSettings() }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Welcome back, $name",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color.Transparent,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        TabItem(
+                            selected = selectedTab == index,
+                            onClick = {
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            },
+                            text = { Text(title) }
+                        )
+                    }
+                }
+                if (selectedTab != 2) {
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
+                        }
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false }
+                        ) {
                             DropdownMenuItem(
-                                text = { Text(label) },
+                                text = { Text("Select") },
                                 onClick = {
-                                    sort = index
-                                    sortMenuOpen = false
+                                    menuOpen = false
+                                    selectMode = true
                                 }
                             )
+                            DropdownMenuItem(
+                                text = { Text("Select all") },
+                                onClick = {
+                                    menuOpen = false
+                                    selected.clear()
+                                    selected.addAll(currentList.map { it.uri })
+                                    selectMode = selected.isNotEmpty()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (listView) "Grid view" else "List view") },
+                                onClick = {
+                                    menuOpen = false
+                                    listView = !listView
+                                }
+                            )
+                            if (selectedTab == 0) {
+                                DropdownMenuItem(
+                                    text = { Text("Clear recent") },
+                                    onClick = {
+                                        menuOpen = false
+                                        clearOpen = true
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            if (scanning && files.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (shown.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No PDF files found.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                pageSpacing = 12.dp
+            ) { page ->
+                if (page == 2) {
+                    DeviceTab(
+                        hasAccess = hasAccess,
+                        scanning = scanning,
+                        files = deviceFiles,
+                        onGrant = { requestAccess() },
+                        onOpen = onOpen
                     )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 24.dp)
-                ) {
-                    items(shown, key = { it.uri.toString() }) { file ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpen(file.uri) }
-                                .padding(vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                } else {
+                    val list = if (page == 0) entries else starredList
+                    if (list.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.PictureAsPdf,
-                                contentDescription = null,
-                                tint = Color(0xFFE53935),
-                                modifier = Modifier.size(36.dp)
+                            Text(
+                                text = if (page == 0) "No files yet. Tap + to open a PDF."
+                                else "No starred files yet.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 14.dp)
-                            ) {
-                                Text(
-                                    text = file.name,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                                Text(
-                                    text = formatFileSize(file.size) + "  •  " +
-                                        formatFileDate(file.modified),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(if (listView) 1 else 2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 96.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(if (listView) 4.dp else 16.dp)
+                        ) {
+                            items(list, key = { it.uri }) { entry ->
+                                RecentCard(
+                                    entry = entry,
+                                    onOpen = { onOpen(Uri.parse(entry.uri)) },
+                                    onToggleStar = {
+                                        scope.launch { store.setStarred(entry.uri, !entry.starred) }
+                                    },
+                                    onRemove = {
+                                        scope.launch { store.remove(entry.uri) }
+                                    },
+                                    listMode = listView,
+                                    selectMode = selectMode,
+                                    selected = selected.contains(entry.uri),
+                                    onSelectToggle = { toggle(entry.uri) }
                                 )
                             }
                         }
@@ -284,5 +371,37 @@ fun FilesScreen(
                 }
             }
         }
+
+        if (searching) {
+            HomeSearch(
+                entries = entries,
+                onOpen = onOpen,
+                onClose = { searching = false }
+            )
+        }
+    }
+
+    if (clearOpen) {
+        AlertDialog(
+            onDismissRequest = { clearOpen = false },
+            title = { Text("Clear recent?") },
+            text = { Text("Recent files will be removed from this list. Starred files stay. Your PDF files are not deleted.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        clearOpen = false
+                        val list = entries.filter { !it.starred }
+                        scope.launch { list.forEach { store.remove(it.uri) } }
+                    }
+                ) {
+                    Text("Clear")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { clearOpen = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
