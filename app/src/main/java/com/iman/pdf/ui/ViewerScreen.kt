@@ -390,7 +390,27 @@ fun ViewerScreen(
                     )
                 }
             }
-
+                        if (!annotOpen && !readerOpen && !searchOpen) {
+                ViewerBottomBar(
+                    onReadAloud = { readerOpen = true },
+                    onTool = { tool ->
+                        stopReading()
+                        if (tool == AnnotTool.SIGN) {
+                            annot.signature = SignatureStore.load(context)
+                        }
+                        annotOpen = true
+                        annot.select(tool)
+                    },
+                    onLiquid = {
+                        stopReading()
+                        liquidOpen = true
+                    },
+                    onSearch = { searchOpen = true },
+                    onShare = { PdfActions.share(context, engine.file, title) },
+                    onPrint = { PdfActions.print(context, engine.file, title) },
+                    onSave = { saveLauncher.launch(fileName) }
+                )
+                        }
             if (annotOpen) {
                 AnnotToolbar(
                     annot = annot,
