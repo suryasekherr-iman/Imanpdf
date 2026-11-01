@@ -34,4 +34,12 @@
     <string name="tool_combine">Combine files</string><string name="tool_combine_desc">Merge multiple files into one PDF</string>
     <string name="tool_create_pdf">Create PDF</string><string name="tool_create_pdf_desc">Create a PDF from images or documents</string>
     <string name="tool_scan">Scan</string><string name="tool_scan_desc">Scan documents with your camera</string>
+
+    <string name="nav_home">Home</string><string name="nav_create">Create</string><string name="nav_files">Files</string><string name="nav_tools">Tools</string>
+    <string name="home_recent">Recent</string><string name="home_starred">Starred</string><string name="home_on_device">On device</string><string name="home_welcome_back">Welcome back, %1$s</string>
+    <string name="home_select">Select</string><string name="home_select_all">Select all</string><string name="home_grid_view">Grid view</string><string name="home_list_view">List view</string><string name="home_clear_recent">Clear recent</string><string name="home_clear_recent_title">Clear recent?</string><string name="home_clear_recent_message">Recent files will be removed from this list. Starred files stay. Your PDF files are not deleted.</string><string name="home_clear">Clear</string><string name="home_cancel">Cancel</string>
+    <string name="home_no_files">No files yet. Tap + to open a PDF.</string><string name="home_no_starred">No starred files yet.</string><string name="home_selected">%1$d selected</string>
+    <string name="home_search">Search</string><string name="home_notifications">Notifications</string><string name="home_more_options">More options</string><string name="home_close">Close</string><string name="home_star">Star</string><string name="home_remove_recent">Remove from recent</string><string name="home_open_pdf">Open PDF</string>
+    <string name="main_open_failed">Could not open this PDF. It may be damaged.</string><string name="main_password_required">Password required</string><string name="main_enter_password">Enter the password to open this PDF.</string><string name="main_wrong_password">Wrong password</string><string name="main_open">Open</string><string name="main_this_soon">This will be added soon</string><string name="main_tool_soon">%1$s will be added soon</string>
+
 </resources>
