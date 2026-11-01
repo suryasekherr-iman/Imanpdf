@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_profile">Profile</string>
+    <string name="settings_add_photo">Add photo</string>
+    <string name="settings_change_photo">Change photo</string>
+    <string name="settings_remove_photo">Remove photo</string>
+    <string name="settings_your_name">Your name</string>
+    <string name="settings_save_name">Save name</string>
+    <string name="settings_name_saved">Name saved</string>
+    <string name="settings_photo_error">Could not use this photo</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_system_default">System default</string>
+    <string name="settings_light">Light</string>
+    <string name="settings_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_english">English</string>
+    <string name="settings_bengali">বাংলা (Bengali)</string>
+    <string name="settings_hindi">हिन्दी (Hindi)</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">ImAn PDF Reader • Version 1.0</string>
+</resources>
