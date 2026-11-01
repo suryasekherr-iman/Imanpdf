@@ -40,9 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import com.iman.pdf.R
 import com.iman.pdf.data.FileStore
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfTools
@@ -52,11 +50,11 @@ import java.io.File
 
 private val viewerTools = listOf("fill_sign", "comment", "liquid", "read_aloud")
 
-enum class Tab(val labelRes: Int, val icon: ImageVector) {
-    HOME(R.string.nav_home, Icons.Outlined.Home),
-    CREATE(R.string.nav_create, Icons.Outlined.Create),
-    FILES(R.string.nav_files, Icons.Outlined.Folder),
-    TOOLS(R.string.nav_tools, Icons.Outlined.GridView)
+enum class Tab(val label: String, val icon: ImageVector) {
+    HOME("Home", Icons.Outlined.Home),
+    CREATE("Create", Icons.Outlined.Create),
+    FILES("Files", Icons.Outlined.Folder),
+    TOOLS("Tools", Icons.Outlined.GridView)
 }
 
 private fun fileNameOf(context: Context, uri: Uri): String {
@@ -118,7 +116,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 } else {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.main_open_failed),
+                        "Could not open this PDF. It may be damaged.",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -187,7 +185,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                     FloatingActionButton(
                         onClick = { picker.launch(arrayOf("application/pdf")) }
                     ) {
-                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.home_open_pdf))
+                        Icon(Icons.Filled.Add, contentDescription = "Open PDF")
                     }
                 }
             },
@@ -197,8 +195,8 @@ fun MainScreen(incomingUri: Uri? = null) {
                         NavigationBarItem(
                             selected = selected == index,
                             onClick = { selected = index },
-                            icon = { Icon(tab.icon, contentDescription = context.getString(tab.labelRes)) },
-                            label = { Text(stringResource(tab.labelRes)) }
+                            icon = { Icon(tab.icon, contentDescription = tab.label) },
+                            label = { Text(tab.label) }
                         )
                     }
                 }
@@ -222,7 +220,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                             } else {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.main_this_soon),
+                                    "This will be added soon",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -244,7 +242,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                             } else {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.main_tool_soon, item.title),
+                                    item.title + " will be added soon",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -268,10 +266,10 @@ fun MainScreen(incomingUri: Uri? = null) {
         var typed by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { passwordUri = null },
-            title = { Text(stringResource(R.string.main_password_required)) },
+            title = { Text("Password required") },
             text = {
                 Column {
-                    Text(stringResource(R.string.main_enter_password))
+                    Text("Enter the password to open this PDF.")
                     OutlinedTextField(
                         value = typed,
                         onValueChange = {
@@ -282,7 +280,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                         isError = passwordWrong,
                         supportingText = {
                             if (passwordWrong) {
-                                Text(stringResource(R.string.main_wrong_password))
+                                Text("Wrong password")
                             }
                         },
                         visualTransformation = PasswordVisualTransformation()
@@ -303,12 +301,12 @@ fun MainScreen(incomingUri: Uri? = null) {
                         }
                     }
                 ) {
-                    Text(stringResource(R.string.main_open))
+                    Text("Open")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { passwordUri = null }) {
-                    Text(stringResource(R.string.home_cancel))
+                    Text("Cancel")
                 }
             }
         )

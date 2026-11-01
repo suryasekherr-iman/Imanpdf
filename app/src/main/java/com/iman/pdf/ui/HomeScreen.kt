@@ -61,7 +61,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -86,7 +85,7 @@ fun HomeScreen(
     val name by prefs.userName.collectAsState(initial = "Indrajit")
     val photo by prefs.photoPath.collectAsState(initial = "")
     val entries by store.entries.collectAsState(initial = emptyList())
-    val tabs = listOf(stringResource(R.string.home_recent), stringResource(R.string.home_starred), stringResource(R.string.home_on_device))
+    val tabs = listOf("Recent", "Starred", "On device")
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
     val selectedTab = pagerState.currentPage
     var searching by rememberSaveable { mutableStateOf(false) }
@@ -162,10 +161,10 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { exitSelect() }) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.home_close))
+                        Icon(Icons.Filled.Close, contentDescription = "Close")
                     }
                     Text(
-                        text = stringResource(R.string.home_selected, selected.size),
+                        text = selected.size.toString() + " selected",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground
@@ -176,7 +175,7 @@ fun HomeScreen(
                             selected.addAll(currentList.map { it.uri })
                         }
                     ) {
-                        Icon(Icons.Outlined.SelectAll, contentDescription = stringResource(R.string.home_select_all))
+                        Icon(Icons.Outlined.SelectAll, contentDescription = "Select all")
                     }
                     IconButton(
                         onClick = {
@@ -190,7 +189,7 @@ fun HomeScreen(
                             exitSelect()
                         }
                     ) {
-                        Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.home_star))
+                        Icon(Icons.Outlined.StarBorder, contentDescription = "Star")
                     }
                     IconButton(
                         onClick = {
@@ -201,7 +200,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             Icons.Outlined.RemoveCircleOutline,
-                            contentDescription = stringResource(R.string.home_remove_recent)
+                            contentDescription = "Remove from recent"
                         )
                     }
                 }
@@ -229,10 +228,10 @@ fun HomeScreen(
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     IconButton(onClick = { searching = true }) {
-                        Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.home_search))
+                        Icon(Icons.Outlined.Search, contentDescription = "Search")
                     }
                     IconButton(onClick = { }) {
-                        Icon(Icons.Outlined.Notifications, contentDescription = stringResource(R.string.home_notifications))
+                        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
                     }
                     Avatar(
                         path = photo,
@@ -244,7 +243,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = stringResource(R.string.home_welcome_back, name),
+                    text = "Welcome back, $name",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -272,21 +271,21 @@ fun HomeScreen(
                 if (selectedTab != 2) {
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.home_more_options))
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
                         }
                         DropdownMenu(
                             expanded = menuOpen,
                             onDismissRequest = { menuOpen = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.home_select)) },
+                                text = { Text("Select") },
                                 onClick = {
                                     menuOpen = false
                                     selectMode = true
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.home_select_all)) },
+                                text = { Text("Select all") },
                                 onClick = {
                                     menuOpen = false
                                     selected.clear()
@@ -295,7 +294,7 @@ fun HomeScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(if (listView) R.string.home_grid_view else R.string.home_list_view)) },
+                                text = { Text(if (listView) "Grid view" else "List view") },
                                 onClick = {
                                     menuOpen = false
                                     listView = !listView
@@ -303,7 +302,7 @@ fun HomeScreen(
                             )
                             if (selectedTab == 0) {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.home_clear_recent)) },
+                                    text = { Text("Clear recent") },
                                     onClick = {
                                         menuOpen = false
                                         clearOpen = true
@@ -338,7 +337,8 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = stringResource(if (page == 0) R.string.home_no_files else R.string.home_no_starred),
+                                text = if (page == 0) "No files yet. Tap + to open a PDF."
+                                else "No starred files yet.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -384,8 +384,8 @@ fun HomeScreen(
     if (clearOpen) {
         AlertDialog(
             onDismissRequest = { clearOpen = false },
-            title = { Text(stringResource(R.string.home_clear_recent_title)) },
-            text = { Text(stringResource(R.string.home_clear_recent_message)) },
+            title = { Text("Clear recent?") },
+            text = { Text("Recent files will be removed from this list. Starred files stay. Your PDF files are not deleted.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -394,12 +394,12 @@ fun HomeScreen(
                         scope.launch { list.forEach { store.remove(it.uri) } }
                     }
                 ) {
-                    Text(stringResource(R.string.home_clear))
+                    Text("Clear")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { clearOpen = false }) {
-                    Text(stringResource(R.string.home_cancel))
+                    Text("Cancel")
                 }
             }
         )
