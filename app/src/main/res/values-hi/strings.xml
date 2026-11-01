@@ -20,4 +20,18 @@
     <string name="settings_hindi">हिन्दी</string>
     <string name="settings_about">ऐप के बारे में</string>
     <string name="settings_version">ImAn PDF Reader • संस्करण 1.0</string>
+
+    <string name="tools_title">टूल्स</string><string name="tools_filter_all">सभी</string><string name="tools_filter_read">पढ़ें</string><string name="tools_filter_create">बनाएँ</string><string name="tools_filter_edit">संपादन</string>
+    <string name="tool_fill_sign">फ़ॉर्म भरें और हस्ताक्षर करें</string><string name="tool_fill_sign_desc">फ़ॉर्म पूरा करें और हस्ताक्षर जोड़ें</string>
+    <string name="tool_comment">कमेंट जोड़ें</string><string name="tool_comment_desc">टेक्स्ट हाइलाइट करें, ड्रॉ करें और नोट जोड़ें</string>
+    <string name="tool_liquid">रीफ़्लो मोड</string><string name="tool_liquid_desc">PDF को स्क्रीन के अनुसार आसानी से पढ़ें</string>
+    <string name="tool_read_aloud">ज़ोर से पढ़ें</string><string name="tool_read_aloud_desc">अपनी PDF सुनें</string>
+    <string name="tool_edit_pdf">PDF संपादित करें</string><string name="tool_edit_pdf_desc">PDF में नया टेक्स्ट और तस्वीर जोड़ें</string>
+    <string name="tool_organize">पेज व्यवस्थित करें</string><string name="tool_organize_desc">पेज का क्रम बदलें, घुमाएँ, हटाएँ या जोड़ें</string>
+    <string name="tool_crop">पेज क्रॉप करें</string><string name="tool_crop_desc">पेज के किनारों की अतिरिक्त जगह हटाएँ</string>
+    <string name="tool_compress">PDF का आकार घटाएँ</string><string name="tool_compress_desc">PDF फ़ाइल का आकार कम करें</string>
+    <string name="tool_password">पासवर्ड लगाएँ</string><string name="tool_password_desc">PDF को पासवर्ड से सुरक्षित करें</string>
+    <string name="tool_combine">PDF जोड़ें</string><string name="tool_combine_desc">कई फ़ाइलों को एक PDF में मिलाएँ</string>
+    <string name="tool_create_pdf">PDF बनाएँ</string><string name="tool_create_pdf_desc">तस्वीरों या दस्तावेज़ों से PDF बनाएँ</string>
+    <string name="tool_scan">स्कैन करें</string><string name="tool_scan_desc">कैमरे से दस्तावेज़ स्कैन करें</string>
 </resources>
