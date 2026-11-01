@@ -37,7 +37,9 @@ fun ViewerMenu(
     onReadAloud: () -> Unit,
     onPrint: () -> Unit,
     onSave: () -> Unit,
-    onTool: (String) -> Unit
+    onTool: (String) -> Unit,
+    onBookmarks: () -> Unit = {},
+    onAddBookmark: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
@@ -64,7 +66,7 @@ fun ViewerMenu(
             }
             MenuRow(Icons.Outlined.Article, "Bookmarks & TOC") {
                 open = false
-                soon()
+                onBookmarks()
             }
             MenuRow(Icons.Outlined.Comment, "Comment List") {
                 open = false
@@ -72,7 +74,7 @@ fun ViewerMenu(
             }
             MenuRow(Icons.Outlined.NoteAdd, "Add bookmark") {
                 open = false
-                soon()
+                onAddBookmark()
             }
             HorizontalDivider()
             MenuRow(Icons.Outlined.Print, "Print") {

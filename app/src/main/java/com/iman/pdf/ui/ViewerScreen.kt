@@ -44,11 +44,13 @@ import androidx.compose.ui.unit.dp
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
 import com.iman.pdf.annot.SignatureStore
+import com.iman.pdf.pdf.Bookmarks
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfText
 import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.SearchHit
+import com.iman.pdf.pdf.TocEntry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -98,6 +100,13 @@ fun ViewerScreen(
     val annot = remember { AnnotController() }
     var annotOpen by remember { mutableStateOf(false) }
     val drawing = annot.tool != AnnotTool.NONE
+
+    var bookmarksOpen by remember { mutableStateOf(false) }
+    var bookmarkList by remember {
+        mutableStateOf(Bookmarks.load(context, title, engine.pageCount))
+    }
+    var tocList by remember { mutableStateOf<List<TocEntry>>(emptyList()) }
+    var tocLoading by remember { mutableStateOf(false) }
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
     val saveLauncher = rememberLauncherForActivityResult(
@@ -310,6 +319,29 @@ fun ViewerScreen(
                 onCloseSearch = { closeSearch() },
                 onOpenSearch = { searchOpen = true },
                 onTool = { id -> onOpenTool(id) },
+                onBookmarks = {
+                    bookmarksOpen = true
+                    scope.launch {
+                        if (tocList.isEmpty()) {
+                            tocLoading = true
+                            tocList = Bookmarks.toc(context, engine.file)
+                            tocLoading = false
+                        }
+                    }
+                },
+                onAddBookmark = {
+                    val added = Bookmarks.add(context, title, engine.pageCount, currentPage)
+                    bookmarkList = Bookmarks.load(context, title, engine.pageCount)
+                    Toast.makeText(
+                        context,
+                        if (added) {
+                            "Bookmark added: page " + (currentPage + 1)
+                        } else {
+                            "Page " + (currentPage + 1) + " is already bookmarked"
+                        },
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
                 onLiquid = {
                     stopReading()
                     liquidOpen = true
@@ -482,6 +514,23 @@ fun ViewerScreen(
                     }
                 )
             }
+        }
+
+        if (bookmarksOpen) {
+            BookmarksSheet(
+                bookmarks = bookmarkList,
+                toc = tocList,
+                tocLoading = tocLoading,
+                onJump = { page ->
+                    bookmarksOpen = false
+                    scope.launch { listState.scrollToItem(page) }
+                },
+                onRemove = { page ->
+                    Bookmarks.remove(context, title, engine.pageCount, page)
+                    bookmarkList = Bookmarks.load(context, title, engine.pageCount)
+                },
+                onDismiss = { bookmarksOpen = false }
+            )
         }
 
         if (liquidOpen) {
