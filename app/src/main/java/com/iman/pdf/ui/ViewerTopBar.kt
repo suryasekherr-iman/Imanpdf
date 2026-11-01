@@ -11,9 +11,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,7 +48,8 @@ fun ViewerTopBar(
     onReadAloud: () -> Unit,
     onShare: () -> Unit,
     onPrint: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onTool: (String) -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -102,12 +103,6 @@ fun ViewerTopBar(
                 color = MaterialTheme.colorScheme.onSurface
             )
             IconButton(
-                onClick = onAnnotate,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(Icons.Outlined.Edit, contentDescription = "Annotate")
-            }
-            IconButton(
                 onClick = onLiquid,
                 modifier = Modifier.size(40.dp)
             ) {
@@ -125,10 +120,17 @@ fun ViewerTopBar(
             ) {
                 Icon(Icons.Outlined.Search, contentDescription = "Search")
             }
+            IconButton(
+                onClick = onShare,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(Icons.Outlined.Share, contentDescription = "Share")
+            }
             ViewerMenu(
-                onShare = onShare,
+                onReadAloud = onReadAloud,
                 onPrint = onPrint,
-                onSave = onSave
+                onSave = onSave,
+                onTool = onTool
             )
         }
     }
