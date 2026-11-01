@@ -424,9 +424,11 @@ fun ViewerScreen(
                 ReaderBar(
                     reading = reading,
                     pageNumber = (if (reading) readPage else currentPage) + 1,
-                    speedLabel = speedLabels[speedIndex],
-                    voiceLabel = voiceLabels[voiceIndex],
+                    pageCount = engine.pageCount,
+                    speedLabels = speedLabels,
+                    speedIndex = speedIndex,
                     voiceLabels = voiceLabels,
+                    voiceIndex = voiceIndex,
                     onClose = { closeReader() },
                     onToggle = {
                         if (reading) {
@@ -436,9 +438,29 @@ fun ViewerScreen(
                             speakPage(currentPage)
                         }
                     },
-                    onSpeed = {
-                        speedIndex = (speedIndex + 1) % speedValues.size
-                        reader.setSpeed(speedValues[speedIndex])
+                    onPrev = {
+                        if (reading) {
+                            speakPage((readPage - 1).coerceAtLeast(0))
+                        } else {
+                            scope.launch {
+                                listState.animateScrollToItem((currentPage - 1).coerceAtLeast(0))
+                            }
+                        }
+                    },
+                    onNext = {
+                        if (reading) {
+                            speakPage(readPage + 1)
+                        } else {
+                            scope.launch {
+                                listState.animateScrollToItem(
+                                    (currentPage + 1).coerceAtMost(engine.pageCount - 1)
+                                )
+                            }
+                        }
+                    },
+                    onSpeed = { index ->
+                        speedIndex = index
+                        reader.setSpeed(speedValues[index])
                         if (reading) {
                             speakPage(readPage)
                         }
