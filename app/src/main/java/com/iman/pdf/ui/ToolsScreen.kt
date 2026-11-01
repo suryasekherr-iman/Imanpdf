@@ -45,6 +45,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
+import com.iman.pdf.R
 import androidx.compose.ui.unit.dp
 
 data class ToolItem(
@@ -121,11 +123,12 @@ private val allTools = listOf(
 @Composable
 fun ToolsScreen(onToolClick: (ToolItem) -> Unit) {
     var filter by rememberSaveable { mutableIntStateOf(0) }
-    val filters = listOf("All", "Read", "Create", "Edit")
+    val filters = listOf(stringResource(R.string.tools_filter_all), stringResource(R.string.tools_filter_read), stringResource(R.string.tools_filter_create), stringResource(R.string.tools_filter_edit))
+    val categories = listOf("All", "Read", "Create", "Edit")
     val shown = if (filter == 0) {
         allTools
     } else {
-        allTools.filter { it.category == filters[filter] }
+        allTools.filter { it.category == categories[filter] }
     }
 
     Column(
@@ -134,7 +137,7 @@ fun ToolsScreen(onToolClick: (ToolItem) -> Unit) {
             .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "Tools",
+            text = stringResource(R.string.tools_title),
             modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
@@ -202,14 +205,14 @@ private fun ToolCard(tool: ToolItem, onClick: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = tool.title,
+            text = stringResource(when (tool.id) { "fill_sign" -> R.string.tool_fill_sign; "comment" -> R.string.tool_comment; "liquid" -> R.string.tool_liquid; "read_aloud" -> R.string.tool_read_aloud; "edit_pdf" -> R.string.tool_edit_pdf; "organize" -> R.string.tool_organize; "crop" -> R.string.tool_crop; "compress" -> R.string.tool_compress; "password" -> R.string.tool_password; "combine" -> R.string.tool_combine; "create_pdf" -> R.string.tool_create_pdf; "scan" -> R.string.tool_scan }),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = tool.description,
+            text = stringResource(when (tool.id) { "fill_sign" -> R.string.tool_fill_sign_desc; "comment" -> R.string.tool_comment_desc; "liquid" -> R.string.tool_liquid_desc; "read_aloud" -> R.string.tool_read_aloud_desc; "edit_pdf" -> R.string.tool_edit_pdf_desc; "organize" -> R.string.tool_organize_desc; "crop" -> R.string.tool_crop_desc; "compress" -> R.string.tool_compress_desc; "password" -> R.string.tool_password_desc; "combine" -> R.string.tool_combine_desc; "create_pdf" -> R.string.tool_create_pdf_desc; "scan" -> R.string.tool_scan_desc }),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
