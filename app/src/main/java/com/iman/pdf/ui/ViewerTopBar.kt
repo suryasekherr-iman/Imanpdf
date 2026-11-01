@@ -43,7 +43,6 @@ fun ViewerTopBar(
     onBack: () -> Unit,
     onCloseSearch: () -> Unit,
     onOpenSearch: () -> Unit,
-    onTool = { id -> onOpenTool(id) },
     onAnnotate: () -> Unit,
     onLiquid: () -> Unit,
     onReadAloud: () -> Unit,
