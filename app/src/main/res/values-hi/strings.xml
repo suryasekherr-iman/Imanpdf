@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">सेटिंग्स</string>
+    <string name="settings_back">वापस</string>
+    <string name="settings_profile">प्रोफ़ाइल</string>
+    <string name="settings_add_photo">फ़ोटो जोड़ें</string>
+    <string name="settings_change_photo">फ़ोटो बदलें</string>
+    <string name="settings_remove_photo">फ़ोटो हटाएँ</string>
+    <string name="settings_your_name">आपका नाम</string>
+    <string name="settings_save_name">नाम सेव करें</string>
+    <string name="settings_name_saved">नाम सेव हो गया</string>
+    <string name="settings_photo_error">यह फ़ोटो इस्तेमाल नहीं हो सकी</string>
+    <string name="settings_theme">थीम</string>
+    <string name="settings_system_default">सिस्टम डिफ़ॉल्ट</string>
+    <string name="settings_light">लाइट</string>
+    <string name="settings_dark">डार्क</string>
+    <string name="settings_language">भाषा</string>
+    <string name="settings_english">English</string>
+    <string name="settings_bengali">বাংলা (बंगाली)</string>
+    <string name="settings_hindi">हिन्दी</string>
+    <string name="settings_about">ऐप के बारे में</string>
+    <string name="settings_version">ImAn PDF Reader • संस्करण 1.0</string>
+</resources>
