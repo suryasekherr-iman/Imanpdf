@@ -310,11 +310,6 @@ fun ViewerScreen(
                 onCloseSearch = { closeSearch() },
                 onOpenSearch = { searchOpen = true },
                 onTool = { id -> onOpenTool(id) },
-                onAnnotate = {
-                    stopReading()
-                    readerOpen = false
-                    annotOpen = true
-                },
                 onLiquid = {
                     stopReading()
                     liquidOpen = true
