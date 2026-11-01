@@ -64,6 +64,7 @@ fun ViewerScreen(
     engine: PdfEngine,
     title: String,
     startMode: String = "",
+        onOpenTool: (String) -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
