@@ -338,8 +338,7 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = stringResource(if (page == 0) R.string.home_no_files else R.string.home_no_starred)
-                                else "No starred files yet.",
+                                text = stringResource(if (page == 0) R.string.home_no_files else R.string.home_no_starred),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
