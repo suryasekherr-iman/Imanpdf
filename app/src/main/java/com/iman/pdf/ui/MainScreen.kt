@@ -156,6 +156,11 @@ fun MainScreen(incomingUri: Uri? = null) {
             engine = current,
             title = title,
             startMode = viewerMode,
+                        onOpenTool = { id ->
+                current.close()
+                engine = null
+                tool = id
+            },
             onBack = {
                 current.close()
                 engine = null
