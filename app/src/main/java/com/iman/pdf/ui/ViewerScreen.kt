@@ -309,6 +309,7 @@ fun ViewerScreen(
                 onBack = onBack,
                 onCloseSearch = { closeSearch() },
                 onOpenSearch = { searchOpen = true },
+                onTool = { id -> onOpenTool(id) },
                 onAnnotate = {
                     stopReading()
                     readerOpen = false
