@@ -34,4 +34,12 @@
     <string name="tool_combine">PDF जोड़ें</string><string name="tool_combine_desc">कई फ़ाइलों को एक PDF में मिलाएँ</string>
     <string name="tool_create_pdf">PDF बनाएँ</string><string name="tool_create_pdf_desc">तस्वीरों या दस्तावेज़ों से PDF बनाएँ</string>
     <string name="tool_scan">स्कैन करें</string><string name="tool_scan_desc">कैमरे से दस्तावेज़ स्कैन करें</string>
+
+    <string name="nav_home">होम</string><string name="nav_create">बनाएँ</string><string name="nav_files">फ़ाइलें</string><string name="nav_tools">टूल्स</string>
+    <string name="home_recent">हाल की</string><string name="home_starred">पसंदीदा</string><string name="home_on_device">डिवाइस में</string><string name="home_welcome_back">वापस स्वागत है, %1$s</string>
+    <string name="home_select">चुनें</string><string name="home_select_all">सभी चुनें</string><string name="home_grid_view">ग्रिड दृश्य</string><string name="home_list_view">सूची दृश्य</string><string name="home_clear_recent">हाल की फ़ाइलें हटाएँ</string><string name="home_clear_recent_title">हाल की फ़ाइलें हटाएँ?</string><string name="home_clear_recent_message">हाल की फ़ाइलें इस सूची से हटेंगी। पसंदीदा फ़ाइलें रहेंगी। आपकी PDF फ़ाइलें डिलीट नहीं होंगी।</string><string name="home_clear">हटाएँ</string><string name="home_cancel">रद्द करें</string>
+    <string name="home_no_files">अभी कोई फ़ाइल नहीं है। PDF खोलने के लिए + दबाएँ।</string><string name="home_no_starred">अभी कोई पसंदीदा फ़ाइल नहीं है।</string><string name="home_selected">%1$d चुनी गईं</string>
+    <string name="home_search">खोजें</string><string name="home_notifications">सूचनाएँ</string><string name="home_more_options">अन्य विकल्प</string><string name="home_close">बंद करें</string><string name="home_star">पसंदीदा</string><string name="home_remove_recent">हाल की सूची से हटाएँ</string><string name="home_open_pdf">PDF खोलें</string>
+    <string name="main_open_failed">यह PDF नहीं खुल सकी। फ़ाइल खराब हो सकती है।</string><string name="main_password_required">पासवर्ड आवश्यक है</string><string name="main_enter_password">PDF खोलने के लिए पासवर्ड दर्ज करें।</string><string name="main_wrong_password">गलत पासवर्ड</string><string name="main_open">खोलें</string><string name="main_this_soon">यह सुविधा जल्द जोड़ी जाएगी</string><string name="main_tool_soon">%1$s सुविधा जल्द जोड़ी जाएगी</string>
+
 </resources>
