@@ -20,4 +20,18 @@
     <string name="settings_hindi">हिन्दी (হিন্দি)</string>
     <string name="settings_about">অ্যাপ সম্পর্কে</string>
     <string name="settings_version">ImAn PDF Reader • সংস্করণ 1.0</string>
+
+    <string name="tools_title">টুলস</string><string name="tools_filter_all">সব</string><string name="tools_filter_read">পড়ুন</string><string name="tools_filter_create">তৈরি</string><string name="tools_filter_edit">সম্পাদনা</string>
+    <string name="tool_fill_sign">ফর্ম পূরণ ও স্বাক্ষর</string><string name="tool_fill_sign_desc">ফর্ম পূরণ করুন এবং স্বাক্ষর যোগ করুন</string>
+    <string name="tool_comment">মন্তব্য যোগ করুন</string><string name="tool_comment_desc">টেক্সট হাইলাইট, আঁকুন এবং নোট যোগ করুন</string>
+    <string name="tool_liquid">রিফ্লো মোড</string><string name="tool_liquid_desc">স্ক্রিন অনুযায়ী সহজে PDF পড়ুন</string>
+    <string name="tool_read_aloud">জোরে পড়ুন</string><string name="tool_read_aloud_desc">আপনার PDF শুনুন</string>
+    <string name="tool_edit_pdf">PDF সম্পাদনা</string><string name="tool_edit_pdf_desc">PDF-এ নতুন লেখা ও ছবি যোগ করুন</string>
+    <string name="tool_organize">পৃষ্ঠা সাজান</string><string name="tool_organize_desc">পৃষ্ঠা সাজান, ঘোরান, মুছুন বা যোগ করুন</string>
+    <string name="tool_crop">পৃষ্ঠা ক্রপ</string><string name="tool_crop_desc">পৃষ্ঠার অতিরিক্ত প্রান্ত কাটুন</string>
+    <string name="tool_compress">PDF সংকুচিত করুন</string><string name="tool_compress_desc">PDF ফাইলের আকার কমান</string>
+    <string name="tool_password">পাসওয়ার্ড দিন</string><string name="tool_password_desc">পাসওয়ার্ড দিয়ে PDF সুরক্ষিত করুন</string>
+    <string name="tool_combine">ফাইল একত্র করুন</string><string name="tool_combine_desc">একাধিক ফাইল একটি PDF-এ যুক্ত করুন</string>
+    <string name="tool_create_pdf">PDF তৈরি করুন</string><string name="tool_create_pdf_desc">ছবি বা নথি থেকে PDF তৈরি করুন</string>
+    <string name="tool_scan">স্ক্যান</string><string name="tool_scan_desc">ক্যামেরা দিয়ে নথি স্ক্যান করুন</string>
 </resources>
