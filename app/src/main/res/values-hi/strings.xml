@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">सेटिंग्स</string>
+    <string name="settings_back">वापस</string>
+    <string name="settings_profile">प्रोफ़ाइल</string>
+    <string name="settings_add_photo">फ़ोटो जोड़ें</string>
+    <string name="settings_change_photo">फ़ोटो बदलें</string>
+    <string name="settings_remove_photo">फ़ोटो हटाएँ</string>
+    <string name="settings_your_name">आपका नाम</string>
+    <string name="settings_save_name">नाम सेव करें</string>
+    <string name="settings_name_saved">नाम सेव हो गया</string>
+    <string name="settings_photo_error">यह फ़ोटो इस्तेमाल नहीं हो सकी</string>
+    <string name="settings_theme">थीम</string>
+    <string name="settings_system_default">सिस्टम डिफ़ॉल्ट</string>
+    <string name="settings_light">लाइट</string>
+    <string name="settings_dark">डार्क</string>
+    <string name="settings_language">भाषा</string>
+    <string name="settings_english">English</string>
+    <string name="settings_bengali">বাংলা (बंगाली)</string>
+    <string name="settings_hindi">हिन्दी</string>
+    <string name="settings_about">ऐप के बारे में</string>
+    <string name="settings_version">ImAn PDF Reader • संस्करण 1.0</string>
+
+    <string name="tools_title">टूल्स</string><string name="tools_filter_all">सभी</string><string name="tools_filter_read">पढ़ें</string><string name="tools_filter_create">बनाएँ</string><string name="tools_filter_edit">संपादन</string>
+    <string name="tool_fill_sign">फ़ॉर्म भरें और हस्ताक्षर करें</string><string name="tool_fill_sign_desc">फ़ॉर्म पूरा करें और हस्ताक्षर जोड़ें</string>
+    <string name="tool_comment">कमेंट जोड़ें</string><string name="tool_comment_desc">टेक्स्ट हाइलाइट करें, ड्रॉ करें और नोट जोड़ें</string>
+    <string name="tool_liquid">रीफ़्लो मोड</string><string name="tool_liquid_desc">PDF को स्क्रीन के अनुसार आसानी से पढ़ें</string>
+    <string name="tool_read_aloud">ज़ोर से पढ़ें</string><string name="tool_read_aloud_desc">अपनी PDF सुनें</string>
+    <string name="tool_edit_pdf">PDF संपादित करें</string><string name="tool_edit_pdf_desc">PDF में नया टेक्स्ट और तस्वीर जोड़ें</string>
+    <string name="tool_organize">पेज व्यवस्थित करें</string><string name="tool_organize_desc">पेज का क्रम बदलें, घुमाएँ, हटाएँ या जोड़ें</string>
+    <string name="tool_crop">पेज क्रॉप करें</string><string name="tool_crop_desc">पेज के किनारों की अतिरिक्त जगह हटाएँ</string>
+    <string name="tool_compress">PDF का आकार घटाएँ</string><string name="tool_compress_desc">PDF फ़ाइल का आकार कम करें</string>
+    <string name="tool_password">पासवर्ड लगाएँ</string><string name="tool_password_desc">PDF को पासवर्ड से सुरक्षित करें</string>
+    <string name="tool_combine">PDF जोड़ें</string><string name="tool_combine_desc">कई फ़ाइलों को एक PDF में मिलाएँ</string>
+    <string name="tool_create_pdf">PDF बनाएँ</string><string name="tool_create_pdf_desc">तस्वीरों या दस्तावेज़ों से PDF बनाएँ</string>
+    <string name="tool_scan">स्कैन करें</string><string name="tool_scan_desc">कैमरे से दस्तावेज़ स्कैन करें</string>
+
+    <string name="nav_home">होम</string><string name="nav_create">बनाएँ</string><string name="nav_files">फ़ाइलें</string><string name="nav_tools">टूल्स</string>
+    <string name="home_recent">हाल की</string><string name="home_starred">पसंदीदा</string><string name="home_on_device">डिवाइस में</string><string name="home_welcome_back">वापस स्वागत है, %1$s</string>
+    <string name="home_select">चुनें</string><string name="home_select_all">सभी चुनें</string><string name="home_grid_view">ग्रिड दृश्य</string><string name="home_list_view">सूची दृश्य</string><string name="home_clear_recent">हाल की फ़ाइलें हटाएँ</string><string name="home_clear_recent_title">हाल की फ़ाइलें हटाएँ?</string><string name="home_clear_recent_message">हाल की फ़ाइलें इस सूची से हटेंगी। पसंदीदा फ़ाइलें रहेंगी। आपकी PDF फ़ाइलें डिलीट नहीं होंगी।</string><string name="home_clear">हटाएँ</string><string name="home_cancel">रद्द करें</string>
+    <string name="home_no_files">अभी कोई फ़ाइल नहीं है। PDF खोलने के लिए + दबाएँ।</string><string name="home_no_starred">अभी कोई पसंदीदा फ़ाइल नहीं है।</string><string name="home_selected">%1$d चुनी गईं</string>
+    <string name="home_search">खोजें</string><string name="home_notifications">सूचनाएँ</string><string name="home_more_options">अन्य विकल्प</string><string name="home_close">बंद करें</string><string name="home_star">पसंदीदा</string><string name="home_remove_recent">हाल की सूची से हटाएँ</string><string name="home_open_pdf">PDF खोलें</string>
+    <string name="main_open_failed">यह PDF नहीं खुल सकी। फ़ाइल खराब हो सकती है।</string><string name="main_password_required">पासवर्ड आवश्यक है</string><string name="main_enter_password">PDF खोलने के लिए पासवर्ड दर्ज करें।</string><string name="main_wrong_password">गलत पासवर्ड</string><string name="main_open">खोलें</string><string name="main_this_soon">यह सुविधा जल्द जोड़ी जाएगी</string><string name="main_tool_soon">%1$s सुविधा जल्द जोड़ी जाएगी</string>
+
+</resources>

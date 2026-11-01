@@ -38,9 +38,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
+import com.iman.pdf.R
 import com.iman.pdf.data.UserPrefs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -75,7 +77,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 if (path != null) {
                     prefs.setPhotoPath(path)
                 } else {
-                    Toast.makeText(context, "Could not use this photo", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, R.string.settings_photo_error, Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -86,15 +88,15 @@ fun SettingsScreen(onBack: () -> Unit) {
     }
 
     val themeOptions = listOf(
-        "SYSTEM" to "System default",
-        "LIGHT" to "Light",
-        "DARK" to "Dark"
+        "SYSTEM" to stringResource(R.string.settings_system_default),
+        "LIGHT" to stringResource(R.string.settings_light),
+        "DARK" to stringResource(R.string.settings_dark)
     )
     val languageOptions = listOf(
-        "system" to "System default",
-        "en" to "English",
-        "bn" to "বাংলা (Bengali)",
-        "hi" to "हिन्दी (Hindi)"
+        "system" to stringResource(R.string.settings_system_default),
+        "en" to stringResource(R.string.settings_english),
+        "bn" to stringResource(R.string.settings_bengali),
+        "hi" to stringResource(R.string.settings_hindi)
     )
 
     Surface(
@@ -114,16 +116,16 @@ fun SettingsScreen(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
                 }
                 Text(
-                    text = "Settings",
+                    text = stringResource(R.string.settings_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            SectionTitle("Profile")
+            SectionTitle(stringResource(R.string.settings_profile))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -137,7 +139,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                     TextButton(onClick = { picker.launch("image/*") }) {
-                        Text(if (photo.isEmpty()) "Add photo" else "Change photo")
+                        Text(if (photo.isEmpty()) stringResource(R.string.settings_add_photo) else stringResource(R.string.settings_change_photo))
                     }
                     if (photo.isNotEmpty()) {
                         TextButton(
@@ -148,7 +150,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 }
                             }
                         ) {
-                            Text("Remove photo")
+                            Text(stringResource(R.string.settings_remove_photo))
                         }
                     }
                 }
@@ -156,7 +158,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             OutlinedTextField(
                 value = nameField,
                 onValueChange = { nameField = it },
-                label = { Text("Your name") },
+                label = { Text(stringResource(R.string.settings_your_name)) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -168,16 +170,16 @@ fun SettingsScreen(onBack: () -> Unit) {
                     val value = nameField.trim()
                     if (value.isNotEmpty()) {
                         scope.launch { prefs.setUserName(value) }
-                        Toast.makeText(context, "Name saved", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, R.string.settings_name_saved, Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                Text("Save name")
+                Text(stringResource(R.string.settings_save_name))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            SectionTitle("Theme")
+            SectionTitle(stringResource(R.string.settings_theme))
             themeOptions.forEach { option ->
                 OptionRow(
                     label = option.second,
@@ -189,7 +191,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            SectionTitle("Language")
+            SectionTitle(stringResource(R.string.settings_language))
             languageOptions.forEach { option ->
                 OptionRow(
                     label = option.second,
@@ -204,9 +206,9 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            SectionTitle("About")
+            SectionTitle(stringResource(R.string.settings_about))
             Text(
-                text = "Iman PDF Reader  •  Version 1.0",
+                text = stringResource(R.string.settings_version),
                 modifier = Modifier.padding(horizontal = 16.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_profile">Profile</string>
+    <string name="settings_add_photo">Add photo</string>
+    <string name="settings_change_photo">Change photo</string>
+    <string name="settings_remove_photo">Remove photo</string>
+    <string name="settings_your_name">Your name</string>
+    <string name="settings_save_name">Save name</string>
+    <string name="settings_name_saved">Name saved</string>
+    <string name="settings_photo_error">Could not use this photo</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_system_default">System default</string>
+    <string name="settings_light">Light</string>
+    <string name="settings_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_english">English</string>
+    <string name="settings_bengali">বাংলা (Bengali)</string>
+    <string name="settings_hindi">हिन्दी (Hindi)</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">ImAn PDF Reader • Version 1.0</string>
+
+    <string name="tools_title">Tools</string><string name="tools_filter_all">All</string><string name="tools_filter_read">Read</string><string name="tools_filter_create">Create</string><string name="tools_filter_edit">Edit</string>
+    <string name="tool_fill_sign">Fill &amp; Sign</string><string name="tool_fill_sign_desc">Complete a form and add your signature</string>
+    <string name="tool_comment">Add comment</string><string name="tool_comment_desc">Highlight text, draw, and add notes</string>
+    <string name="tool_liquid">Liquid mode</string><string name="tool_liquid_desc">Read PDFs with content reflowing to fit your screen</string>
+    <string name="tool_read_aloud">Read aloud</string><string name="tool_read_aloud_desc">Listen to your PDF</string>
+    <string name="tool_edit_pdf">Edit PDF</string><string name="tool_edit_pdf_desc">Add new text and images to a PDF</string>
+    <string name="tool_organize">Organize pages</string><string name="tool_organize_desc">Reorder, rotate, delete or add pages</string>
+    <string name="tool_crop">Crop pages</string><string name="tool_crop_desc">Trim page margins</string>
+    <string name="tool_compress">Compress PDF</string><string name="tool_compress_desc">Reduce the size of your PDF</string>
+    <string name="tool_password">Set password</string><string name="tool_password_desc">Protect your PDF with a password</string>
+    <string name="tool_combine">Combine files</string><string name="tool_combine_desc">Merge multiple files into one PDF</string>
+    <string name="tool_create_pdf">Create PDF</string><string name="tool_create_pdf_desc">Create a PDF from images or documents</string>
+    <string name="tool_scan">Scan</string><string name="tool_scan_desc">Scan documents with your camera</string>
+
+    <string name="nav_home">Home</string><string name="nav_create">Create</string><string name="nav_files">Files</string><string name="nav_tools">Tools</string>
+    <string name="home_recent">Recent</string><string name="home_starred">Starred</string><string name="home_on_device">On device</string><string name="home_welcome_back">Welcome back, %1$s</string>
+    <string name="home_select">Select</string><string name="home_select_all">Select all</string><string name="home_grid_view">Grid view</string><string name="home_list_view">List view</string><string name="home_clear_recent">Clear recent</string><string name="home_clear_recent_title">Clear recent?</string><string name="home_clear_recent_message">Recent files will be removed from this list. Starred files stay. Your PDF files are not deleted.</string><string name="home_clear">Clear</string><string name="home_cancel">Cancel</string>
+    <string name="home_no_files">No files yet. Tap + to open a PDF.</string><string name="home_no_starred">No starred files yet.</string><string name="home_selected">%1$d selected</string>
+    <string name="home_search">Search</string><string name="home_notifications">Notifications</string><string name="home_more_options">More options</string><string name="home_close">Close</string><string name="home_star">Star</string><string name="home_remove_recent">Remove from recent</string><string name="home_open_pdf">Open PDF</string>
+    <string name="main_open_failed">Could not open this PDF. It may be damaged.</string><string name="main_password_required">Password required</string><string name="main_enter_password">Enter the password to open this PDF.</string><string name="main_wrong_password">Wrong password</string><string name="main_open">Open</string><string name="main_this_soon">This will be added soon</string><string name="main_tool_soon">%1$s will be added soon</string>
+
+</resources>
