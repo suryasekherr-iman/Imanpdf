@@ -26,6 +26,6 @@ fun ToolHost(
         "organize" -> OrganizeScreen(onBack = onClose, onOpen = onOpen)
         "crop" -> CropScreen(onBack = onClose, onOpen = onOpen)
         "compress" -> CompressScreen(onBack = onClose, onOpen = onOpen)
-        "scan" -> ScanScreen(onBack = onClose, onOpen = onOpen)
+        "scan" -> ScanScreen(onBack = onClose, onOpen = onOpen)\n        "edit_pdf" -> EditPdfScreen(onBack = onClose, onOpen = onOpen)
     }
 }
