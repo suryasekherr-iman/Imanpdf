@@ -1,12 +1,18 @@
-name: Build APK
+name: Build and Test APK
 
 on:
   push:
-    branches: [ main ]
+    branches: ['**']
+  pull_request:
+    branches: ['**']
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  build-and-test:
+    name: Build, lint and UI smoke test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,11 +29,31 @@ jobs:
         with:
           gradle-version: 8.10.2
 
-      - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+      - name: Run lint, unit tests and build APK
+        run: gradle lintDebug testDebugUnitTest assembleDebug --stacktrace
+
+      - name: Run Android emulator UI tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: gradle connectedDebugAndroidTest --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Iman-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Iman-Test-Reports
+          path: |
+            app/build/reports/**
+            app/build/outputs/androidTest-results/**
+            app/build/outputs/connected_android_test_additional_output/**
+          if-no-files-found: ignore
