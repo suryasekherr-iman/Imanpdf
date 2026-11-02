@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -134,7 +135,27 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var resultFile by remember { mutableStateOf<File?>(null) }
 
-    val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { pdf = it }
+    val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        pdf = uri
+        if (uri != null) {
+            val displayName = runCatching {
+                context.contentResolver.query(
+                    uri,
+                    arrayOf(OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (column >= 0) cursor.getString(column) else null
+                    } else null
+                }
+            }.getOrNull()
+            name = (displayName ?: "Document.pdf").removeSuffix(".pdf")
+                .removeSuffix(".PDF").ifBlank { "Document" }
+        }
+    }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { picture = it }
     val savePicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { target ->
         val file = resultFile
