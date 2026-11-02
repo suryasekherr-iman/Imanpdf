@@ -244,7 +244,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                             } else {
                                 Toast.makeText(
                                     context,
-                                    stringResource(R.string.main_tool_soon, stringResource(item.titleRes)),
+                                    context.getString(R.string.main_tool_soon, context.getString(item.titleRes)),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
