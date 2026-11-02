@@ -51,7 +51,8 @@ fun ViewerTopBar(
     onTool: (String) -> Unit = {},
     onBookmarks: () -> Unit = {},
     onAddBookmark: () -> Unit = {},
-    onViewSettings: () -> Unit = {}
+    onViewSettings: () -> Unit = {},
+    onComments: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -135,7 +136,8 @@ fun ViewerTopBar(
                 onTool = onTool,
                 onBookmarks = onBookmarks,
                 onAddBookmark = onAddBookmark,
-                onViewSettings = onViewSettings
+                onViewSettings = onViewSettings,
+                onComments = onComments
             )
         }
     }

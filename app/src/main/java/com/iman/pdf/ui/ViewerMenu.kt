@@ -40,7 +40,8 @@ fun ViewerMenu(
     onTool: (String) -> Unit,
     onBookmarks: () -> Unit = {},
     onAddBookmark: () -> Unit = {},
-    onViewSettings: () -> Unit = {}
+    onViewSettings: () -> Unit = {},
+    onComments: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
@@ -71,7 +72,7 @@ fun ViewerMenu(
             }
             MenuRow(Icons.Outlined.Comment, "Comment List") {
                 open = false
-                soon()
+                onComments()
             }
             MenuRow(Icons.Outlined.NoteAdd, "Add bookmark") {
                 open = false

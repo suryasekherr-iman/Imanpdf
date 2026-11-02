@@ -46,6 +46,8 @@ import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
 import com.iman.pdf.annot.SignatureStore
 import com.iman.pdf.pdf.Bookmarks
+import com.iman.pdf.pdf.CommentItem
+import com.iman.pdf.pdf.Comments
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfText
@@ -104,6 +106,9 @@ fun ViewerScreen(
 
     var bookmarksOpen by remember { mutableStateOf(false) }
     var viewSettingsOpen by remember { mutableStateOf(false) }
+    var commentsOpen by remember { mutableStateOf(false) }
+    var commentsLoading by remember { mutableStateOf(false) }
+    var commentItems by remember { mutableStateOf<List<CommentItem>>(emptyList()) }
     var keepScreenOn by remember { mutableStateOf(false) }
     var nightMode by remember { mutableStateOf(false) }
     val hostView = LocalView.current
@@ -329,6 +334,15 @@ fun ViewerScreen(
                 onOpenSearch = { searchOpen = true },
                 onTool = { id -> onOpenTool(id) },
                 onViewSettings = { viewSettingsOpen = true },
+                onComments = {
+                    commentsOpen = true
+                    commentsLoading = true
+                    scope.launch {
+                        val saved = Comments.load(context, engine.file)
+                        commentItems = Comments.fromMarks(annot.marks.toList()) + saved
+                        commentsLoading = false
+                    }
+                },
                 onBookmarks = {
                     bookmarksOpen = true
                     scope.launch {
@@ -541,6 +555,18 @@ fun ViewerScreen(
                     bookmarkList = Bookmarks.load(context, title, engine.pageCount)
                 },
                 onDismiss = { bookmarksOpen = false }
+            )
+        }
+
+        if (commentsOpen) {
+            CommentsSheet(
+                items = commentItems,
+                loading = commentsLoading,
+                onJump = { page ->
+                    commentsOpen = false
+                    scope.launch { listState.scrollToItem(page) }
+                },
+                onDismiss = { commentsOpen = false }
             )
         }
 
