@@ -40,7 +40,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.iman.pdf.R
 import com.iman.pdf.data.FileStore
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfTools
@@ -242,7 +244,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                             } else {
                                 Toast.makeText(
                                     context,
-                                    item.title + " will be added soon",
+                                    stringResource(R.string.main_tool_soon, stringResource(item.titleRes)),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
