@@ -35,11 +35,12 @@
     <string name="tool_create_pdf">PDF তৈরি করুন</string><string name="tool_create_pdf_desc">ছবি বা নথি থেকে PDF তৈরি করুন</string>
     <string name="tool_scan">স্ক্যান</string><string name="tool_scan_desc">ক্যামেরা দিয়ে নথি স্ক্যান করুন</string>
 
+    <string name="create_quick_actions">দ্রুত কাজ</string>
+
     <string name="nav_home">হোম</string><string name="nav_create">তৈরি</string><string name="nav_files">ফাইল</string><string name="nav_tools">টুলস</string>
     <string name="home_recent">সাম্প্রতিক</string><string name="home_starred">পছন্দের</string><string name="home_on_device">ডিভাইসে</string><string name="home_welcome_back">আবার স্বাগতম, %1$s</string>
     <string name="home_select">নির্বাচন</string><string name="home_select_all">সব নির্বাচন</string><string name="home_grid_view">গ্রিড ভিউ</string><string name="home_list_view">লিস্ট ভিউ</string><string name="home_clear_recent">সাম্প্রতিক মুছুন</string><string name="home_clear_recent_title">সাম্প্রতিক মুছবেন?</string><string name="home_clear_recent_message">সাম্প্রতিক ফাইলগুলি এই তালিকা থেকে সরানো হবে। পছন্দের ফাইল থাকবে। আপনার PDF ফাইল মুছে যাবে না।</string><string name="home_clear">মুছুন</string><string name="home_cancel">বাতিল</string>
     <string name="home_no_files">এখনও কোনো ফাইল নেই। PDF খুলতে + চাপুন।</string><string name="home_no_starred">এখনও কোনো পছন্দের ফাইল নেই।</string><string name="home_selected">%1$d টি নির্বাচিত</string>
     <string name="home_search">খুঁজুন</string><string name="home_notifications">বিজ্ঞপ্তি</string><string name="home_more_options">আরও বিকল্প</string><string name="home_close">বন্ধ</string><string name="home_star">পছন্দের</string><string name="home_remove_recent">সাম্প্রতিক থেকে সরান</string><string name="home_open_pdf">PDF খুলুন</string>
     <string name="main_open_failed">এই PDF খোলা যায়নি। ফাইলটি নষ্ট হতে পারে।</string><string name="main_password_required">পাসওয়ার্ড প্রয়োজন</string><string name="main_enter_password">PDF খুলতে পাসওয়ার্ড লিখুন।</string><string name="main_wrong_password">ভুল পাসওয়ার্ড</string><string name="main_open">খুলুন</string><string name="main_this_soon">এই সুবিধা শীঘ্রই যোগ করা হবে</string><string name="main_tool_soon">%1$s সুবিধা শীঘ্রই যোগ করা হবে</string>
-
 </resources>
