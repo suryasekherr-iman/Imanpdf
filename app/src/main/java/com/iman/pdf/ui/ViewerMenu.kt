@@ -39,7 +39,8 @@ fun ViewerMenu(
     onSave: () -> Unit,
     onTool: (String) -> Unit,
     onBookmarks: () -> Unit = {},
-    onAddBookmark: () -> Unit = {}
+    onAddBookmark: () -> Unit = {},
+    onViewSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
@@ -58,7 +59,7 @@ fun ViewerMenu(
         ) {
             MenuRow(Icons.Outlined.GridView, "View settings") {
                 open = false
-                soon()
+                onViewSettings()
             }
             MenuRow(Icons.Outlined.ViewModule, "Pages") {
                 open = false

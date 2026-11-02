@@ -16,17 +16,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.pdf.PdfEngine
+
+private val NIGHT_MATRIX = ColorMatrix(
+    floatArrayOf(
+        -1f, 0f, 0f, 0f, 255f,
+        0f, -1f, 0f, 0f, 255f,
+        0f, 0f, -1f, 0f, 255f,
+        0f, 0f, 0f, 1f, 0f
+    )
+)
 
 @Composable
 fun PdfPageItem(
     engine: PdfEngine,
     index: Int,
     renderWidth: Int,
-    annot: AnnotController? = null
+    annot: AnnotController? = null,
+    nightMode: Boolean = false
 ) {
     var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
@@ -48,7 +60,8 @@ fun PdfPageItem(
                 bitmap = current.asImageBitmap(),
                 contentDescription = "Page ${index + 1}",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
+                contentScale = ContentScale.FillBounds,
+                colorFilter = if (nightMode) ColorFilter.colorMatrix(NIGHT_MATRIX) else null
             )
         }
         if (annot != null) {

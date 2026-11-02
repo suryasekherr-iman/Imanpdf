@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.annot.AnnotController
@@ -102,6 +103,14 @@ fun ViewerScreen(
     val drawing = annot.tool != AnnotTool.NONE
 
     var bookmarksOpen by remember { mutableStateOf(false) }
+    var viewSettingsOpen by remember { mutableStateOf(false) }
+    var keepScreenOn by remember { mutableStateOf(false) }
+    var nightMode by remember { mutableStateOf(false) }
+    val hostView = LocalView.current
+    DisposableEffect(keepScreenOn) {
+        hostView.keepScreenOn = keepScreenOn
+        onDispose { hostView.keepScreenOn = false }
+    }
     var bookmarkList by remember {
         mutableStateOf(Bookmarks.load(context, title, engine.pageCount))
     }
@@ -319,6 +328,7 @@ fun ViewerScreen(
                 onCloseSearch = { closeSearch() },
                 onOpenSearch = { searchOpen = true },
                 onTool = { id -> onOpenTool(id) },
+                onViewSettings = { viewSettingsOpen = true },
                 onBookmarks = {
                     bookmarksOpen = true
                     scope.launch {
@@ -390,7 +400,8 @@ fun ViewerScreen(
                                 engine = engine,
                                 index = index,
                                 renderWidth = renderWidth,
-                                annot = annot
+                                annot = annot,
+                                nightMode = nightMode
                             )
                         }
                     }
@@ -530,6 +541,16 @@ fun ViewerScreen(
                     bookmarkList = Bookmarks.load(context, title, engine.pageCount)
                 },
                 onDismiss = { bookmarksOpen = false }
+            )
+        }
+
+        if (viewSettingsOpen) {
+            ViewSettingsSheet(
+                keepScreenOn = keepScreenOn,
+                nightMode = nightMode,
+                onKeepScreenOn = { keepScreenOn = it },
+                onNightMode = { nightMode = it },
+                onDismiss = { viewSettingsOpen = false }
             )
         }
 
