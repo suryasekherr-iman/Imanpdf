@@ -50,6 +50,7 @@ import com.iman.pdf.pdf.CommentItem
 import com.iman.pdf.pdf.Comments
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
+import com.iman.pdf.pdf.PdfExport
 import com.iman.pdf.pdf.PdfText
 import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.SearchHit
@@ -133,6 +134,47 @@ fun ViewerScreen(
                 if (ok) "Copy saved" else "Could not save the copy",
                 Toast.LENGTH_SHORT
             ).show()
+        }
+    }
+
+    var exportOpen by remember { mutableStateOf(false) }
+    var exportText by remember { mutableStateOf("") }
+    val baseName = fileName.removeSuffix(".pdf").removeSuffix(".PDF")
+    val textLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val ok = PdfExport.writeText(context, uri, exportText)
+                Toast.makeText(
+                    context,
+                    if (ok) "Text file saved" else "Could not save the text file",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+    val folderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                Toast.makeText(context, "Exporting pages...", Toast.LENGTH_SHORT).show()
+                val saved = try {
+                    PdfExport.writeImages(context, engine, uri, baseName)
+                } catch (e: Exception) {
+                    0
+                }
+                Toast.makeText(
+                    context,
+                    if (saved == engine.pageCount) {
+                        "$saved images saved"
+                    } else {
+                        "$saved of ${engine.pageCount} images saved"
+                    },
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
@@ -334,6 +376,7 @@ fun ViewerScreen(
                 onOpenSearch = { searchOpen = true },
                 onTool = { id -> onOpenTool(id) },
                 onViewSettings = { viewSettingsOpen = true },
+                onExport = { exportOpen = true },
                 onComments = {
                     commentsOpen = true
                     commentsLoading = true
@@ -555,6 +598,32 @@ fun ViewerScreen(
                     bookmarkList = Bookmarks.load(context, title, engine.pageCount)
                 },
                 onDismiss = { bookmarksOpen = false }
+            )
+        }
+
+        if (exportOpen) {
+            ExportDialog(
+                onText = {
+                    exportOpen = false
+                    scope.launch {
+                        val text = PdfExport.allText(context, engine.file)
+                        if (text.isBlank()) {
+                            Toast.makeText(
+                                context,
+                                "No text found in this PDF (it may be a scan)",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            exportText = text
+                            textLauncher.launch("$baseName.txt")
+                        }
+                    }
+                },
+                onImages = {
+                    exportOpen = false
+                    folderLauncher.launch(null)
+                },
+                onDismiss = { exportOpen = false }
             )
         }
 

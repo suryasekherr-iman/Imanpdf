@@ -41,7 +41,8 @@ fun ViewerMenu(
     onBookmarks: () -> Unit = {},
     onAddBookmark: () -> Unit = {},
     onViewSettings: () -> Unit = {},
-    onComments: () -> Unit = {}
+    onComments: () -> Unit = {},
+    onExport: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
@@ -93,7 +94,7 @@ fun ViewerMenu(
             }
             MenuRow(Icons.Outlined.SaveAlt, "Export") {
                 open = false
-                soon()
+                onExport()
             }
             HorizontalDivider()
             MenuRow(Icons.Outlined.Compress, "Compress PDF") {

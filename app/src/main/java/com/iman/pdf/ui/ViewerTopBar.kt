@@ -52,7 +52,8 @@ fun ViewerTopBar(
     onBookmarks: () -> Unit = {},
     onAddBookmark: () -> Unit = {},
     onViewSettings: () -> Unit = {},
-    onComments: () -> Unit = {}
+    onComments: () -> Unit = {},
+    onExport: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -137,7 +138,8 @@ fun ViewerTopBar(
                 onBookmarks = onBookmarks,
                 onAddBookmark = onAddBookmark,
                 onViewSettings = onViewSettings,
-                onComments = onComments
+                onComments = onComments,
+                onExport = onExport
             )
         }
     }
