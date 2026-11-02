@@ -44,88 +44,46 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 data class ToolItem(
     val id: String,
-    val title: String,
-    val description: String,
+    val titleRes: Int,
+    val descriptionRes: Int,
     val category: String,
     val icon: ImageVector
 )
 
 private val allTools = listOf(
-    ToolItem(
-        "fill_sign", "Fill & Sign",
-        "Complete a form and add your signature",
-        "Edit", Icons.Outlined.Gesture
-    ),
-    ToolItem(
-        "comment", "Add comment",
-        "Highlight text, draw, and add sticky notes or text comments",
-        "Read", Icons.Outlined.Comment
-    ),
-    ToolItem(
-        "liquid", "Liquid mode",
-        "Read PDFs more easily with content reflowing to fit your screen",
-        "Read", Icons.Outlined.Article
-    ),
-    ToolItem(
-        "read_aloud", "Read aloud",
-        "Listen to your PDF on the go",
-        "Read", Icons.Outlined.VolumeUp
-    ),
-    ToolItem(
-        "edit_pdf", "Edit PDF",
-        "Edit text and images in your PDF",
-        "Edit", Icons.Outlined.Edit
-    ),
-    ToolItem(
-        "organize", "Organize pages",
-        "Reorder, rotate, delete or add pages",
-        "Edit", Icons.Outlined.ViewModule
-    ),
-    ToolItem(
-        "crop", "Crop pages",
-        "Trim the margins of your pages",
-        "Edit", Icons.Outlined.Crop
-    ),
-    ToolItem(
-        "compress", "Compress PDF",
-        "Reduce the size of your PDF file",
-        "Edit", Icons.Outlined.Compress
-    ),
-    ToolItem(
-        "password", "Set password",
-        "Protect your PDF with a password",
-        "Edit", Icons.Outlined.Lock
-    ),
-    ToolItem(
-        "combine", "Combine files",
-        "Merge multiple files into one PDF",
-        "Create", Icons.Outlined.MergeType
-    ),
-    ToolItem(
-        "create_pdf", "Create PDF",
-        "Make a PDF from images or documents",
-        "Create", Icons.Outlined.NoteAdd
-    ),
-    ToolItem(
-        "scan", "Scan",
-        "Scan documents with your camera",
-        "Create", Icons.Outlined.CameraAlt
-    )
+    ToolItem("fill_sign", R.string.tool_fill_sign, R.string.tool_fill_sign_desc, "Edit", Icons.Outlined.Gesture),
+    ToolItem("comment", R.string.tool_comment, R.string.tool_comment_desc, "Read", Icons.Outlined.Comment),
+    ToolItem("liquid", R.string.tool_liquid, R.string.tool_liquid_desc, "Read", Icons.Outlined.Article),
+    ToolItem("read_aloud", R.string.tool_read_aloud, R.string.tool_read_aloud_desc, "Read", Icons.Outlined.VolumeUp),
+    ToolItem("edit_pdf", R.string.tool_edit_pdf, R.string.tool_edit_pdf_desc, "Edit", Icons.Outlined.Edit),
+    ToolItem("organize", R.string.tool_organize, R.string.tool_organize_desc, "Edit", Icons.Outlined.ViewModule),
+    ToolItem("crop", R.string.tool_crop, R.string.tool_crop_desc, "Edit", Icons.Outlined.Crop),
+    ToolItem("compress", R.string.tool_compress, R.string.tool_compress_desc, "Edit", Icons.Outlined.Compress),
+    ToolItem("password", R.string.tool_password, R.string.tool_password_desc, "Edit", Icons.Outlined.Lock),
+    ToolItem("combine", R.string.tool_combine, R.string.tool_combine_desc, "Create", Icons.Outlined.MergeType),
+    ToolItem("create_pdf", R.string.tool_create_pdf, R.string.tool_create_pdf_desc, "Create", Icons.Outlined.NoteAdd),
+    ToolItem("scan", R.string.tool_scan, R.string.tool_scan_desc, "Create", Icons.Outlined.CameraAlt)
 )
 
 @Composable
 fun ToolsScreen(onToolClick: (ToolItem) -> Unit) {
     var filter by rememberSaveable { mutableIntStateOf(0) }
-    val filters = listOf("All", "Read", "Create", "Edit")
+    val filters = listOf(
+        R.string.tools_filter_all,
+        R.string.tools_filter_read,
+        R.string.tools_filter_create,
+        R.string.tools_filter_edit
+    )
     val shown = if (filter == 0) {
         allTools
     } else {
-        allTools.filter { it.category == filters[filter] }
+        allTools.filter { it.category == listOf("All", "Read", "Create", "Edit")[filter] }
     }
 
     Column(
@@ -134,7 +92,7 @@ fun ToolsScreen(onToolClick: (ToolItem) -> Unit) {
             .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "Tools",
+            text = stringResource(R.string.tools_title),
             modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
@@ -146,11 +104,11 @@ fun ToolsScreen(onToolClick: (ToolItem) -> Unit) {
             edgePadding = 0.dp,
             containerColor = Color.Transparent
         ) {
-            filters.forEachIndexed { index, label ->
+            filters.forEachIndexed { index, labelRes ->
                 TabItem(
                     selected = filter == index,
                     onClick = { filter = index },
-                    text = { Text(label) }
+                    text = { Text(stringResource(labelRes)) }
                 )
             }
         }
@@ -202,14 +160,14 @@ private fun ToolCard(tool: ToolItem, onClick: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = tool.title,
+            text = stringResource(tool.titleRes),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = tool.description,
+            text = stringResource(tool.descriptionRes),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
