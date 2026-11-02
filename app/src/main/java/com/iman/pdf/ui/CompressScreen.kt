@@ -1,5 +1,6 @@
 package com.iman.pdf.ui
 
+import androidx.compose.runtime.LaunchedEffect
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -114,9 +115,7 @@ fun CompressScreen(
         }
     }
 
-    val picker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    val onPicked: (Uri?) -> Unit = { uri ->
         if (uri != null) {
             scope.launch {
                 busy = true
@@ -133,6 +132,15 @@ fun CompressScreen(
                 }
             }
         }
+    }
+
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+        onPicked
+    )
+
+    LaunchedEffect(Unit) {
+        ToolSeed.take()?.let { onPicked(it) }
     }
 
     val saver = rememberLauncherForActivityResult(

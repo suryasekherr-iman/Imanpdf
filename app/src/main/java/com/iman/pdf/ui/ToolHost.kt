@@ -14,6 +14,9 @@ val implementedTools = listOf(
     "edit_pdf"
 )
 
+/** Tools that can start with the PDF already open in the viewer. */
+val seedableTools = listOf("compress", "crop", "organize", "password")
+
 @Composable
 fun ToolHost(
     tool: String,

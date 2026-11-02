@@ -112,9 +112,7 @@ fun OrganizeScreen(
         onDispose { engine?.close() }
     }
 
-    val picker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    val onPicked: (Uri?) -> Unit = { uri ->
         if (uri != null) {
             scope.launch {
                 busy = true
@@ -135,6 +133,15 @@ fun OrganizeScreen(
                 }
             }
         }
+    }
+
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+        onPicked
+    )
+
+    LaunchedEffect(Unit) {
+        ToolSeed.take()?.let { onPicked(it) }
     }
 
     val saver = rememberLauncherForActivityResult(

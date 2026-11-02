@@ -1,5 +1,6 @@
 package com.iman.pdf.ui
 
+import androidx.compose.runtime.LaunchedEffect
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
@@ -109,9 +110,7 @@ fun CropScreen(
         onDispose { engine?.close() }
     }
 
-    val picker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    val onPicked: (Uri?) -> Unit = { uri ->
         if (uri != null) {
             scope.launch {
                 busy = true
@@ -137,6 +136,15 @@ fun CropScreen(
                 }
             }
         }
+    }
+
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+        onPicked
+    )
+
+    LaunchedEffect(Unit) {
+        ToolSeed.take()?.let { onPicked(it) }
     }
 
     val saver = rememberLauncherForActivityResult(

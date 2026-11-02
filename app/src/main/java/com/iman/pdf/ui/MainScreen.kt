@@ -95,6 +95,7 @@ fun MainScreen(incomingUri: Uri? = null) {
     var passwordWrong by remember { mutableStateOf(false) }
     var pendingMode by remember { mutableStateOf("") }
     var viewerMode by remember { mutableStateOf("") }
+    var currentUri by remember { mutableStateOf<Uri?>(null) }
     val tabs = Tab.entries
 
     fun openUri(uri: Uri, unlocked: File? = null) {
@@ -130,6 +131,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 viewerMode = pendingMode
                 pendingMode = ""
                 engine = opened
+                currentUri = source
                 title = displayName
             }
         }
@@ -158,6 +160,7 @@ fun MainScreen(incomingUri: Uri? = null) {
             title = title,
             startMode = viewerMode,
                         onOpenTool = { id ->
+                ToolSeed.uri = if (seedableTools.contains(id)) currentUri else null
                 current.close()
                 engine = null
                 tool = id
