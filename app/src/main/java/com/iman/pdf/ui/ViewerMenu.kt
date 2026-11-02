@@ -90,7 +90,7 @@ fun ViewerMenu(
             }
             MenuRow(Icons.Outlined.Edit, "Edit PDF") {
                 open = false
-                soon()
+                onTool("edit_pdf")
             }
             MenuRow(Icons.Outlined.SaveAlt, "Export") {
                 open = false
