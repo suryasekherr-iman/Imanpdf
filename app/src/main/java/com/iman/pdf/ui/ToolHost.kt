@@ -10,7 +10,8 @@ val implementedTools = listOf(
     "organize",
     "crop",
     "compress",
-    "scan"
+    "scan",
+    "edit_pdf"
 )
 
 @Composable
@@ -27,5 +28,6 @@ fun ToolHost(
         "crop" -> CropScreen(onBack = onClose, onOpen = onOpen)
         "compress" -> CompressScreen(onBack = onClose, onOpen = onOpen)
         "scan" -> ScanScreen(onBack = onClose, onOpen = onOpen)
+        "edit_pdf" -> EditPdfScreen(onBack = onClose, onOpen = onOpen)
     }
 }
