@@ -228,7 +228,12 @@ fun MainScreen(incomingUri: Uri? = null) {
                 if (selected == 0) {
                     HomeScreen(
                         onOpen = { openUri(it) },
-                        onOpenSettings = { showSettings = true }
+                        onOpenSettings = { showSettings = true },
+                        onQuickAction = { id ->
+                            if (implementedTools.contains(id)) {
+                                tool = id
+                            }
+                        }
                     )
                 } else if (selected == 1) {
                     CreateScreen(
