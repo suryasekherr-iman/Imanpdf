@@ -42,4 +42,19 @@
     <string name="home_search">Search</string><string name="home_notifications">Notifications</string><string name="home_more_options">More options</string><string name="home_close">Close</string><string name="home_star">Star</string><string name="home_remove_recent">Remove from recent</string><string name="home_open_pdf">Open PDF</string>
     <string name="main_open_failed">Could not open this PDF. It may be damaged.</string><string name="main_password_required">Password required</string><string name="main_enter_password">Enter the password to open this PDF.</string><string name="main_wrong_password">Wrong password</string><string name="main_open">Open</string><string name="main_this_soon">This will be added soon</string><string name="main_tool_soon">%1$s will be added soon</string>
 
+    <string name="edit_pdf_title">Edit PDF</string>
+    <string name="edit_pdf_back">Back</string>
+    <string name="edit_pdf_description">Add text or an image to a PDF page. Hindi and Bengali text are supported. This adds new content; it does not erase or replace existing printed text.</string>
+    <string name="edit_pdf_choose">Choose PDF</string>
+    <string name="edit_pdf_change">Change PDF</string>
+    <string name="edit_pdf_selected">PDF selected</string>
+    <string name="edit_pdf_page_number">Page number</string>
+    <string name="edit_pdf_text_to_add">Text to add</string>
+    <string name="edit_pdf_text_size">Text size: %1$d pt</string>
+    <string name="edit_pdf_choose_image">Choose image to insert</string>
+    <string name="edit_pdf_change_image">Change inserted image</string>
+    <string name="edit_pdf_apply_save">Apply changes and save</string>
+    <string name="edit_pdf_saved">Edited PDF saved</string>
+    <string name="edit_pdf_save_failed">Could not save PDF</string>
+    <string name="edit_pdf_edit_failed">Could not edit this PDF. Check the file and text.</string>
 </resources>
