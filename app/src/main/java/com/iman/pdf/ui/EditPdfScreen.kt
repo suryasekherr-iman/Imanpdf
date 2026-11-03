@@ -23,8 +23,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.iman.pdf.R
 import com.iman.pdf.pdf.PdfActions
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -141,9 +143,11 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
         if (target != null && file != null) scope.launch {
             val saved = withContext(Dispatchers.IO) { PdfActions.saveCopy(context, file, target) }
             if (saved) {
-                Toast.makeText(context, "Edited PDF saved", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.edit_pdf_saved, Toast.LENGTH_SHORT).show()
                 onOpen(target)
-            } else Toast.makeText(context, "Could not save PDF", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(context, R.string.edit_pdf_save_failed, Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -155,37 +159,37 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.edit_pdf_back))
                 }
-                Text("Edit PDF", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.edit_pdf_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
             Text(
-                "Add text or an image to a PDF page. Hindi and Bengali text are supported. This adds new content; it does not erase or replace existing printed text.",
+                stringResource(R.string.edit_pdf_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             OutlinedButton(onClick = { pdfPicker.launch(arrayOf("application/pdf")) }, modifier = Modifier.fillMaxWidth()) {
-                Text(if (pdf == null) "Choose PDF" else "Change PDF")
+                Text(stringResource(if (pdf == null) R.string.edit_pdf_choose else R.string.edit_pdf_change))
             }
-            if (pdf != null) Text("PDF selected")
+            if (pdf != null) Text(stringResource(R.string.edit_pdf_selected))
             OutlinedTextField(
                 value = page,
                 onValueChange = { page = it.filter(Char::isDigit).ifBlank { "1" } },
-                label = { Text("Page number") },
+                label = { Text(stringResource(R.string.edit_pdf_page_number)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("Text to add") },
+                label = { Text(stringResource(R.string.edit_pdf_text_to_add)) },
                 minLines = 2,
                 modifier = Modifier.fillMaxWidth()
             )
-            Text("Text size: ${size.toInt()} pt")
+            Text(stringResource(R.string.edit_pdf_text_size, size.toInt()))
             Slider(value = size, onValueChange = { size = it }, valueRange = 8f..36f)
             OutlinedButton(onClick = { imagePicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
-                Text(if (picture == null) "Choose image to insert" else "Change inserted image")
+                Text(stringResource(if (picture == null) R.string.edit_pdf_choose_image else R.string.edit_pdf_change_image))
             }
             Button(
                 onClick = {
@@ -195,7 +199,7 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
                         val edited = editPdf(context, selected, page.toIntOrNull() ?: 1, text, size, picture)
                         busy = false
                         if (edited == null) {
-                            Toast.makeText(context, "Could not edit this PDF. Check the file and text.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, R.string.edit_pdf_edit_failed, Toast.LENGTH_LONG).show()
                         } else {
                             resultFile = edited
                             savePicker.launch(name + "_edited.pdf")
@@ -205,7 +209,7 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
                 enabled = pdf != null && (text.isNotBlank() || picture != null) && !busy,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (busy) CircularProgressIndicator() else Text("Apply changes and save")
+                if (busy) CircularProgressIndicator() else Text(stringResource(R.string.edit_pdf_apply_save))
             }
         }
     }
