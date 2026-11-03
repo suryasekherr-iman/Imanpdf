@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="create_quick_actions">Quick actions</string>
+    <string name="files_title">Files</string>
+    <string name="files_browse_locations">Browse other locations</string>
+    <string name="files_on_device">On this device</string>
+    <string name="files_permission_message">Allow access to all files so ImAn can find PDF files on your phone.</string>
+    <string name="files_allow_access">Allow access</string>
+    <string name="files_search">Search files</string>
+    <string name="files_count">%1$d files</string>
+    <string name="files_sort">Sort: %1$s</string>
+    <string name="files_sort_date">Date</string>
+    <string name="files_sort_name">Name</string>
+    <string name="files_sort_size">Size</string>
+    <string name="files_empty">No PDF files found.</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_profile">Profile</string>

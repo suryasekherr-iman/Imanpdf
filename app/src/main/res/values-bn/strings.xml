@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="create_quick_actions">দ্রুত কাজ</string>
+    <string name="files_title">ফাইল</string>
+    <string name="files_browse_locations">অন্য অবস্থান থেকে ব্রাউজ করুন</string>
+    <string name="files_on_device">এই ডিভাইসে</string>
+    <string name="files_permission_message">আপনার ফোনের PDF ফাইল খুঁজে পেতে ImAn-কে সব ফাইলের অনুমতি দিন।</string>
+    <string name="files_allow_access">অনুমতি দিন</string>
+    <string name="files_search">ফাইল খুঁজুন</string>
+    <string name="files_count">%1$d টি ফাইল</string>
+    <string name="files_sort">সাজান: %1$s</string>
+    <string name="files_sort_date">তারিখ</string>
+    <string name="files_sort_name">নাম</string>
+    <string name="files_sort_size">আকার</string>
+    <string name="files_empty">কোনো PDF ফাইল পাওয়া যায়নি।</string>
     <string name="settings_title">সেটিংস</string>
     <string name="settings_back">ফিরে যান</string>
     <string name="settings_profile">প্রোফাইল</string>
