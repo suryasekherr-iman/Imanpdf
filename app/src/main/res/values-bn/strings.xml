@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="create_quick_actions">দ্রুত কাজ</string>
     <string name="settings_title">সেটিংস</string>
     <string name="settings_back">ফিরে যান</string>
     <string name="settings_profile">প্রোফাইল</string>
