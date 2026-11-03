@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="create_quick_actions">Quick actions</string>
+    <string name="files_refresh">Refresh</string>
     <string name="files_title">Files</string>
     <string name="files_browse_locations">Browse other locations</string>
     <string name="files_on_device">On this device</string>

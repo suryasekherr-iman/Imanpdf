@@ -84,6 +84,7 @@ fun FilesScreen(
     var files by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
     var query by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableIntStateOf(0) }
+    var refreshToken by remember { mutableIntStateOf(0) }
     var sortMenuOpen by remember { mutableStateOf(false) }
     val sortLabels = listOf(stringResource(R.string.files_sort_date), stringResource(R.string.files_sort_name), stringResource(R.string.files_sort_size))
 
@@ -98,11 +99,14 @@ fun FilesScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(hasAccess) {
+    LaunchedEffect(hasAccess, refreshToken) {
         if (hasAccess) {
             scanning = true
-            files = DeviceFiles.scan(context)
-            scanning = false
+            try {
+                files = DeviceFiles.scan(context)
+            } finally {
+                scanning = false
+            }
         }
     }
 
@@ -137,13 +141,26 @@ fun FilesScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.files_title),
-            modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.files_title),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            TextButton(
+                onClick = { refreshToken++ },
+                enabled = hasAccess && !scanning
+            ) {
+                Text(stringResource(R.string.files_refresh))
+            }
+        }
 
         OutlinedButton(
             onClick = onBrowse,

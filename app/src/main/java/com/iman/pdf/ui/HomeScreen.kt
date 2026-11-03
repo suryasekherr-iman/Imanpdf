@@ -34,7 +34,6 @@ import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.MergeType
 import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.ViewModule
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SelectAll
@@ -249,9 +248,6 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.weight(1f))
                     IconButton(onClick = { searching = true }) {
                         Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.home_search))
-                    }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Outlined.Notifications, contentDescription = stringResource(R.string.home_notifications))
                     }
                     Avatar(
                         path = photo,
