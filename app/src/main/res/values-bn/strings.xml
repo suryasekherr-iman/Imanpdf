@@ -42,4 +42,19 @@
     <string name="home_search">খুঁজুন</string><string name="home_notifications">বিজ্ঞপ্তি</string><string name="home_more_options">আরও বিকল্প</string><string name="home_close">বন্ধ</string><string name="home_star">পছন্দের</string><string name="home_remove_recent">সাম্প্রতিক থেকে সরান</string><string name="home_open_pdf">PDF খুলুন</string>
     <string name="main_open_failed">এই PDF খোলা যায়নি। ফাইলটি নষ্ট হতে পারে।</string><string name="main_password_required">পাসওয়ার্ড প্রয়োজন</string><string name="main_enter_password">PDF খুলতে পাসওয়ার্ড লিখুন।</string><string name="main_wrong_password">ভুল পাসওয়ার্ড</string><string name="main_open">খুলুন</string><string name="main_this_soon">এই সুবিধা শীঘ্রই যোগ করা হবে</string><string name="main_tool_soon">%1$s সুবিধা শীঘ্রই যোগ করা হবে</string>
 
+    <string name="edit_pdf_title">PDF সম্পাদনা</string>
+    <string name="edit_pdf_back">ফিরে যান</string>
+    <string name="edit_pdf_description">PDF পৃষ্ঠায় লেখা বা ছবি যোগ করুন। হিন্দি ও বাংলা লেখা সমর্থিত। এতে নতুন বিষয়বস্তু যোগ হয়; আগে থেকে থাকা মুদ্রিত লেখা মুছে যায় বা বদলে যায় না।</string>
+    <string name="edit_pdf_choose">PDF নির্বাচন করুন</string>
+    <string name="edit_pdf_change">PDF পরিবর্তন করুন</string>
+    <string name="edit_pdf_selected">PDF নির্বাচিত হয়েছে</string>
+    <string name="edit_pdf_page_number">পৃষ্ঠার নম্বর</string>
+    <string name="edit_pdf_text_to_add">যে লেখা যোগ করবেন</string>
+    <string name="edit_pdf_text_size">লেখার আকার: %1$d pt</string>
+    <string name="edit_pdf_choose_image">যোগ করার জন্য ছবি নির্বাচন করুন</string>
+    <string name="edit_pdf_change_image">ছবি পরিবর্তন করুন</string>
+    <string name="edit_pdf_apply_save">পরিবর্তন প্রয়োগ করে সংরক্ষণ করুন</string>
+    <string name="edit_pdf_saved">সম্পাদিত PDF সংরক্ষিত হয়েছে</string>
+    <string name="edit_pdf_save_failed">PDF সংরক্ষণ করা যায়নি</string>
+    <string name="edit_pdf_edit_failed">PDF সম্পাদনা করা যায়নি। ফাইল ও লেখা পরীক্ষা করুন।</string>
 </resources>
