@@ -42,6 +42,7 @@ jobs:
           script: gradle connectedDebugAndroidTest --stacktrace
 
       - name: Upload APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Iman-APK
