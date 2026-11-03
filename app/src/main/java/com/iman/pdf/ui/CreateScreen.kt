@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
+import com.iman.pdf.R
 import androidx.compose.ui.unit.dp
 
 private data class QuickAction(
@@ -62,7 +64,7 @@ fun CreateScreen(onAction: (String) -> Unit) {
             .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "Quick actions",
+            text = stringResource(R.string.create_quick_actions),
             modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
@@ -101,7 +103,18 @@ fun CreateScreen(onAction: (String) -> Unit) {
                     }
                     Spacer(modifier = Modifier.height(0.dp))
                     Text(
-                        text = action.title,
+                        text = stringResource(
+                            when (action.id) {
+                                "create_pdf" -> R.string.tool_create_pdf
+                                "scan" -> R.string.tool_scan
+                                "combine" -> R.string.tool_combine
+                                "organize" -> R.string.tool_organize
+                                "crop" -> R.string.tool_crop
+                                "compress" -> R.string.tool_compress
+                                "password" -> R.string.tool_password
+                                else -> R.string.create_quick_actions
+                            }
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 12.dp),
