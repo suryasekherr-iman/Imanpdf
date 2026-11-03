@@ -32,6 +32,12 @@ jobs:
       - name: Run lint, unit tests and build APK
         run: gradle lintDebug testDebugUnitTest assembleDebug --stacktrace
 
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Run Android emulator UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -39,7 +45,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: gradle connectedDebugAndroidTest --stacktrace
+          script: bash scripts/ci-emulator-tests.sh
 
       - name: Upload APK
         if: always()
