@@ -52,6 +52,22 @@ import java.io.File
 
 private val viewerTools = listOf("fill_sign", "comment", "liquid", "read_aloud")
 
+private fun toolTitleResource(id: String): Int = when (id) {
+    "fill_sign" -> R.string.tool_fill_sign
+    "comment" -> R.string.tool_comment
+    "liquid" -> R.string.tool_liquid
+    "read_aloud" -> R.string.tool_read_aloud
+    "edit_pdf" -> R.string.tool_edit_pdf
+    "organize" -> R.string.tool_organize
+    "crop" -> R.string.tool_crop
+    "compress" -> R.string.tool_compress
+    "password" -> R.string.tool_password
+    "combine" -> R.string.tool_combine
+    "create_pdf" -> R.string.tool_create_pdf
+    "scan" -> R.string.tool_scan
+    else -> R.string.tools_title
+}
+
 enum class Tab(val labelRes: Int, val icon: ImageVector) {
     HOME(R.string.nav_home, Icons.Outlined.Home),
     CREATE(R.string.nav_create, Icons.Outlined.Create),
@@ -244,7 +260,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                             } else {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.main_tool_soon, item.title),
+                                    context.getString(R.string.main_tool_soon, context.getString(toolTitleResource(item.id))),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
