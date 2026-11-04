@@ -40,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import com.iman.pdf.R
 import androidx.compose.ui.unit.dp
-import com.iman.pdf.R
 
 private data class QuickAction(
     val id: String,
