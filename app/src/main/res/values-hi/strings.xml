@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="create_quick_actions">त्वरित काम</string>
     <string name="files_refresh">रीफ़्रेश</string>
     <string name="files_title">फ़ाइलें</string>
     <string name="files_browse_locations">अन्य स्थानों से ब्राउज़ करें</string>

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="create_quick_actions">দ্রুত কাজ</string>
     <string name="files_refresh">রিফ্রেশ</string>
     <string name="files_title">ফাইল</string>
     <string name="files_browse_locations">অন্য অবস্থান থেকে ব্রাউজ করুন</string>
