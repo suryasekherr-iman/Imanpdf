@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -36,6 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
+import com.iman.pdf.R
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.R
 
@@ -79,14 +82,15 @@ fun CreateScreen(onAction: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(quickActions, key = { it.id }) { action ->
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .heightIn(min = 156.dp)
+                        .clip(RoundedCornerShape(18.dp))
                         .background(MaterialTheme.colorScheme.surface)
                         .clickable { onAction(action.id) }
                         .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.Top
                 ) {
                     Box(
                         modifier = Modifier
@@ -101,14 +105,40 @@ fun CreateScreen(onAction: (String) -> Unit) {
                             tint = action.tint
                         )
                     }
-                    Spacer(modifier = Modifier.height(0.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = stringResource(action.titleRes),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 12.dp),
+                        text = stringResource(
+                            when (action.id) {
+                                "create_pdf" -> R.string.tool_create_pdf
+                                "scan" -> R.string.tool_scan
+                                "combine" -> R.string.tool_combine
+                                "organize" -> R.string.tool_organize
+                                "crop" -> R.string.tool_crop
+                                "compress" -> R.string.tool_compress
+                                "password" -> R.string.tool_password
+                                else -> R.string.create_quick_actions
+                            }
+                        ),
                         style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(
+                            when (action.id) {
+                                "create_pdf" -> R.string.tool_create_pdf_desc
+                                "scan" -> R.string.tool_scan_desc
+                                "combine" -> R.string.tool_combine_desc
+                                "organize" -> R.string.tool_organize_desc
+                                "crop" -> R.string.tool_crop_desc
+                                "compress" -> R.string.tool_compress_desc
+                                "password" -> R.string.tool_password_desc
+                                else -> R.string.create_quick_actions
+                            }
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

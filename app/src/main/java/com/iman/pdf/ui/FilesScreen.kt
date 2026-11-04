@@ -46,12 +46,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.iman.pdf.R
 import com.iman.pdf.data.DeviceFiles
 import com.iman.pdf.data.DevicePdf
 import java.text.SimpleDateFormat
@@ -82,8 +84,9 @@ fun FilesScreen(
     var files by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
     var query by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableIntStateOf(0) }
+    var refreshToken by remember { mutableIntStateOf(0) }
     var sortMenuOpen by remember { mutableStateOf(false) }
-    val sortLabels = listOf("Date", "Name", "Size")
+    val sortLabels = listOf(stringResource(R.string.files_sort_date), stringResource(R.string.files_sort_name), stringResource(R.string.files_sort_size))
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -96,11 +99,14 @@ fun FilesScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(hasAccess) {
+    LaunchedEffect(hasAccess, refreshToken) {
         if (hasAccess) {
             scanning = true
-            files = DeviceFiles.scan(context)
-            scanning = false
+            try {
+                files = DeviceFiles.scan(context)
+            } finally {
+                scanning = false
+            }
         }
     }
 
@@ -135,13 +141,26 @@ fun FilesScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        Text(
-            text = "Files",
-            modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.files_title),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            TextButton(
+                onClick = { refreshToken++ },
+                enabled = hasAccess && !scanning
+            ) {
+                Text(stringResource(R.string.files_refresh))
+            }
+        }
 
         OutlinedButton(
             onClick = onBrowse,
@@ -153,12 +172,18 @@ fun FilesScreen(
                 modifier = Modifier.size(20.dp)
             )
             Text(
-                text = "Browse other locations",
+                text = stringResource(R.string.files_browse_locations),
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.files_on_device),
+            modifier = Modifier.padding(top = 18.dp, bottom = 8.dp),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
 
         if (!hasAccess) {
             Column(
@@ -169,20 +194,20 @@ fun FilesScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Allow access to all files so Iman can find the PDF files on your phone.",
+                    text = stringResource(R.string.files_permission_message),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { requestAccess() }) {
-                    Text("Allow access")
+                    Text(stringResource(R.string.files_allow_access))
                 }
             }
         } else {
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Search files") },
+                placeholder = { Text(stringResource(R.string.files_search)) },
                 leadingIcon = {
                     Icon(Icons.Outlined.Search, contentDescription = null)
                 },
@@ -198,14 +223,14 @@ fun FilesScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = shown.size.toString() + " files",
+                    text = stringResource(R.string.files_count, shown.size),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Box {
                     TextButton(onClick = { sortMenuOpen = true }) {
-                        Text("Sort: " + sortLabels[sort])
+                        Text(stringResource(R.string.files_sort, sortLabels[sort]))
                     }
                     DropdownMenu(
                         expanded = sortMenuOpen,
@@ -237,7 +262,7 @@ fun FilesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No PDF files found.",
+                        text = stringResource(R.string.files_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

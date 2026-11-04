@@ -120,7 +120,7 @@ fun ProtectScreen(
                         "Protected PDF saved. Remember your password.",
                         Toast.LENGTH_LONG
                     ).show()
-                    onBack()
+                    onOpen(destination)
                 } else {
                     Toast.makeText(context, "Could not save the PDF", Toast.LENGTH_SHORT).show()
                 }

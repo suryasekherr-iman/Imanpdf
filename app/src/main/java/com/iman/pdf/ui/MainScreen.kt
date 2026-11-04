@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.iman.pdf.R
 import com.iman.pdf.data.FileStore
@@ -51,11 +52,27 @@ import java.io.File
 
 private val viewerTools = listOf("fill_sign", "comment", "liquid", "read_aloud")
 
-enum class Tab(val label: String, val icon: ImageVector) {
-    HOME("Home", Icons.Outlined.Home),
-    CREATE("Create", Icons.Outlined.Create),
-    FILES("Files", Icons.Outlined.Folder),
-    TOOLS("Tools", Icons.Outlined.GridView)
+private fun toolTitleResource(id: String): Int = when (id) {
+    "fill_sign" -> R.string.tool_fill_sign
+    "comment" -> R.string.tool_comment
+    "liquid" -> R.string.tool_liquid
+    "read_aloud" -> R.string.tool_read_aloud
+    "edit_pdf" -> R.string.tool_edit_pdf
+    "organize" -> R.string.tool_organize
+    "crop" -> R.string.tool_crop
+    "compress" -> R.string.tool_compress
+    "password" -> R.string.tool_password
+    "combine" -> R.string.tool_combine
+    "create_pdf" -> R.string.tool_create_pdf
+    "scan" -> R.string.tool_scan
+    else -> R.string.tools_title
+}
+
+enum class Tab(val labelRes: Int, val icon: ImageVector) {
+    HOME(R.string.nav_home, Icons.Outlined.Home),
+    CREATE(R.string.nav_create, Icons.Outlined.Create),
+    FILES(R.string.nav_files, Icons.Outlined.Folder),
+    TOOLS(R.string.nav_tools, Icons.Outlined.GridView)
 }
 
 private fun fileNameOf(context: Context, uri: Uri): String {
@@ -199,8 +216,8 @@ fun MainScreen(incomingUri: Uri? = null) {
                         NavigationBarItem(
                             selected = selected == index,
                             onClick = { selected = index },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) }
+                            icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
+                            label = { Text(stringResource(tab.labelRes)) }
                         )
                     }
                 }
@@ -214,7 +231,12 @@ fun MainScreen(incomingUri: Uri? = null) {
                 if (selected == 0) {
                     HomeScreen(
                         onOpen = { openUri(it) },
-                        onOpenSettings = { showSettings = true }
+                        onOpenSettings = { showSettings = true },
+                        onQuickAction = { id ->
+                            if (implementedTools.contains(id)) {
+                                tool = id
+                            }
+                        }
                     )
                 } else if (selected == 1) {
                     CreateScreen(
@@ -246,7 +268,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                             } else {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.main_tool_soon, context.getString(item.titleRes)),
+                                    context.getString(R.string.main_tool_soon, context.getString(toolTitleResource(item.id))),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }

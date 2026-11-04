@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,8 +16,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as rowItems
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -26,7 +30,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.MergeType
+import androidx.compose.material.icons.outlined.NoteAdd
+import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SelectAll
@@ -57,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -73,10 +81,20 @@ import com.iman.pdf.data.PdfEntry
 import com.iman.pdf.data.UserPrefs
 import kotlinx.coroutines.launch
 
+private data class HomeQuickAction(val id: String, val titleRes: Int, val icon: ImageVector, val tint: Color)
+
+private val homeQuickActions = listOf(
+    HomeQuickAction("create_pdf", R.string.tool_create_pdf, Icons.Outlined.NoteAdd, Color(0xFFFF6B6B)),
+    HomeQuickAction("scan", R.string.tool_scan, Icons.Outlined.CameraAlt, Color(0xFF4CD1A0)),
+    HomeQuickAction("combine", R.string.tool_combine, Icons.Outlined.MergeType, Color(0xFF5AA9FF)),
+    HomeQuickAction("organize", R.string.tool_organize, Icons.Outlined.ViewModule, Color(0xFFFFA24C))
+)
+
 @Composable
 fun HomeScreen(
     onOpen: (Uri) -> Unit = {},
-    onOpenSettings: () -> Unit = {}
+    onOpenSettings: () -> Unit = {},
+    onQuickAction: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -230,9 +248,6 @@ fun HomeScreen(
                     IconButton(onClick = { searching = true }) {
                         Icon(Icons.Outlined.Search, contentDescription = "Search")
                     }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
-                    }
                     Avatar(
                         path = photo,
                         size = 36.dp,
@@ -250,6 +265,39 @@ fun HomeScreen(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    rowItems(homeQuickActions, key = { it.id }) { action ->
+                        Column(
+                            modifier = Modifier
+                                .width(112.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .clickable { onQuickAction(action.id) }
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(action.tint.copy(alpha = 0.16f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(action.icon, contentDescription = null, tint = action.tint)
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = stringResource(action.titleRes),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 2
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {

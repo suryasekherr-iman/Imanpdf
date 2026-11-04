@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="create_quick_actions">त्वरित काम</string>
+    <string name="files_refresh">रीफ़्रेश</string>
+    <string name="files_title">फ़ाइलें</string>
+    <string name="files_browse_locations">अन्य स्थानों से ब्राउज़ करें</string>
+    <string name="files_on_device">इस डिवाइस पर</string>
+    <string name="files_permission_message">ImAn को आपके फ़ोन की PDF फ़ाइलें ढूँढने के लिए सभी फ़ाइलों की अनुमति दें।</string>
+    <string name="files_allow_access">अनुमति दें</string>
+    <string name="files_search">फ़ाइलें खोजें</string>
+    <string name="files_count">%1$d फ़ाइलें</string>
+    <string name="files_sort">क्रम: %1$s</string>
+    <string name="files_sort_date">तारीख</string>
+    <string name="files_sort_name">नाम</string>
+    <string name="files_sort_size">आकार</string>
+    <string name="files_empty">कोई PDF फ़ाइल नहीं मिली।</string>
     <string name="settings_title">सेटिंग्स</string>
     <string name="settings_back">वापस</string>
     <string name="settings_profile">प्रोफ़ाइल</string>
@@ -43,4 +57,20 @@
     <string name="home_no_files">अभी कोई फ़ाइल नहीं है। PDF खोलने के लिए + दबाएँ।</string><string name="home_no_starred">अभी कोई पसंदीदा फ़ाइल नहीं है।</string><string name="home_selected">%1$d चुनी गईं</string>
     <string name="home_search">खोजें</string><string name="home_notifications">सूचनाएँ</string><string name="home_more_options">अन्य विकल्प</string><string name="home_close">बंद करें</string><string name="home_star">पसंदीदा</string><string name="home_remove_recent">हाल की सूची से हटाएँ</string><string name="home_open_pdf">PDF खोलें</string>
     <string name="main_open_failed">यह PDF नहीं खुल सकी। फ़ाइल खराब हो सकती है।</string><string name="main_password_required">पासवर्ड आवश्यक है</string><string name="main_enter_password">PDF खोलने के लिए पासवर्ड दर्ज करें।</string><string name="main_wrong_password">गलत पासवर्ड</string><string name="main_open">खोलें</string><string name="main_this_soon">यह सुविधा जल्द जोड़ी जाएगी</string><string name="main_tool_soon">%1$s सुविधा जल्द जोड़ी जाएगी</string>
+
+    <string name="edit_pdf_title">PDF संपादित करें</string>
+    <string name="edit_pdf_back">वापस</string>
+    <string name="edit_pdf_description">PDF पेज में टेक्स्ट या तस्वीर जोड़ें। हिंदी और बंगाली टेक्स्ट समर्थित हैं। इससे नया कंटेंट जुड़ता है; पहले से छपा टेक्स्ट मिटता या बदलता नहीं है।</string>
+    <string name="edit_pdf_choose">PDF चुनें</string>
+    <string name="edit_pdf_change">PDF बदलें</string>
+    <string name="edit_pdf_selected">PDF चुनी गई</string>
+    <string name="edit_pdf_page_number">पेज नंबर</string>
+    <string name="edit_pdf_text_to_add">जोड़ने के लिए टेक्स्ट</string>
+    <string name="edit_pdf_text_size">टेक्स्ट का आकार: %1$d pt</string>
+    <string name="edit_pdf_choose_image">जोड़ने के लिए तस्वीर चुनें</string>
+    <string name="edit_pdf_change_image">तस्वीर बदलें</string>
+    <string name="edit_pdf_apply_save">बदलाव लागू करें और सेव करें</string>
+    <string name="edit_pdf_saved">संपादित PDF सेव हो गई</string>
+    <string name="edit_pdf_save_failed">PDF सेव नहीं हो सकी</string>
+    <string name="edit_pdf_edit_failed">PDF संपादित नहीं हो सकी। फ़ाइल और टेक्स्ट जाँचें।</string>
 </resources>

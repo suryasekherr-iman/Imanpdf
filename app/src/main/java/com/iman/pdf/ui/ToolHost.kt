@@ -26,7 +26,7 @@ fun ToolHost(
     when (tool) {
         "combine" -> CombineScreen(onBack = onClose, onOpen = onOpen)
         "create_pdf" -> ImagesToPdfScreen(onBack = onClose, onOpen = onOpen)
-        "password" -> ProtectScreen(onBack = onClose, onOpen = { })
+        "password" -> ProtectScreen(onBack = onClose, onOpen = onOpen)
         "organize" -> OrganizeScreen(onBack = onClose, onOpen = onOpen)
         "crop" -> CropScreen(onBack = onClose, onOpen = onOpen)
         "compress" -> CompressScreen(onBack = onClose, onOpen = onOpen)
