@@ -232,6 +232,15 @@ fun MainScreen(incomingUri: Uri? = null) {
                     HomeScreen(
                         onOpen = { openUri(it) },
                         onOpenSettings = { showSettings = true },
+                        onFileAction = { id, uri ->
+                            if (viewerTools.contains(id)) {
+                                pendingMode = id
+                                openUri(uri)
+                            } else if (implementedTools.contains(id)) {
+                                ToolSeed.uri = if (seedableTools.contains(id)) uri else null
+                                tool = id
+                            }
+                        },
                         onQuickAction = { id ->
                             if (implementedTools.contains(id)) {
                                 tool = id

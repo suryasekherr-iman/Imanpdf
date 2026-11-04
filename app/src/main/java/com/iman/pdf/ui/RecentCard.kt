@@ -67,7 +67,8 @@ fun RecentCard(
     listMode: Boolean = false,
     selectMode: Boolean = false,
     selected: Boolean = false,
-    onSelectToggle: () -> Unit = {}
+    onSelectToggle: () -> Unit = {},
+    onFileAction: (String, Uri) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -204,6 +205,10 @@ fun RecentCard(
             thumb = thumb,
             onDismiss = { sheetOpen = false },
             onToggleStar = onToggleStar,
+            onAction = { id ->
+                sheetOpen = false
+                onFileAction(id, Uri.parse(entry.uri))
+            },
             onShare = {
                 sheetOpen = false
                 scope.launch {

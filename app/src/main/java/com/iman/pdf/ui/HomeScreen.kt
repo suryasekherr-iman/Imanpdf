@@ -95,7 +95,8 @@ private val homeQuickActions = listOf(
 fun HomeScreen(
     onOpen: (Uri) -> Unit = {},
     onOpenSettings: () -> Unit = {},
-    onQuickAction: (String) -> Unit = {}
+    onQuickAction: (String) -> Unit = {},
+    onFileAction: (String, Uri) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -412,7 +413,8 @@ fun HomeScreen(
                                     listMode = listView,
                                     selectMode = selectMode,
                                     selected = selected.contains(entry.uri),
-                                    onSelectToggle = { toggle(entry.uri) }
+                                    onSelectToggle = { toggle(entry.uri) },
+                                    onFileAction = onFileAction
                                 )
                             }
                         }

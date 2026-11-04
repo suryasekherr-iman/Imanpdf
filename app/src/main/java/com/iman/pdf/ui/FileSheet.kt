@@ -16,7 +16,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
@@ -58,7 +62,8 @@ fun FileSheet(
     onSave: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onAction: (String) -> Unit = {}
 ) {
     val opened = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
         .format(Date(entry.lastOpened))
@@ -139,6 +144,11 @@ fun FileSheet(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
+            SheetRow(Icons.Outlined.Edit, "Edit PDF") { onAction("edit_pdf") }
+            SheetRow(Icons.Outlined.Headphones, "Read aloud") { onAction("read_aloud") }
+            SheetRow(Icons.Outlined.Compress, "Compress PDF") { onAction("compress") }
+            SheetRow(Icons.Outlined.Lock, "Set password") { onAction("password") }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             SheetRow(Icons.Outlined.Share, "Share", onShare)
             SheetRow(Icons.Outlined.Print, "Print", onPrint)
             SheetRow(Icons.Outlined.SaveAlt, "Save a copy", onSave)
