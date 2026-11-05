@@ -129,6 +129,8 @@ fun PdfPageItem(
         }
         if (ocrLines.isNotEmpty()) {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val pageWidth = maxWidth
+                val pageHeight = maxHeight
                 SelectionContainer {
                     Box(modifier = Modifier.fillMaxSize()) {
                         ocrLines.forEach { line ->
@@ -138,8 +140,8 @@ fun PdfPageItem(
                                 text = line.text,
                                 modifier = Modifier
                                     .offset(
-                                        x = maxWidth * line.left.coerceIn(0f, 1f),
-                                        y = maxHeight * line.top.coerceIn(0f, 1f)
+                                        x = pageWidth * line.left.coerceIn(0f, 1f),
+                                        y = pageHeight * line.top.coerceIn(0f, 1f)
                                     )
                                     .width(maxWidth * lineWidth.coerceAtMost(1f))
                                     .height(maxHeight * lineHeight.coerceAtMost(1f)),
