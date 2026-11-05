@@ -143,11 +143,11 @@ fun PdfPageItem(
                                         x = pageWidth * line.left.coerceIn(0f, 1f),
                                         y = pageHeight * line.top.coerceIn(0f, 1f)
                                     )
-                                    .width(maxWidth * lineWidth.coerceAtMost(1f))
-                                    .height(maxHeight * lineHeight.coerceAtMost(1f)),
+                                    .width(pageWidth * lineWidth.coerceAtMost(1f))
+                                    .height(pageHeight * lineHeight.coerceAtMost(1f)),
                                 style = TextStyle(
                                     color = Color.Transparent,
-                                    fontSize = (maxHeight * lineHeight * 0.75f).value.coerceAtLeast(1f).sp
+                                    fontSize = (pageHeight * lineHeight * 0.75f).value.coerceAtLeast(1f).sp
                                 ),
                                 maxLines = 1,
                                 softWrap = false,
