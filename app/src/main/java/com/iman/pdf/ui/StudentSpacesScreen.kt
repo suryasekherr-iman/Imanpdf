@@ -52,7 +52,7 @@ private enum class StudentSection(val title: String) {
 }
 
 @Composable
-fun StudentSpacesScreen() {
+fun StudentSpacesScreen(onOpenPage: (documentId: String, page: Int) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     val store = remember { StudentStore(context) }
     var section by remember { mutableIntStateOf(0) }
@@ -205,7 +205,9 @@ fun StudentSpacesScreen() {
                         }
                     }
                     items(notes, key = { it.id }) { note ->
-                        Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+                        Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth().clickable {
+                            if (!note.documentId.isNullOrBlank() && note.page != null) onOpenPage(note.documentId, note.page)
+                        }) {
                             Column(Modifier.padding(16.dp)) {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(note.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -222,7 +224,10 @@ fun StudentSpacesScreen() {
                 if (bookmarks.isEmpty()) EmptyStudyState("No bookmarks yet", "Bookmark pages while reading a PDF. They will appear here for revision.")
                 else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(bookmarks, key = { it.id }) { item ->
-                        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+                        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth().clickable {
+                            val documentId = item.id.removeSuffix("|" + item.page)
+                            if (documentId.isNotBlank()) onOpenPage(documentId, item.page)
+                        }) {
                             Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(item.documentTitle, style = MaterialTheme.typography.bodyLarge)
