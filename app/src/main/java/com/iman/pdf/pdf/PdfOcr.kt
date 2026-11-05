@@ -23,21 +23,25 @@ object PdfOcr {
             var descriptor: ParcelFileDescriptor? = null
             var renderer: PdfRenderer? = null
             var bitmap: Bitmap? = null
+            var imageWidth = 0
+            var imageHeight = 0
             val latin = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
             val devanagari = TextRecognition.getClient(
                 DevanagariTextRecognizerOptions.Builder().build()
             )
             try {
-                descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                renderer = PdfRenderer(descriptor)
-                if (pageIndex !in 0 until renderer.pageCount) return@withContext null
-                val page = renderer.openPage(pageIndex)
+                val activeDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                descriptor = activeDescriptor
+                val activeRenderer = PdfRenderer(activeDescriptor)
+                renderer = activeRenderer
+                if (pageIndex !in 0 until activeRenderer.pageCount) return@withContext null
+                val page = activeRenderer.openPage(pageIndex)
                 try {
-                    val width = (page.width * 2).coerceIn(900, 1800)
-                    val height = (width.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
-                    bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                    imageWidth = (page.width * 2).coerceIn(900, 1800)
+                    imageHeight = (imageWidth.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
+                    bitmap = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
                     bitmap!!.eraseColor(android.graphics.Color.WHITE)
-                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    page.render(bitmap!!, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 } finally {
                     page.close()
                 }
@@ -46,15 +50,19 @@ object PdfOcr {
                 val latinResult = process(latin, input)
                 val devanagariResult = process(devanagari, input)
                 val lines = ArrayList<OcrLine>()
-                lines.addAll(toLines(latinResult, width, height))
-                toLines(devanagariResult, width, height).forEach { candidate ->
+                lines.addAll(toLines(latinResult, imageWidth, imageHeight))
+                toLines(devanagariResult, imageWidth, imageHeight).forEach { candidate ->
                     val duplicate = lines.indexOfFirst { existing ->
                         overlap(existing, candidate) > 0.55f
                     }
                     if (duplicate < 0) {
                         lines.add(candidate)
-                    } else if (candidate.text.length > lines[duplicate].text.length) {
-                        lines[duplicate] = candidate
+                    } else {
+                        val existing = lines[duplicate]
+                        val merged = listOf(existing.text, candidate.text)
+                            .distinctBy { it.lowercase() }
+                            .joinToString(" ")
+                        lines[duplicate] = existing.copy(text = merged)
                     }
                 }
                 OcrPage(pageIndex, lines.sortedWith(compareBy<OcrLine> { it.top }.thenBy { it.left }))
@@ -87,9 +95,9 @@ object PdfOcr {
         val output = ArrayList<OcrLine>()
         result.textBlocks.forEach { block ->
             block.lines.forEach { line ->
-                val bounds: Rect = line.boundingBox ?: return@forEach
+                val bounds: Rect? = line.boundingBox
                 val text = line.text.trim()
-                if (text.isNotEmpty()) {
+                if (bounds != null && text.isNotEmpty()) {
                     output.add(
                         OcrLine(
                             text,
