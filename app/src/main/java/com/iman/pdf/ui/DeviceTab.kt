@@ -67,13 +67,13 @@ internal fun DeviceTab(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Allow access to all files so Iman can find the PDF files on your phone.",
+                text = stringResource(R.string.files_permission_message),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onGrant) {
-                Text("Allow access")
+                Text(stringResource(R.string.files_allow_access))
             }
         }
     } else if (scanning && files.isEmpty()) {
