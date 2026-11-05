@@ -21,7 +21,7 @@ object LastPage {
     fun save(context: Context, documentId: String, pageCount: Int, page: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putInt(pageKey(documentId, pageCount), page.coerceIn(0, (pageCount - 1).coerceAtLeast(0)))
+            .putInt(pageKey(documentId), page.coerceIn(0, (pageCount - 1).coerceAtLeast(0)))
             .apply()
     }
 
