@@ -48,6 +48,7 @@ import com.iman.pdf.annot.SignatureStore
 import com.iman.pdf.pdf.Bookmarks
 import com.iman.pdf.pdf.CommentItem
 import com.iman.pdf.pdf.Comments
+import com.iman.pdf.pdf.LastPage
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfExport
@@ -74,7 +75,9 @@ fun ViewerScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val listState = rememberLazyListState()
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = LastPage.load(context, title, engine.pageCount)
+    )
     val horizontalState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
@@ -337,6 +340,11 @@ fun ViewerScreen(
                     (total - 1).toFloat()).coerceIn(0f, 1f)
             }
         }
+    }
+
+    LaunchedEffect(currentPage) {
+        delay(500)
+        LastPage.save(context, title, engine.pageCount, currentPage)
     }
 
     val scrolling = listState.isScrollInProgress
