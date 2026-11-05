@@ -116,10 +116,11 @@ fun MainScreen(incomingUri: Uri? = null) {
     var pendingMode by remember { mutableStateOf("") }
     var viewerMode by remember { mutableStateOf("") }
     var currentUri by remember { mutableStateOf<Uri?>(null) }
+    var requestedPage by remember { mutableIntStateOf(-1) }
     var addOpen by remember { mutableStateOf(false) }
     val tabs = Tab.entries
 
-    fun openUri(uri: Uri, unlocked: File? = null) {
+    fun openUri(uri: Uri, unlocked: File? = null, startPage: Int? = null) {
         scope.launch {
             loading = true
             try {
@@ -153,6 +154,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 pendingMode = ""
                 engine = opened
                 currentUri = uri
+                requestedPage = startPage?.minus(1)?.coerceIn(0, (opened.pageCount - 1).coerceAtLeast(0)) ?: -1
                 title = displayName
             }
         }
@@ -182,6 +184,7 @@ fun MainScreen(incomingUri: Uri? = null) {
             title = title,
             documentId = currentUri?.toString() ?: title,
             startMode = viewerMode,
+            initialPage = requestedPage.takeIf { it >= 0 },
                         onOpenTool = { id ->
                 ToolSeed.uri = if (seedableTools.contains(id)) currentUri else null
                 current.close()
@@ -282,7 +285,9 @@ fun MainScreen(incomingUri: Uri? = null) {
                         }
                     )
                 } else if (selected == 2) {
-                    StudentSpacesScreen()
+                    StudentSpacesScreen(onOpenPage = { documentId, page ->
+                        runCatching { Uri.parse(documentId) }.getOrNull()?.let { openUri(it, startPage = page) }
+                    })
                 } else if (selected == 3) {
                     FilesScreen(
                         onOpen = { openUri(it) },
