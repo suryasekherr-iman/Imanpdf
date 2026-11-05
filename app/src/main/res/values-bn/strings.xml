@@ -32,6 +32,10 @@
     <string name="settings_english">English</string>
     <string name="settings_bengali">বাংলা</string>
     <string name="settings_hindi">हिन्दी (হিন্দি)</string>
+    <string name="settings_privacy">গোপনীয়তা</string>
+    <string name="settings_hide_recent_documents">সাম্প্রতিক নথি লুকান</string>
+    <string name="settings_hide_recent_description">সাম্প্রতিক তালিকা ও তার অনুসন্ধানের ফল লুকানো হবে। পছন্দের ও ডিভাইসের ফাইল উপলব্ধ থাকবে।</string>
+    <string name="home_recent_hidden">সাম্প্রতিক নথি লুকানো আছে। সেটিংস → গোপনীয়তা থেকে পরিবর্তন করুন।</string>
     <string name="settings_about">অ্যাপ সম্পর্কে</string>
     <string name="settings_version">ImAn PDF Reader • সংস্করণ 1.0</string>
 
