@@ -72,4 +72,6 @@
     <string name="edit_pdf_saved">संपादित PDF सेव हो गई</string>
     <string name="edit_pdf_save_failed">PDF सेव नहीं हो सकी</string>
     <string name="edit_pdf_edit_failed">PDF संपादित नहीं हो सकी। फ़ाइल और टेक्स्ट जाँचें।</string>
+    <string name="tool_split">PDF बाँटें</string>
+    <string name="tool_split_desc">एक PDF को कई फ़ाइलों में बाँटें</string>
 </resources>

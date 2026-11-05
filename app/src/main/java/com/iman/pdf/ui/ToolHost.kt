@@ -9,13 +9,14 @@ val implementedTools = listOf(
     "password",
     "organize",
     "crop",
+    "split",
     "compress",
     "scan",
     "edit_pdf"
 )
 
 /** Tools that can start with the PDF already open in the viewer. */
-val seedableTools = listOf("compress", "crop", "organize", "password")
+val seedableTools = listOf("compress", "crop", "organize", "password", "split")
 
 @Composable
 fun ToolHost(
@@ -29,6 +30,7 @@ fun ToolHost(
         "password" -> ProtectScreen(onBack = onClose, onOpen = onOpen)
         "organize" -> OrganizeScreen(onBack = onClose, onOpen = onOpen)
         "crop" -> CropScreen(onBack = onClose, onOpen = onOpen)
+        "split" -> SplitScreen(onBack = onClose, onOpen = onOpen)
         "compress" -> CompressScreen(onBack = onClose, onOpen = onOpen)
         "scan" -> ScanScreen(onBack = onClose, onOpen = onOpen)
         "edit_pdf" -> EditPdfScreen(onBack = onClose, onOpen = onOpen)

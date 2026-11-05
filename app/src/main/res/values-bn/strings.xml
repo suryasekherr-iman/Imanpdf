@@ -72,4 +72,6 @@
     <string name="edit_pdf_saved">সম্পাদিত PDF সংরক্ষিত হয়েছে</string>
     <string name="edit_pdf_save_failed">PDF সংরক্ষণ করা যায়নি</string>
     <string name="edit_pdf_edit_failed">PDF সম্পাদনা করা যায়নি। ফাইল ও লেখা পরীক্ষা করুন।</string>
+    <string name="tool_split">PDF ভাগ করুন</string>
+    <string name="tool_split_desc">একটি PDF কে একাধিক ফাইলে ভাগ করুন</string>
 </resources>

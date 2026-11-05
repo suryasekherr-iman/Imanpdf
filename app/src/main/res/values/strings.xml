@@ -72,4 +72,6 @@
     <string name="edit_pdf_saved">Edited PDF saved</string>
     <string name="edit_pdf_save_failed">Could not save PDF</string>
     <string name="edit_pdf_edit_failed">Could not edit this PDF. Check the file and text.</string>
+    <string name="tool_split">Split PDF</string>
+    <string name="tool_split_desc">Split a PDF into several files</string>
 </resources>

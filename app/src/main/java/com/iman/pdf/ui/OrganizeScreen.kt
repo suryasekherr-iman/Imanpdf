@@ -31,7 +31,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.RotateRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,7 +70,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-private data class PageItem(val original: Int, val rotation: Int)
+private data class PageItem(val id: Int, val original: Int, val rotation: Int)
 
 private fun organizeNameOf(context: Context, uri: Uri): String {
     var name: String? = null
@@ -128,7 +130,7 @@ fun OrganizeScreen(
                     engine?.close()
                     engine = opened
                     sourceName = organizeNameOf(context, uri)
-                    pages = (0 until opened.pageCount).map { PageItem(it, 0) }
+                    pages = (0 until opened.pageCount).map { PageItem(it, it, 0) }
                     selected = emptySet()
                 }
             }
@@ -165,7 +167,7 @@ fun OrganizeScreen(
 
     fun rotateSelected() {
         pages = pages.map {
-            if (selected.contains(it.original)) {
+            if (selected.contains(it.id)) {
                 it.copy(rotation = (it.rotation + 90) % 360)
             } else {
                 it
@@ -174,8 +176,44 @@ fun OrganizeScreen(
     }
 
     fun deleteSelected() {
-        pages = pages.filter { !selected.contains(it.original) }
+        pages = pages.filter { !selected.contains(it.id) }
         selected = emptySet()
+    }
+
+    fun duplicateSelected() {
+        var next = (pages.maxOfOrNull { it.id } ?: -1) + 1
+        val list = ArrayList<PageItem>()
+        pages.forEach { item ->
+            list.add(item)
+            if (selected.contains(item.id)) {
+                list.add(item.copy(id = next++))
+            }
+        }
+        pages = list
+    }
+
+    fun extractSelected() {
+        val chosen = pages.filter { selected.contains(it.id) }
+        val file = engine?.file
+        if (chosen.isEmpty() || file == null) {
+            return
+        }
+        scope.launch {
+            busy = true
+            val result = PdfOrganize.apply(
+                context,
+                file,
+                chosen.map { it.original },
+                chosen.map { it.rotation }
+            )
+            busy = false
+            if (result == null) {
+                Toast.makeText(context, "Could not save these changes", Toast.LENGTH_LONG).show()
+            } else {
+                pending = result
+                saver.launch(sourceName.removeSuffix(".pdf") + "_extracted.pdf")
+            }
+        }
     }
 
     fun moveSelected(delta: Int) {
@@ -183,7 +221,7 @@ fun OrganizeScreen(
             return
         }
         val id = selected.first()
-        val from = pages.indexOfFirst { it.original == id }
+        val from = pages.indexOfFirst { it.id == id }
         val to = from + delta
         if (from < 0 || to < 0 || to >= pages.size) {
             return
@@ -264,18 +302,18 @@ fun OrganizeScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(pages, key = { it.original }) { page ->
+                        items(pages, key = { it.id }) { page ->
                             PageCell(
                                 engine = current,
                                 original = page.original,
                                 rotation = page.rotation,
                                 position = pages.indexOf(page) + 1,
-                                selected = selected.contains(page.original),
+                                selected = selected.contains(page.id),
                                 onClick = {
-                                    selected = if (selected.contains(page.original)) {
-                                        selected - page.original
+                                    selected = if (selected.contains(page.id)) {
+                                        selected - page.id
                                     } else {
-                                        selected + page.original
+                                        selected + page.id
                                     }
                                 }
                             )
@@ -322,6 +360,18 @@ fun OrganizeScreen(
                         enabled = selected.isNotEmpty()
                     ) {
                         Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                    }
+                    IconButton(
+                        onClick = { duplicateSelected() },
+                        enabled = selected.isNotEmpty()
+                    ) {
+                        Icon(Icons.Outlined.ContentCopy, contentDescription = "Duplicate")
+                    }
+                    IconButton(
+                        onClick = { extractSelected() },
+                        enabled = selected.isNotEmpty()
+                    ) {
+                        Icon(Icons.Outlined.FileDownload, contentDescription = "Extract pages")
                     }
                 }
 

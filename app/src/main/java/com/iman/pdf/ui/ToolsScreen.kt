@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Article
+import androidx.compose.material.icons.outlined.CallSplit
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Comment
 import androidx.compose.material.icons.outlined.Compress
@@ -65,6 +66,7 @@ private val allTools = listOf(
     ToolItem("edit_pdf", R.string.tool_edit_pdf, R.string.tool_edit_pdf_desc, "Edit", Icons.Outlined.Edit),
     ToolItem("organize", R.string.tool_organize, R.string.tool_organize_desc, "Edit", Icons.Outlined.ViewModule),
     ToolItem("crop", R.string.tool_crop, R.string.tool_crop_desc, "Edit", Icons.Outlined.Crop),
+    ToolItem("split", R.string.tool_split, R.string.tool_split_desc, "Edit", Icons.Outlined.CallSplit),
     ToolItem("compress", R.string.tool_compress, R.string.tool_compress_desc, "Edit", Icons.Outlined.Compress),
     ToolItem("password", R.string.tool_password, R.string.tool_password_desc, "Edit", Icons.Outlined.Lock),
     ToolItem("combine", R.string.tool_combine, R.string.tool_combine_desc, "Create", Icons.Outlined.MergeType),
