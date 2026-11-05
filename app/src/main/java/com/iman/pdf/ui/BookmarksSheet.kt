@@ -11,18 +11,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,11 +41,15 @@ fun BookmarksSheet(
     bookmarks: List<Int>,
     toc: List<TocEntry>,
     tocLoading: Boolean,
+    notes: Map<Int, String>,
     onJump: (Int) -> Unit,
     onRemove: (Int) -> Unit,
+    onSaveNote: (Int, String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var tab by remember { mutableIntStateOf(0) }
+    var editingPage by remember { mutableStateOf<Int?>(null) }
+    var noteDraft by remember { mutableStateOf("") }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -73,18 +81,25 @@ fun BookmarksSheet(
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         itemsIndexed(bookmarks) { _, page ->
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onJump(page) }
+                                modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Page " + (page + 1),
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                androidx.compose.foundation.layout.Column(
+                                    modifier = Modifier.weight(1f).clickable { onJump(page) }
+                                ) {
+                                    Text("Page " + (page + 1), style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface)
+                                    notes[page]?.takeIf { it.isNotBlank() }?.let { note ->
+                                        Text(note, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                TextButton(onClick = {
+                                    editingPage = page
+                                    noteDraft = notes[page].orEmpty()
+                                }) { Text(if (notes[page].isNullOrBlank()) "Add note" else "Edit note") }
                                 IconButton(onClick = { onRemove(page) }) {
                                     Icon(
                                         Icons.Outlined.Delete,
@@ -142,6 +157,21 @@ fun BookmarksSheet(
                 }
             }
         }
+    }
+
+    editingPage?.let { page ->
+        AlertDialog(
+            onDismissRequest = { editingPage = null },
+            title = { Text("Note · page " + (page + 1)) },
+            text = {
+                OutlinedTextField(value = noteDraft, onValueChange = { noteDraft = it },
+                    label = { Text("Optional bookmark note") }, minLines = 3)
+            },
+            confirmButton = {
+                TextButton(onClick = { onSaveNote(page, noteDraft); editingPage = null }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { editingPage = null }) { Text("Cancel") } }
+        )
     }
 }
 
