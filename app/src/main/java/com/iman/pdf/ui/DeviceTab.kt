@@ -52,6 +52,7 @@ internal fun DeviceTab(
     hasAccess: Boolean,
     scanning: Boolean,
     files: List<DevicePdf>,
+    scanError: Boolean = false,
     onGrant: () -> Unit,
     onOpen: (Uri) -> Unit
 ) {
@@ -86,7 +87,7 @@ internal fun DeviceTab(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No PDF files found on this phone.",
+                text = if (scanError) "Could not scan device storage. Check the storage permission and try again." else "No PDF files found on this phone.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
