@@ -49,8 +49,8 @@ object Bookmarks {
     }
 
     fun remove(context: Context, documentId: String, pageCount: Int, page: Int) {
-        val current = load(context, name, pageCount)
-        save(context, name, pageCount, current.filter { it != page })
+        val current = load(context, documentId, pageCount)
+        save(context, documentId, pageCount, current.filter { it != page })
     }
 
     suspend fun toc(context: Context, file: File): List<TocEntry> =
