@@ -10,6 +10,7 @@ data class StudyNote(val id: String, val title: String, val body: String, val pa
 data class RevisionItem(val id: String, val text: String, val done: Boolean)
 data class ImportantQuestion(val id: String, val text: String)
 data class StudyBookmark(val id: String, val documentTitle: String, val page: Int)
+data class StudyHighlight(val id: String, val documentTitle: String, val page: Int, val type: String, val text: String)
 
 class StudentStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("student_spaces", Context.MODE_PRIVATE)
@@ -30,6 +31,18 @@ class StudentStore(context: Context) {
     }
     fun bookmarks(): List<StudyBookmark> = readArray("bookmarks") {
         StudyBookmark(it.getString("id"), it.getString("documentTitle"), it.getInt("page"))
+    }
+    fun highlights(): List<StudyHighlight> = readArray("highlights") {
+        StudyHighlight(it.getString("id"), it.getString("documentTitle"), it.getInt("page"), it.getString("type"), it.optString("text"))
+    }
+    fun replaceHighlights(documentId: String, documentTitle: String, items: List<StudyHighlight>) {
+        val retained = highlights().filterNot { it.id.startsWith("$documentId|") }
+        val updated = retained + items.mapIndexed { index, item ->
+            item.copy(id = "$documentId|${item.page}|${item.type}|$index", documentTitle = documentTitle)
+        }
+        writeArray("highlights", updated.map {
+            JSONObject().put("id", it.id).put("documentTitle", it.documentTitle).put("page", it.page).put("type", it.type).put("text", it.text)
+        })
     }
     fun addBookmark(documentId: String, documentTitle: String, page: Int) {
         val id = "$documentId|$page"
