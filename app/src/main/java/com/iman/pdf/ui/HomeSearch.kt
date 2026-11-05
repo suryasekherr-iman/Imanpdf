@@ -62,6 +62,7 @@ fun HomeSearch(
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var device by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
+    var scanError by remember { mutableStateOf(false) }
     var history by remember { mutableStateOf(SearchHistory.load(context)) }
     val focus = remember { FocusRequester() }
 
@@ -105,7 +106,12 @@ fun HomeSearch(
         } catch (e: Exception) {
         }
         if (DeviceFiles.hasAllFilesAccess(context)) {
-            device = DeviceFiles.scan(context)
+            try {
+                device = DeviceFiles.scan(context)
+            } catch (_: Exception) {
+                device = emptyList()
+                scanError = true
+            }
         }
     }
 
@@ -243,7 +249,7 @@ fun HomeSearch(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No PDFs found",
+                    text = if (scanError) "Could not scan device storage. Check storage access and try again." else "No PDFs found",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
