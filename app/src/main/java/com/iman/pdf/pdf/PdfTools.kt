@@ -80,7 +80,7 @@ object PdfTools {
             doc = Document.openDocument(copy.absolutePath) as? PDFDocument ?: return@withContext null
             val permissions = Document.PERMISSION_PRINT or Document.PERMISSION_COPY or
                 Document.PERMISSION_EDIT or Document.PERMISSION_ANNOTATE or
-                Document.PERMISSION_FORM or Document.PERMISSION_ACCESSIBILITY or
+                Document.PERMISSION_FORM or Document.PERMISSION_ACCESSBILITY or
                 Document.PERMISSION_ASSEMBLE or Document.PERMISSION_PRINT_HQ
             val escaped = password.replace("\"", "\"\"")
             val options = "encrypt=aes-256,user-password=\"$escaped\",owner-password=\"$escaped\",permissions=$permissions,garbage=compact"
