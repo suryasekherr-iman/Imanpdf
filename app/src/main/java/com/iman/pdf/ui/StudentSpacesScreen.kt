@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.data.StudentStore
 
+private data class StudyMaterial(val id: String, val label: String, val title: String, val body: String, val page: Int?)
+
 private enum class StudentSection(val title: String) {
     FLASHCARDS("Flashcards"), NOTES("Notes"), BOOKMARKS("Bookmarks"), REVISION("Revision"), IMPORTANT_QUESTIONS("Important Questions")
 }
@@ -57,6 +59,7 @@ fun StudentSpacesScreen() {
     var importantQuestionText by remember { mutableStateOf("") }
     var revealed by remember { mutableStateOf(setOf<String>()) }
     var studyMode by remember { mutableStateOf(false) }
+    var notesStudyMode by remember { mutableStateOf(false) }
     var studyIndex by remember { mutableIntStateOf(0) }
 
     val flashcards = remember(refresh) { store.flashcards() }
@@ -64,6 +67,12 @@ fun StudentSpacesScreen() {
     val revision = remember(refresh) { store.revisionItems() }
     val importantQuestions = remember(refresh) { store.importantQuestions() }
     val bookmarks = remember(refresh) { store.bookmarks() }
+    val highlights = remember(refresh) { store.highlights() }
+    val studyMaterials = remember(notes, highlights) {
+        (notes.map { StudyMaterial(it.id, "NOTE", it.title, it.body, it.page) } +
+            highlights.map { StudyMaterial(it.id, it.type.uppercase(), it.text.ifBlank { "Highlighted area saved in PDF" }, it.text, it.page) })
+            .sortedWith(compareBy<StudyMaterial> { it.page ?: Int.MAX_VALUE }.thenBy { it.label })
+    }
 
     Column(Modifier.fillMaxSize()) {
         Text("Student Spaces", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
@@ -130,8 +139,37 @@ fun StudentSpacesScreen() {
                 }
             }
             StudentSection.NOTES -> {
-                if (notes.isEmpty()) EmptyStudyState("No study notes yet", "Keep important points here and optionally link a note to a PDF page.")
+                if (notesStudyMode && studyMaterials.isNotEmpty()) {
+                    val currentIndex = studyIndex.coerceIn(0, studyMaterials.lastIndex)
+                    val material = studyMaterials[currentIndex]
+                    Column(Modifier.weight(1f).fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("NOTES & HIGHLIGHTS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text("Item ${currentIndex + 1} of ${studyMaterials.size}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                        Surface(shape = MaterialTheme.shapes.extraLarge, tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)) {
+                            Column(Modifier.padding(24.dp)) {
+                                Text(material.label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(material.title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 10.dp))
+                                Text(material.body.ifBlank { "Highlighted area saved in PDF" }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 14.dp))
+                                if (material.page != null) Text("PDF page ${material.page}", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 16.dp))
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            TextButton(onClick = { studyIndex = (currentIndex - 1).coerceAtLeast(0) }, enabled = currentIndex > 0) { Text("Previous") }
+                            TextButton(onClick = { studyIndex = (currentIndex + 1).coerceAtMost(studyMaterials.lastIndex) }, enabled = currentIndex < studyMaterials.lastIndex) { Text("Next") }
+                        }
+                        TextButton(onClick = { notesStudyMode = false }) { Text("Exit study mode") }
+                    }
+                } else if (notes.isEmpty() && highlights.isEmpty()) EmptyStudyState("No study notes or highlights yet", "Add notes from a PDF page and save PDFs after highlighting text.")
                 else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(highlights, key = { it.id }) { highlight ->
+                        Surface(shape = MaterialTheme.shapes.large, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text(highlight.type, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(highlight.text.ifBlank { "Highlighted area saved in PDF" }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 6.dp))
+                                Text("${highlight.documentTitle} · page ${highlight.page}", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 8.dp))
+                            }
+                        }
+                    }
                     items(notes, key = { it.id }) { note ->
                         Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp)) {
@@ -193,6 +231,9 @@ fun StudentSpacesScreen() {
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
             if (section == 0 && flashcards.isNotEmpty() && !studyMode) {
                 Button(onClick = { studyIndex = 0; studyMode = true; revealed = emptySet() }) { Text("Study mode") }
+            }
+            if (section == 1 && studyMaterials.isNotEmpty() && !notesStudyMode) {
+                Button(onClick = { studyIndex = 0; notesStudyMode = true }) { Text("Study notes & highlights") }
             }
             FloatingActionButton(onClick = { addOpen = true }) {
                 Icon(Icons.Outlined.Add, contentDescription = "Add study item")
