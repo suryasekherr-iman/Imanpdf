@@ -100,7 +100,7 @@ object PdfTools {
             if (doc.needsPassword() && !doc.authenticatePassword(password)) return@withContext null
             val pdf = doc as? PDFDocument ?: return@withContext null
             val out = File(context.cacheDir, "unlocked_${System.nanoTime()}.pdf")
-            pdf.save(out.absolutePath, "encrypt=none,garbage=compact")
+            pdf.save(out.absolutePath, "decrypt,garbage=compact")
             out.takeIf { it.isFile && it.length() > 0 }
         } catch (_: Exception) { null }
         finally { try { doc?.destroy() } catch (_: Exception) {}; copy?.delete() }
