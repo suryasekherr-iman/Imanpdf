@@ -14,7 +14,11 @@ import java.io.File
 object PdfExport {
 
     /** Whole-document text, or "" when the PDF has no readable text (for example a scan). */
-    suspend fun allText(context: Context, file: File): String =
+    suspend fun allText(
+        context: Context,
+        file: File,
+        documentId: String = file.absolutePath
+    ): String =
         withContext(Dispatchers.IO) {
             try {
                 PDFBoxResourceLoader.init(context.applicationContext)
@@ -24,7 +28,9 @@ object PdfExport {
                     for (index in 0 until document.numberOfPages) {
                         stripper.startPage = index + 1
                         stripper.endPage = index + 1
-                        val text = (stripper.getText(document) ?: "").trim()
+                        val nativeText = (stripper.getText(document) ?: "").trim()
+                        val text = if (nativeText.isNotEmpty()) nativeText
+                        else OcrStore.loadPage(context, documentId, index)?.text.orEmpty().trim()
                         if (text.isNotEmpty()) {
                             if (builder.isNotEmpty()) builder.append("\n\n")
                             builder.append("--- Page ").append(index + 1).append(" ---\n")
