@@ -20,11 +20,11 @@ object Bookmarks {
     private const val PREFS = "iman_bookmarks"
     private var initialized = false
 
-    private fun key(name: String, pageCount: Int): String = name + "|" + pageCount
+    private fun key(documentId: String, pageCount: Int): String = documentId + "|" + pageCount
 
     fun load(context: Context, name: String, pageCount: Int): List<Int> {
         val text = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(key(name, pageCount), "") ?: ""
+            .getString(key(documentId, pageCount), "") ?: ""
         return text.split(",")
             .mapNotNull { it.trim().toIntOrNull() }
             .filter { it in 0 until pageCount }
