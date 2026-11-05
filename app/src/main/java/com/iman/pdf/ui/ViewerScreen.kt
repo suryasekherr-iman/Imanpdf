@@ -266,6 +266,7 @@ fun ViewerScreen(
             }
             "liquid" -> liquidOpen = true
             "read_aloud" -> readerOpen = true
+            "export" -> exportOpen = true
         }
     }
 

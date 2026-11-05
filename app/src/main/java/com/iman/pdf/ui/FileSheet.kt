@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PictureAsPdf
@@ -151,6 +152,7 @@ fun FileSheet(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             SheetRow(Icons.Outlined.Share, "Share", onShare)
             SheetRow(Icons.Outlined.Print, "Print", onPrint)
+            SheetRow(Icons.Outlined.FileDownload, "Export") { onAction("export") }
             SheetRow(Icons.Outlined.SaveAlt, "Save a copy", onSave)
             SheetRow(Icons.Outlined.DriveFileRenameOutline, "Rename", onRename)
             SheetRow(Icons.Outlined.RemoveCircleOutline, "Remove from recent", onRemove)

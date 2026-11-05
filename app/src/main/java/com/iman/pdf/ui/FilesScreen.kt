@@ -4,6 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -162,19 +166,20 @@ fun FilesScreen(
             }
         }
 
-        OutlinedButton(
-            onClick = onBrowse,
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
         ) {
-            Icon(
-                imageVector = Icons.Outlined.FolderOpen,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
+            LocationRow(
+                icon = Icons.Outlined.FolderOpen,
+                label = stringResource(R.string.files_browse_locations),
+                onClick = onBrowse
             )
-            Text(
-                text = stringResource(R.string.files_browse_locations),
-                modifier = Modifier.padding(start = 8.dp)
-            )
+            LocationRow(Icons.Outlined.Cloud, "Google Drive", onBrowse)
+            LocationRow(Icons.Outlined.Cloud, "OneDrive", onBrowse)
+            LocationRow(Icons.Outlined.Cloud, "Dropbox", onBrowse)
         }
 
         Text(
@@ -309,5 +314,32 @@ fun FilesScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LocationRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = label,
+            modifier = Modifier.padding(start = 16.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

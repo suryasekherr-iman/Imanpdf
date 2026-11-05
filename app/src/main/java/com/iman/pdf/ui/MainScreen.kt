@@ -50,7 +50,7 @@ import com.iman.pdf.pdf.Thumbnails
 import kotlinx.coroutines.launch
 import java.io.File
 
-private val viewerTools = listOf("fill_sign", "comment", "liquid", "read_aloud")
+private val viewerTools = listOf("fill_sign", "comment", "liquid", "read_aloud", "export")
 
 private fun toolTitleResource(id: String): Int = when (id) {
     "fill_sign" -> R.string.tool_fill_sign
