@@ -17,6 +17,8 @@ class UserPrefs(private val context: Context) {
     private val languageKey = stringPreferencesKey("language")
     private val photoKey = stringPreferencesKey("photo_path")
     private val hideRecentKey = booleanPreferencesKey("hide_recent_documents")
+    private val ttsSpeedKey = androidx.datastore.preferences.core.intPreferencesKey("tts_speed_index")
+    private val ttsVoiceKey = androidx.datastore.preferences.core.intPreferencesKey("tts_voice_index")
 
     val userName: Flow<String> =
         context.dataStore.data.map { it[nameKey] ?: "Indrajit" }
@@ -32,6 +34,12 @@ class UserPrefs(private val context: Context) {
 
     val hideRecentDocuments: Flow<Boolean> =
         context.dataStore.data.map { it[hideRecentKey] ?: false }
+
+    val ttsSpeedIndex: Flow<Int> =
+        context.dataStore.data.map { it[ttsSpeedKey] ?: 1 }
+
+    val ttsVoiceIndex: Flow<Int> =
+        context.dataStore.data.map { it[ttsVoiceKey] ?: 0 }
 
     suspend fun setUserName(value: String) {
         context.dataStore.edit { it[nameKey] = value }
@@ -51,5 +59,13 @@ class UserPrefs(private val context: Context) {
 
     suspend fun setHideRecentDocuments(value: Boolean) {
         context.dataStore.edit { it[hideRecentKey] = value }
+    }
+
+    suspend fun setTtsSpeedIndex(value: Int) {
+        context.dataStore.edit { it[ttsSpeedKey] = value.coerceIn(0, 7) }
+    }
+
+    suspend fun setTtsVoiceIndex(value: Int) {
+        context.dataStore.edit { it[ttsVoiceKey] = value.coerceIn(0, 11) }
     }
 }
