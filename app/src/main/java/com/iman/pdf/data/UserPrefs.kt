@@ -1,6 +1,7 @@
 package com.iman.pdf.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -15,6 +16,7 @@ class UserPrefs(private val context: Context) {
     private val themeKey = stringPreferencesKey("theme_mode")
     private val languageKey = stringPreferencesKey("language")
     private val photoKey = stringPreferencesKey("photo_path")
+    private val hideRecentKey = booleanPreferencesKey("hide_recent_documents")
 
     val userName: Flow<String> =
         context.dataStore.data.map { it[nameKey] ?: "Indrajit" }
@@ -27,6 +29,9 @@ class UserPrefs(private val context: Context) {
 
     val photoPath: Flow<String> =
         context.dataStore.data.map { it[photoKey] ?: "" }
+
+    val hideRecentDocuments: Flow<Boolean> =
+        context.dataStore.data.map { it[hideRecentKey] ?: false }
 
     suspend fun setUserName(value: String) {
         context.dataStore.edit { it[nameKey] = value }
@@ -42,5 +47,9 @@ class UserPrefs(private val context: Context) {
 
     suspend fun setPhotoPath(value: String) {
         context.dataStore.edit { it[photoKey] = value }
+    }
+
+    suspend fun setHideRecentDocuments(value: Boolean) {
+        context.dataStore.edit { it[hideRecentKey] = value }
     }
 }
