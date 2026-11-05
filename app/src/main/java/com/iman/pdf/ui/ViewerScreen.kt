@@ -344,6 +344,8 @@ fun ViewerScreen(
     }
 
     val renderWidth = minOf((screenWidthPx * 1.5f * renderScale).toInt(), MAX_RENDER_WIDTH)
+    val hitsByPage = remember(hits) { hits.groupBy { it.page } }
+    val activeSearchHit = hits.getOrNull(activeHit)
 
     val containerHeightPx = zoom.height
     var dragging by remember { mutableStateOf(false) }
@@ -498,7 +500,9 @@ fun ViewerScreen(
                                 renderWidth = renderWidth,
                                 annot = annot,
                                 nightMode = nightMode,
-                                sepiaMode = sepiaMode
+                                sepiaMode = sepiaMode,
+                                searchHits = hitsByPage[index].orEmpty(),
+                                activeSearchHit = activeSearchHit
                             )
                         }
                     }
