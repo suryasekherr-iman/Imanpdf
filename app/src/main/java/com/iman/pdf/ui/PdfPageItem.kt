@@ -83,8 +83,11 @@ fun PdfPageItem(
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
 
     LaunchedEffect(index, renderWidth) {
-        ratio = engine.pageAspectRatio(index)
-        bitmap = engine.renderPage(index, renderWidth)
+        val rendered = withContext(Dispatchers.IO) {
+            engine.pageAspectRatio(index) to engine.renderPage(index, renderWidth)
+        }
+        ratio = rendered.first
+        bitmap = rendered.second
     }
 
     Box(
