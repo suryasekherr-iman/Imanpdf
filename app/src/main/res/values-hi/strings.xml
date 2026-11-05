@@ -79,4 +79,6 @@
     <string name="edit_pdf_edit_failed">PDF संपादित नहीं हो सकी। फ़ाइल और टेक्स्ट जाँचें।</string>
     <string name="tool_split">PDF बाँटें</string>
     <string name="tool_split_desc">एक PDF को कई फ़ाइलों में बाँटें</string>
+    <string name="settings_open_source_licenses">ओपन-सोर्स लाइसेंस और सूचनाएँ</string>
+    <string name="settings_close">बंद करें</string>
 </resources>
