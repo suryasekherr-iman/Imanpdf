@@ -149,6 +149,7 @@ fun ViewerScreen(
     var ocrBusy by remember { mutableStateOf(false) }
     var ocrDone by remember { mutableIntStateOf(0) }
     var ocrTotal by remember { mutableIntStateOf(0) }
+    var ocrRevision by remember { mutableIntStateOf(0) }
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
     val saveLauncher = rememberLauncherForActivityResult(
@@ -269,6 +270,7 @@ fun ViewerScreen(
             } catch (_: Exception) {
                 failed++
             } finally {
+                ocrRevision++
                 ocrBusy = false
             }
             val message = when {
@@ -549,7 +551,9 @@ fun ViewerScreen(
                                 nightMode = nightMode,
                                 sepiaMode = sepiaMode,
                                 searchHits = hitsByPage[index].orEmpty(),
-                                activeSearchHit = activeSearchHit
+                                activeSearchHit = activeSearchHit,
+                                documentId = documentId,
+                                ocrRevision = ocrRevision
                             )
                         }
                     }
