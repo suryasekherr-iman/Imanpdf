@@ -41,14 +41,15 @@ object PdfOcr {
                 try {
                     imageWidth = (page.width * 2).coerceIn(900, 1800)
                     imageHeight = (imageWidth.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
-                    bitmap = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
-                    bitmap!!.eraseColor(android.graphics.Color.WHITE)
-                    page.render(bitmap!!, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    val created = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
+                    bitmap = created
+                    created.eraseColor(android.graphics.Color.WHITE)
+                    page.render(created, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 } finally {
                     page.close()
                 }
 
-                val input = InputImage.fromBitmap(bitmap!!, 0)
+                val input = InputImage.fromBitmap(checkNotNull(bitmap), 0)
                 val latinResult = process(latin, input)
                 val devanagariResult = process(devanagari, input)
                 val lines = ArrayList<OcrLine>()

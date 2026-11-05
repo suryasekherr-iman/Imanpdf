@@ -40,7 +40,7 @@ object PdfOrganize {
                                 output.addPage(blank)
                                 blank
                             } else if (original <= -2) {
-                                output.importPage(other!!.getPage(-original - 2))
+                                output.importPage(checkNotNull(other) { "Second PDF missing" }.getPage(-original - 2))
                             } else {
                                 output.importPage(input.getPage(original))
                             }
