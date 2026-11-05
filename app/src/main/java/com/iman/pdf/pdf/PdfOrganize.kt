@@ -57,8 +57,12 @@ object PdfOrganize {
                 val page = output.loadPage(position) as? PDFPage
                 if (page != null) {
                     try {
-                        val rotation = ((page.getObject().get("Rotate")?.asInteger() ?: 0) + rotations[position]) % 360
-                        page.getObject().put("Rotate", (rotation + 360) % 360)
+                        val pageObject = page.getObject()
+                        val rotationObject = pageObject.get("Rotate")
+                        val existingRotation = if (rotationObject == null || rotationObject.isNull()) 0
+                            else rotationObject.asInteger()
+                        val rotation = (existingRotation + rotations[position]) % 360
+                        pageObject.put("Rotate", (rotation + 360) % 360)
                         page.update()
                     } finally { page.destroy() }
                 }
