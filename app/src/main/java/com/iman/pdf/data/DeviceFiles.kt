@@ -1,12 +1,13 @@
 package com.iman.pdf.data
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-data class DevicePdf(
+ data class DevicePdf(
     val uri: Uri,
     val name: String,
     val size: Long,
@@ -22,10 +23,11 @@ object DeviceFiles {
         savedTreeUri(context) != null
 
     fun saveTreeUri(context: Context, uri: Uri) {
+        // This feature only reads documents. Requesting write access as well can cause
+        // providers that grant read-only access to reject the whole persist operation.
         context.contentResolver.takePersistableUriPermission(
             uri,
-            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
         )
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(TREE_URI, uri.toString()).apply()
@@ -41,30 +43,44 @@ object DeviceFiles {
     }
 
     suspend fun scan(context: Context): List<DevicePdf> = withContext(Dispatchers.IO) {
-        val tree = savedTreeUri(context)?.let { DocumentFile.fromTreeUri(context, it) }
+        val treeUri = savedTreeUri(context) ?: return@withContext emptyList()
+        val tree = DocumentFile.fromTreeUri(context, treeUri)
             ?: return@withContext emptyList()
         val result = ArrayList<DevicePdf>()
+        val visited = HashSet<String>()
+
         fun visit(folder: DocumentFile, depth: Int) {
-            if (depth > 12) return
-            folder.listFiles().forEach { item ->
-                if (item.isDirectory) {
-                    visit(item, depth + 1)
-                } else if (item.isFile &&
-                    (item.type == "application/pdf" ||
-                        item.name?.endsWith(".pdf", ignoreCase = true) == true)
-                ) {
-                    result.add(
-                        DevicePdf(
-                            uri = item.uri,
-                            name = item.name ?: "Document.pdf",
-                            size = item.length(),
-                            modified = item.lastModified()
-                        )
-                    )
+            if (depth > 12 || !visited.add(folder.uri.toString())) return
+            // Providers can fail for a single directory. Keep scanning siblings instead
+            // of losing every result from the selected tree.
+            val children = try {
+                folder.listFiles()
+            } catch (_: Exception) {
+                return
+            }
+            children.forEach { item ->
+                try {
+                    when {
+                        item.isDirectory -> visit(item, depth + 1)
+                        item.isFile && (item.type == "application/pdf" ||
+                            item.name?.endsWith(".pdf", ignoreCase = true) == true) -> {
+                            result.add(
+                                DevicePdf(
+                                    uri = item.uri,
+                                    name = item.name ?: "Document.pdf",
+                                    size = item.length(),
+                                    modified = item.lastModified()
+                                )
+                            )
+                        }
+                    }
+                } catch (_: Exception) {
+                    // A document may disappear or become unavailable while the tree is scanned.
                 }
             }
         }
-        try { visit(tree, 0) } catch (_: Exception) { }
+
+        visit(tree, 0)
         result.sortedByDescending { it.modified }
     }
 }
