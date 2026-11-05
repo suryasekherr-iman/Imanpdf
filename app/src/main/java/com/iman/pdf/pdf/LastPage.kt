@@ -26,15 +26,16 @@ object LastPage {
     }
 
     fun loadZoom(context: Context, documentId: String): Float {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getFloat(zoomKey(documentId), 1f)
-            .coerceIn(1f, 3f)
+        return if (saved.isFinite()) saved.coerceIn(1f, 3f) else 1f
     }
 
     fun saveZoom(context: Context, documentId: String, scale: Float) {
+        val safeScale = if (scale.isFinite()) scale.coerceIn(1f, 3f) else 1f
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putFloat(zoomKey(documentId), scale.coerceIn(1f, 3f))
+            .putFloat(zoomKey(documentId), safeScale)
             .apply()
     }
 }
