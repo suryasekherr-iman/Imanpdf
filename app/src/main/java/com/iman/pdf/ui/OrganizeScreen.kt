@@ -34,6 +34,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.RotateRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -107,11 +109,15 @@ fun OrganizeScreen(
     var sourceName by remember { mutableStateOf("") }
     var pages by remember { mutableStateOf<List<PageItem>>(emptyList()) }
     var selected by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var second by remember { mutableStateOf<PdfEngine?>(null) }
     var busy by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<File?>(null) }
 
     DisposableEffect(Unit) {
-        onDispose { engine?.close() }
+        onDispose {
+            engine?.close()
+            second?.close()
+        }
     }
 
     val onPicked: (Uri?) -> Unit = { uri ->
@@ -180,6 +186,50 @@ fun OrganizeScreen(
         selected = emptySet()
     }
 
+    fun insertAfterSelection(items: List<PageItem>) {
+        val lastSelected = pages.indexOfLast { selected.contains(it.id) }
+        val at = if (lastSelected >= 0) lastSelected + 1 else pages.size
+        val list = pages.toMutableList()
+        list.addAll(at, items)
+        pages = list
+    }
+
+    fun nextId(): Int = (pages.maxOfOrNull { it.id } ?: -1) + 1
+
+    fun addBlank() {
+        insertAfterSelection(listOf(PageItem(nextId(), -1, 0)))
+    }
+
+    val insertPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            if (pages.any { it.original <= -2 }) {
+                Toast.makeText(
+                    context,
+                    "Remove the earlier inserted pages first",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                scope.launch {
+                    busy = true
+                    val opened = PdfEngine.open(context, uri)
+                    busy = false
+                    if (opened == null) {
+                        Toast.makeText(context, "Could not open this PDF", Toast.LENGTH_LONG).show()
+                    } else {
+                        second?.close()
+                        second = opened
+                        val start = nextId()
+                        insertAfterSelection(
+                            (0 until opened.pageCount).map { PageItem(start + it, -(it + 2), 0) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun duplicateSelected() {
         var next = (pages.maxOfOrNull { it.id } ?: -1) + 1
         val list = ArrayList<PageItem>()
@@ -204,7 +254,8 @@ fun OrganizeScreen(
                 context,
                 file,
                 chosen.map { it.original },
-                chosen.map { it.rotation }
+                chosen.map { it.rotation },
+                second?.file
             )
             busy = false
             if (result == null) {
@@ -304,7 +355,7 @@ fun OrganizeScreen(
                     ) {
                         items(pages, key = { it.id }) { page ->
                             PageCell(
-                                engine = current,
+                                engine = if (page.original <= -2) second else current,
                                 original = page.original,
                                 rotation = page.rotation,
                                 position = pages.indexOf(page) + 1,
@@ -361,6 +412,12 @@ fun OrganizeScreen(
                     ) {
                         Icon(Icons.Outlined.Delete, contentDescription = "Delete")
                     }
+                    IconButton(onClick = { addBlank() }) {
+                        Icon(Icons.Outlined.NoteAdd, contentDescription = "Add blank page")
+                    }
+                    IconButton(onClick = { insertPicker.launch(arrayOf("application/pdf")) }) {
+                        Icon(Icons.Outlined.FileUpload, contentDescription = "Insert pages from PDF")
+                    }
                     IconButton(
                         onClick = { duplicateSelected() },
                         enabled = selected.isNotEmpty()
@@ -383,7 +440,8 @@ fun OrganizeScreen(
                                 context,
                                 current.file,
                                 pages.map { it.original },
-                                pages.map { it.rotation }
+                                pages.map { it.rotation },
+                                second?.file
                             )
                             busy = false
                             if (result == null) {
@@ -413,7 +471,7 @@ fun OrganizeScreen(
 
 @Composable
 private fun PageCell(
-    engine: PdfEngine,
+    engine: PdfEngine?,
     original: Int,
     rotation: Int,
     position: Int,
@@ -422,8 +480,13 @@ private fun PageCell(
 ) {
     var bitmap by remember(original) { mutableStateOf<Bitmap?>(null) }
 
-    LaunchedEffect(original) {
-        bitmap = engine.renderPage(original, 260)
+    LaunchedEffect(original, engine) {
+        val index = if (original <= -2) -original - 2 else original
+        bitmap = if (original == -1 || engine == null) {
+            null
+        } else {
+            engine.renderPage(index, 260)
+        }
     }
 
     val sideways = rotation == 90 || rotation == 270
