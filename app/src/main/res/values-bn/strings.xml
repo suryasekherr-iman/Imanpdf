@@ -51,7 +51,7 @@
 
     <string name="create_quick_actions">দ্রুত কাজ</string>
 
-    <string name="nav_home">হোম</string><string name="nav_create">তৈরি</string><string name="nav_files">ফাইল</string><string name="nav_tools">টুলস</string>
+    <string name="nav_home">হোম</string><string name="nav_create">তৈরি</string><string name="nav_student">শিক্ষার্থীদের স্থান</string><string name="nav_files">ফাইল</string><string name="nav_tools">টুলস</string>
     <string name="home_recent">সাম্প্রতিক</string><string name="home_starred">পছন্দের</string><string name="home_on_device">ডিভাইসে</string><string name="home_welcome_back">আবার স্বাগতম, %1$s</string>
     <string name="home_select">নির্বাচন</string><string name="home_select_all">সব নির্বাচন</string><string name="home_grid_view">গ্রিড ভিউ</string><string name="home_list_view">লিস্ট ভিউ</string><string name="home_clear_recent">সাম্প্রতিক মুছুন</string><string name="home_clear_recent_title">সাম্প্রতিক মুছবেন?</string><string name="home_clear_recent_message">সাম্প্রতিক ফাইলগুলি এই তালিকা থেকে সরানো হবে। পছন্দের ফাইল থাকবে। আপনার PDF ফাইল মুছে যাবে না।</string><string name="home_clear">মুছুন</string><string name="home_cancel">বাতিল</string>
     <string name="home_no_files">এখনও কোনো ফাইল নেই। PDF খুলতে + চাপুন।</string><string name="home_no_starred">এখনও কোনো পছন্দের ফাইল নেই।</string><string name="home_selected">%1$d টি নির্বাচিত</string>
