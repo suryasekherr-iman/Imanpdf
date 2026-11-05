@@ -1,11 +1,8 @@
 package com.iman.pdf.data
 
-import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
+import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -16,62 +13,58 @@ data class DevicePdf(
     val modified: Long
 )
 
+/** Lists PDFs only inside a folder explicitly selected by the user through SAF. */
 object DeviceFiles {
+    private const val PREFS = "iman_storage"
+    private const val TREE_URI = "pdf_tree_uri"
 
-    fun hasAllFilesAccess(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
-        } else {
-            true
-        }
+    fun hasFolderAccess(context: Context): Boolean =
+        savedTreeUri(context) != null
+
+    fun saveTreeUri(context: Context, uri: Uri) {
+        context.contentResolver.takePersistableUriPermission(
+            uri,
+            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        )
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putString(TREE_URI, uri.toString()).apply()
     }
 
-    suspend fun scan(context: Context): List<DevicePdf> =
-        withContext(Dispatchers.IO) {
-            val result = ArrayList<DevicePdf>()
-            try {
-                val collection = MediaStore.Files.getContentUri("external")
-                val projection = arrayOf(
-                    MediaStore.Files.FileColumns._ID,
-                    MediaStore.Files.FileColumns.DISPLAY_NAME,
-                    MediaStore.Files.FileColumns.SIZE,
-                    MediaStore.Files.FileColumns.DATE_MODIFIED
-                )
-                val selection = MediaStore.Files.FileColumns.MIME_TYPE + " = ?"
-                val args = arrayOf("application/pdf")
-                val order = MediaStore.Files.FileColumns.DATE_MODIFIED + " DESC"
+    private fun savedTreeUri(context: Context): Uri? {
+        val value = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(TREE_URI, null) ?: return null
+        val uri = Uri.parse(value)
+        val stillGranted = context.contentResolver.persistedUriPermissions
+            .any { it.uri == uri && it.isReadPermission }
+        return if (stillGranted) uri else null
+    }
 
-                context.contentResolver.query(
-                    collection,
-                    projection,
-                    selection,
-                    args,
-                    order
-                )?.use { cursor ->
-                    val idColumn =
-                        cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
-                    val nameColumn =
-                        cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
-                    val sizeColumn =
-                        cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.SIZE)
-                    val dateColumn =
-                        cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_MODIFIED)
-
-                    while (cursor.moveToNext()) {
-                        val id = cursor.getLong(idColumn)
-                        val name = cursor.getString(nameColumn) ?: "Document.pdf"
-                        result.add(
-                            DevicePdf(
-                                uri = ContentUris.withAppendedId(collection, id),
-                                name = name,
-                                size = cursor.getLong(sizeColumn),
-                                modified = cursor.getLong(dateColumn) * 1000L
-                            )
+    suspend fun scan(context: Context): List<DevicePdf> = withContext(Dispatchers.IO) {
+        val tree = savedTreeUri(context)?.let { DocumentFile.fromTreeUri(context, it) }
+            ?: return@withContext emptyList()
+        val result = ArrayList<DevicePdf>()
+        fun visit(folder: DocumentFile, depth: Int) {
+            if (depth > 12) return
+            folder.listFiles().forEach { item ->
+                if (item.isDirectory) {
+                    visit(item, depth + 1)
+                } else if (item.isFile &&
+                    (item.type == "application/pdf" ||
+                        item.name?.endsWith(".pdf", ignoreCase = true) == true)
+                ) {
+                    result.add(
+                        DevicePdf(
+                            uri = item.uri,
+                            name = item.name ?: "Document.pdf",
+                            size = item.length(),
+                            modified = item.lastModified()
                         )
-                    }
+                    )
                 }
-            } catch (e: Exception) {
             }
-            result
         }
+        try { visit(tree, 0) } catch (_: Exception) { }
+        result.sortedByDescending { it.modified }
+    }
 }
