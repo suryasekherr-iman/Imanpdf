@@ -76,7 +76,7 @@ fun StudentSpacesScreen() {
                     val currentIndex = studyIndex.coerceIn(0, flashcards.lastIndex)
                     val card = flashcards[currentIndex]
                     Column(
-                        Modifier.fillMaxSize().padding(20.dp),
+                        Modifier.weight(1f).fillMaxWidth().padding(20.dp),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
