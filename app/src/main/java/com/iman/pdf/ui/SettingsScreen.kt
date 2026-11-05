@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -69,6 +71,9 @@ fun SettingsScreen(onBack: () -> Unit) {
     val photo by prefs.photoPath.collectAsState(initial = "")
     val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
     var nameField by remember { mutableStateOf("") }
+    var showLicenses by remember { mutableStateOf(false) }
+    var licenseText by remember { mutableStateOf("") }
+    var noticeText by remember { mutableStateOf("") }
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -242,8 +247,41 @@ fun SettingsScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 16.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        licenseText = context.assets.open("licenses/AGPL-3.0-only.txt").bufferedReader().use { it.readText() }
+                        noticeText = context.assets.open("licenses/NOTICE.txt").bufferedReader().use { it.readText() }
+                        showLicenses = true
+                    }
+                },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                Text(stringResource(R.string.settings_open_source_licenses))
+            }
             Spacer(modifier = Modifier.height(48.dp))
         }
+    }
+
+    if (showLicenses) {
+        AlertDialog(
+            onDismissRequest = { showLicenses = false },
+            title = { Text(stringResource(R.string.settings_open_source_licenses)) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState())
+                ) {
+                    Text(noticeText, style = MaterialTheme.typography.bodySmall)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(licenseText, style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLicenses = false }) {
+                    Text(stringResource(R.string.settings_close))
+                }
+            }
+        )
     }
 }
 
