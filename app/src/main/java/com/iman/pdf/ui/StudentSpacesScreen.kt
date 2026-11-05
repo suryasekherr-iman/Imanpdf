@@ -70,7 +70,7 @@ fun StudentSpacesScreen() {
     val highlights = remember(refresh) { store.highlights() }
     val studyMaterials = remember(notes, highlights) {
         (notes.map { StudyMaterial(it.id, "NOTE", it.title, it.body, it.page) } +
-            highlights.map { StudyMaterial(it.id, it.type.uppercase(), it.text.ifBlank { "Highlighted area saved in PDF" }, it.text, it.page) })
+            highlights.map { StudyMaterial(it.id, it.type.uppercase(), "PDF highlight", it.text.ifBlank { "Highlighted area saved in PDF" }, it.page) })
             .sortedWith(compareBy<StudyMaterial> { it.page ?: Int.MAX_VALUE }.thenBy { it.label })
     }
 
