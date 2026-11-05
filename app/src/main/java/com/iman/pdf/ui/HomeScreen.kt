@@ -139,7 +139,7 @@ fun HomeScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                hasAccess = DeviceFiles.hasAllFilesAccess()
+                hasAccess = DeviceFiles.hasAllFilesAccess(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -155,7 +155,17 @@ fun HomeScreen(
         }
     }
 
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        hasAccess = DeviceFiles.hasAllFilesAccess(context)
+    }
+
     fun requestAccess() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            return
+        }
         try {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             intent.data = Uri.parse("package:" + context.packageName)
