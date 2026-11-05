@@ -18,6 +18,8 @@ class PdfEngine private constructor(
     fun renderPage(index: Int, targetWidth: Int): Bitmap {
         return checkNotNull(mupdf.renderPageToWidth(index, targetWidth)) { "MuPDF render failed" }
     }
+    fun renderPageToBitmap(index: Int, scale: Float = 2f): Bitmap? =
+        mupdf.renderPageToBitmap(index, scale)
     fun pageAspectRatio(index: Int): Float = mupdf.pageAspectRatio(index)
     fun pageText(index: Int): String = mupdf.pageText(index)
     fun searchPage(index: Int, query: String): List<FloatArray> = mupdf.searchPage(index, query)
