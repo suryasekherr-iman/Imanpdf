@@ -1,4 +1,4 @@
-ImAn PDF Reader — Third-Party Notices
+Iman PDF Reader — Third-Party Notices
 ======================================
 
 Project license
@@ -9,30 +9,39 @@ This project is licensed under the GNU Affero General Public License, version 3
 Third-party components
 ----------------------
 
-1. Apache PDFBox Android
-   Maven coordinate: com.tom-roush:pdfbox-android:2.0.27.0
-   License: Apache License 2.0
-   Project: https://github.com/TomRoush/PdfBox-Android
-   License text: https://www.apache.org/licenses/LICENSE-2.0
+1. MuPDF (Fitz)
+   Maven coordinate: com.artifex.mupdf:fitz:1.23.0
+   License: GNU Affero General Public License v3 (AGPL-3.0)
+   Project and source: https://github.com/ArtifexSoftware/mupdf
+   License text: https://www.gnu.org/licenses/agpl-3.0.html
 
-2. AndroidX and Jetpack Compose
+2. Google ML Kit Text Recognition
+   Maven coordinates:
+   - com.google.mlkit:text-recognition:16.0.1
+   - com.google.mlkit:text-recognition-devanagari:16.0.1
+   Processing: bundled, on-device text recognition models.
+   Terms: https://developers.google.com/ml-kit/terms
+   Review the current SDK and model terms before each public release.
+
+3. AndroidX and Jetpack Compose
    Maven groups: androidx.* (including Activity, AppCompat, Core, Lifecycle,
    Navigation, DataStore, Compose UI and Material)
    License: Apache License 2.0
    Project: https://developer.android.com/jetpack/androidx
    License text: https://www.apache.org/licenses/LICENSE-2.0
 
-3. Kotlin
+4. Kotlin and Kotlin Coroutines
    License: Apache License 2.0
    Project: https://kotlinlang.org/
    License text: https://www.apache.org/licenses/LICENSE-2.0
 
-4. Android Gradle Plugin
+5. Android Gradle Plugin
    Build-time tool; not bundled as application runtime code.
    License: Apache License 2.0
    Project: https://developer.android.com/build
    License text: https://www.apache.org/licenses/LICENSE-2.0
 
-This notice is a summary of the dependencies declared directly by the project.
-The resolved dependency graph should be checked for transitive components before
-each public release. Each component remains subject to its own license terms.
+This notice summarizes the dependencies declared directly by the project.
+The resolved dependency graph and the applicable SDK/model terms must be
+reviewed before each public release. Each component remains subject to its own
+license and terms.
