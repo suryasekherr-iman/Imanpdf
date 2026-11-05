@@ -409,7 +409,7 @@ fun ViewerScreen(
                 },
                 onAddBookmark = {
                     val added = Bookmarks.add(context, documentId, engine.pageCount, currentPage)
-                    bookmarkList = Bookmarks.load(context, title, engine.pageCount)
+                    bookmarkList = Bookmarks.load(context, documentId, engine.pageCount)
                     Toast.makeText(
                         context,
                         if (added) {
