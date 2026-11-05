@@ -1,6 +1,7 @@
 package com.iman.pdf.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,10 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.pdf.PdfEngine
+import com.iman.pdf.pdf.SearchHit
 
 private val NIGHT_MATRIX = ColorMatrix(
     floatArrayOf(
@@ -48,7 +52,9 @@ fun PdfPageItem(
     renderWidth: Int,
     annot: AnnotController? = null,
     nightMode: Boolean = false,
-    sepiaMode: Boolean = false
+    sepiaMode: Boolean = false,
+    searchHits: List<SearchHit> = emptyList(),
+    activeSearchHit: SearchHit? = null
 ) {
     var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
@@ -77,6 +83,26 @@ fun PdfPageItem(
                     else -> null
                 }
             )
+        }
+        if (searchHits.isNotEmpty()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                searchHits.forEach { hit ->
+                    val rect = hit.rect ?: return@forEach
+                    val left = rect.left * size.width
+                    val top = rect.top * size.height
+                    val right = rect.right * size.width
+                    val bottom = rect.bottom * size.height
+                    drawRect(
+                        color = if (hit == activeSearchHit) {
+                            Color(0xFFFF9800).copy(alpha = 0.48f)
+                        } else {
+                            Color(0xFFFFEB3B).copy(alpha = 0.34f)
+                        },
+                        topLeft = Offset(left, top),
+                        size = Size((right - left).coerceAtLeast(0f), (bottom - top).coerceAtLeast(0f))
+                    )
+                }
+            }
         }
         if (annot != null) {
             AnnotationLayer(
