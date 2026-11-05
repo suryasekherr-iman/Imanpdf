@@ -51,7 +51,7 @@
 
     <string name="create_quick_actions">त्वरित कार्य</string>
 
-    <string name="nav_home">होम</string><string name="nav_create">बनाएँ</string><string name="nav_files">फ़ाइलें</string><string name="nav_tools">टूल्स</string>
+    <string name="nav_home">होम</string><string name="nav_create">बनाएँ</string><string name="nav_student">विद्यार्थी स्थान</string><string name="nav_files">फ़ाइलें</string><string name="nav_tools">टूल्स</string>
     <string name="home_recent">हाल की</string><string name="home_starred">पसंदीदा</string><string name="home_on_device">डिवाइस में</string><string name="home_welcome_back">वापस स्वागत है, %1$s</string>
     <string name="home_select">चुनें</string><string name="home_select_all">सभी चुनें</string><string name="home_grid_view">ग्रिड दृश्य</string><string name="home_list_view">सूची दृश्य</string><string name="home_clear_recent">हाल की फ़ाइलें हटाएँ</string><string name="home_clear_recent_title">हाल की फ़ाइलें हटाएँ?</string><string name="home_clear_recent_message">हाल की फ़ाइलें इस सूची से हटेंगी। पसंदीदा फ़ाइलें रहेंगी। आपकी PDF फ़ाइलें डिलीट नहीं होंगी।</string><string name="home_clear">हटाएँ</string><string name="home_cancel">रद्द करें</string>
     <string name="home_no_files">अभी कोई फ़ाइल नहीं है। PDF खोलने के लिए + दबाएँ।</string><string name="home_no_starred">अभी कोई पसंदीदा फ़ाइल नहीं है।</string><string name="home_selected">%1$d चुनी गईं</string>
