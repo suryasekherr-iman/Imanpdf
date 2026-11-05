@@ -8,7 +8,7 @@ import com.iman.pdf.annot.StrokeMark
 import com.iman.pdf.annot.TextMark
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
+import android.graphics.RectF
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup
 import com.tom_roush.pdfbox.text.PDFTextStripperByArea
 import kotlinx.coroutines.Dispatchers
@@ -85,7 +85,8 @@ object Comments {
                 val top = ys.maxOrNull() ?: continue
                 if (right <= left || top <= bottom) continue
                 val name = "highlight_${regionNames.size}"
-                stripper.addRegion(name, PDRectangle(left, bottom, right - left, top - bottom))
+                val pageHeight = document.getPage(pageIndex).mediaBox.height
+                stripper.addRegion(name, RectF(left, pageHeight - top, right, pageHeight - bottom))
                 regionNames.add(name)
             }
             if (regionNames.isEmpty()) return (annotation.contents ?: "").trim()
