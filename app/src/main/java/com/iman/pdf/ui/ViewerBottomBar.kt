@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Check
@@ -72,8 +73,8 @@ private class ViewerToolItem(
     val action: () -> Unit
 )
 
-private const val DEFAULT_BAR = "read_aloud,sign,text,highlight,draw"
-private const val MAX_BAR = 5
+private const val DEFAULT_BAR = "read_aloud,ocr_page,sign,text,highlight,draw"
+private const val MAX_BAR = 6
 
 @Composable
 fun ViewerBottomBar(
@@ -83,7 +84,9 @@ fun ViewerBottomBar(
     onSearch: () -> Unit,
     onShare: () -> Unit,
     onPrint: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onOcrPage: () -> Unit = {},
+    onOcrDocument: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("viewer_prefs", Context.MODE_PRIVATE) }
@@ -99,6 +102,8 @@ fun ViewerBottomBar(
 
     val all = listOf(
         ViewerToolItem("read_aloud", Icons.Outlined.Headphones, "Read aloud") { onReadAloud() },
+        ViewerToolItem("ocr_page", Icons.Outlined.Article, "Scan/OCR") { onOcrPage() },
+        ViewerToolItem("ocr_document", Icons.Outlined.Article, "OCR document") { onOcrDocument() },
         ViewerToolItem("sign", Icons.Outlined.Create, "Fill & Sign") { onTool(AnnotTool.SIGN) },
         ViewerToolItem("text", Icons.Outlined.TextFields, "Text") { onTool(AnnotTool.TEXT) },
         ViewerToolItem("highlight", Icons.Outlined.Highlight, "Highlight") { onTool(AnnotTool.HIGHLIGHT) },
