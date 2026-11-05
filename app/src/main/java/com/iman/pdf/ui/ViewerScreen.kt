@@ -290,6 +290,7 @@ fun ViewerScreen(
             val started = reader.speak(text)
             if (!started) {
                 reading = false
+                ReadAloudService.stop(context)
                 Toast.makeText(
                     context,
                     "Voice is not ready yet. Please try again.",
