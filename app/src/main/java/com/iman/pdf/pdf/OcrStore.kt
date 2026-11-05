@@ -59,8 +59,8 @@ object OcrStore {
         }
     }
 
-    fun savePage(context: Context, documentId: String, page: OcrPage) {
-        try {
+    fun savePage(context: Context, documentId: String, page: OcrPage): Boolean {
+        return try {
             val file = documentFile(context, documentId)
             val root = if (file.exists()) JSONObject(file.readText()) else JSONObject()
             val lines = JSONArray()
@@ -81,7 +81,9 @@ object OcrStore {
                 file.writeText(root.toString())
                 temporary.delete()
             }
+            true
         } catch (_: Exception) {
+            false
         }
     }
 
