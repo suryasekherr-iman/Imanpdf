@@ -9,6 +9,7 @@ data class StudyFlashcard(val id: String, val question: String, val answer: Stri
 data class StudyNote(val id: String, val title: String, val body: String, val page: Int?, val documentId: String? = null)
 data class RevisionItem(val id: String, val text: String, val done: Boolean)
 data class ImportantQuestion(val id: String, val text: String)
+data class StudyBookmark(val id: String, val documentTitle: String, val page: Int)
 
 class StudentStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("student_spaces", Context.MODE_PRIVATE)
@@ -27,6 +28,17 @@ class StudentStore(context: Context) {
     fun importantQuestions(): List<ImportantQuestion> = readArray("important_questions") {
         ImportantQuestion(it.getString("id"), it.getString("text"))
     }
+    fun bookmarks(): List<StudyBookmark> = readArray("bookmarks") {
+        StudyBookmark(it.getString("id"), it.getString("documentTitle"), it.getInt("page"))
+    }
+    fun addBookmark(documentId: String, documentTitle: String, page: Int) {
+        val id = "$documentId|$page"
+        val values = bookmarks().filterNot { it.id == id } + StudyBookmark(id, documentTitle, page)
+        writeArray("bookmarks", values.map { JSONObject().put("id", it.id).put("documentTitle", it.documentTitle).put("page", it.page) })
+    }
+    fun removeBookmark(id: String) = writeArray("bookmarks", bookmarks().filterNot { it.id == id }.map {
+        JSONObject().put("id", it.id).put("documentTitle", it.documentTitle).put("page", it.page)
+    })
     fun addFlashcard(question: String, answer: String) {
         val values = flashcards() + StudyFlashcard(UUID.randomUUID().toString(), question.trim(), answer.trim())
         writeArray("flashcards", values.map { JSONObject().put("id", it.id).put("question", it.question).put("answer", it.answer) })
