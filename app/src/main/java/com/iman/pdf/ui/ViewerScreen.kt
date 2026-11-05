@@ -74,8 +74,11 @@ private const val MAX_RENDER_WIDTH = 2200
 
 private val speedValues = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f)
 private val speedLabels = listOf("0.5x", "0.75x", "1x", "1.25x", "1.5x", "2x", "2.5x", "3x")
-private val voiceTags = listOf("system", "en", "hi", "bn")
-private val voiceLabels = listOf("System", "English", "Hindi", "Bengali")
+private val voiceTags = listOf("system", "en", "hi", "bn", "mr", "gu", "pa", "ta", "te", "kn", "ml", "ur")
+private val voiceLabels = listOf(
+    "System", "English", "Hindi", "Bengali", "Marathi", "Gujarati",
+    "Punjabi", "Tamil", "Telugu", "Kannada", "Malayalam", "Urdu"
+)
 
 @Composable
 fun ViewerScreen(
