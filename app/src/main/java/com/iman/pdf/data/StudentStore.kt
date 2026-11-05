@@ -8,6 +8,7 @@ import java.util.UUID
 data class StudyFlashcard(val id: String, val question: String, val answer: String)
 data class StudyNote(val id: String, val title: String, val body: String, val page: Int?)
 data class RevisionItem(val id: String, val text: String, val done: Boolean)
+data class ImportantQuestion(val id: String, val text: String)
 
 class StudentStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("student_spaces", Context.MODE_PRIVATE)
