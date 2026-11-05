@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.iman.pdf.data.StudentStore
 
 private enum class StudentSection(val title: String) {
-    FLASHCARDS("Flashcards"), NOTES("Notes"), REVISION("Revision")
+    FLASHCARDS("Flashcards"), NOTES("Notes"), REVISION("Revision"), IMPORTANT_QUESTIONS("Important Questions")
 }
 
 @Composable
@@ -54,6 +54,7 @@ fun StudentSpacesScreen() {
     var noteBody by remember { mutableStateOf("") }
     var notePage by remember { mutableStateOf("") }
     var revisionText by remember { mutableStateOf("") }
+    var importantQuestionText by remember { mutableStateOf("") }
     var revealed by remember { mutableStateOf(setOf<String>()) }
     var studyMode by remember { mutableStateOf(false) }
     var studyIndex by remember { mutableIntStateOf(0) }
@@ -61,6 +62,7 @@ fun StudentSpacesScreen() {
     val flashcards = remember(refresh) { store.flashcards() }
     val notes = remember(refresh) { store.notes() }
     val revision = remember(refresh) { store.revisionItems() }
+    val importantQuestions = remember(refresh) { store.importantQuestions() }
 
     Column(Modifier.fillMaxSize()) {
         Text("Student Spaces", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
@@ -143,6 +145,19 @@ fun StudentSpacesScreen() {
                     }
                 }
             }
+            StudentSection.IMPORTANT_QUESTIONS -> {
+                if (importantQuestions.isEmpty()) EmptyStudyState("No important questions yet", "Save exam-focused questions here for quick revision.")
+                else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(importantQuestions, key = { it.id }) { item ->
+                        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(item.text, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                                IconButton(onClick = { store.removeImportantQuestion(item.id); refresh++ }) { Icon(Icons.Outlined.Delete, contentDescription = "Remove important question") }
+                            }
+                        }
+                    }
+                }
+            }
             StudentSection.REVISION -> {
                 if (revision.isEmpty()) EmptyStudyState("Revision list is empty", "Add topics or questions you want to revisit.")
                 else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -184,7 +199,8 @@ fun StudentSpacesScreen() {
                             OutlinedTextField(value = noteBody, onValueChange = { noteBody = it }, label = { Text("Note") })
                             OutlinedTextField(value = notePage, onValueChange = { notePage = it.filter(Char::isDigit) }, label = { Text("PDF page (optional)") }, singleLine = true)
                         }
-                        StudentSection.REVISION -> OutlinedTextField(value = revisionText, onValueChange = { revisionText = it }, label = { Text("Topic or question") }, singleLine = true)
+                        StudentSection.REVISION -> OutlinedTextField(value = revisionText, onValueChange = { revisionText = it }, label = { Text("Topic to revise") }, singleLine = true)
+                        StudentSection.IMPORTANT_QUESTIONS -> OutlinedTextField(value = importantQuestionText, onValueChange = { importantQuestionText = it }, label = { Text("Important question") })
                     }
                 }
             },
@@ -194,8 +210,9 @@ fun StudentSpacesScreen() {
                         StudentSection.FLASHCARDS -> if (question.isNotBlank() && answer.isNotBlank()) store.addFlashcard(question, answer)
                         StudentSection.NOTES -> if (noteTitle.isNotBlank() && noteBody.isNotBlank()) store.addNote(noteTitle, noteBody, notePage.toIntOrNull()?.takeIf { it > 0 })
                         StudentSection.REVISION -> if (revisionText.isNotBlank()) store.addRevisionItem(revisionText)
+                        StudentSection.IMPORTANT_QUESTIONS -> if (importantQuestionText.isNotBlank()) store.addImportantQuestion(importantQuestionText)
                     }
-                    question = ""; answer = ""; noteTitle = ""; noteBody = ""; notePage = ""; revisionText = ""
+                    question = ""; answer = ""; noteTitle = ""; noteBody = ""; notePage = ""; revisionText = ""; importantQuestionText = ""
                     addOpen = false
                     refresh++
                 }) { Text("Save") }
