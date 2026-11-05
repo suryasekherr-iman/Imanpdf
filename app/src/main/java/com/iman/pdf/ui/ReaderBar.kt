@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -54,6 +55,7 @@ fun ReaderBar(
     voiceIndex: Int,
     onClose: () -> Unit,
     onToggle: () -> Unit,
+    onStop: () -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onSpeed: (Int) -> Unit,
@@ -104,6 +106,9 @@ fun ReaderBar(
                 Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous page")
             }
             PlayButton(reading = reading, size = 48.dp, onClick = onToggle)
+            IconButton(onClick = onStop) {
+                Icon(Icons.Filled.Stop, contentDescription = "Stop reading")
+            }
             IconButton(onClick = onNext) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "Next page")
             }
@@ -124,6 +129,7 @@ fun ReaderBar(
             voiceIndex = voiceIndex,
             onDismiss = { expanded = false },
             onToggle = onToggle,
+            onStop = onStop,
             onPrev = onPrev,
             onNext = onNext,
             onSpeed = onSpeed,
@@ -165,6 +171,7 @@ private fun ReaderSheet(
     voiceIndex: Int,
     onDismiss: () -> Unit,
     onToggle: () -> Unit,
+    onStop: () -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onSpeed: (Int) -> Unit,
@@ -206,6 +213,9 @@ private fun ReaderSheet(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 PlayButton(reading = reading, size = 64.dp, onClick = onToggle)
+                IconButton(onClick = onStop) {
+                    Icon(Icons.Filled.Stop, contentDescription = "Stop reading", modifier = Modifier.size(32.dp))
+                }
                 Spacer(modifier = Modifier.width(16.dp))
                 IconButton(onClick = onNext) {
                     Icon(

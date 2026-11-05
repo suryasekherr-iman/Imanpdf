@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -45,7 +46,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -68,6 +74,7 @@ import com.iman.pdf.pdf.PdfOcr
 import com.iman.pdf.pdf.OcrStore
 import com.iman.pdf.pdf.ReadAloudService
 import com.iman.pdf.pdf.ReadAloud
+import com.iman.pdf.pdf.TtsHighlight
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
 import kotlinx.coroutines.delay
@@ -116,6 +123,8 @@ fun ViewerScreen(
     var ocrRunning by remember { mutableStateOf(false) }
 
     val reader = remember { ReadAloud(context) }
+    val spokenRange by reader.currentSpokenRange.collectAsState()
+    val spokenText by reader.currentSpokenText.collectAsState()
     var readerOpen by remember { mutableStateOf(false) }
     var reading by remember { mutableStateOf(false) }
     var readPage by remember { mutableIntStateOf(0) }
@@ -558,6 +567,18 @@ fun ViewerScreen(
                     )
                 }
 
+                if (reading && spokenText.isNotBlank()) {
+                    spokenRange?.let { range ->
+                        SpokenSentenceHighlight(
+                            text = spokenText,
+                            range = range,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        )
+                    }
+                }
+
                 if (searchOpen && (searching || searched)) {
                     SearchResults(
                         searching = searching,
@@ -647,6 +668,7 @@ fun ViewerScreen(
                             speakPage(currentPage)
                         }
                     },
+                    onStop = { stopReading() },
                     onPrev = {
                         if (reading) {
                             speakPage((readPage - 1).coerceAtLeast(0))
@@ -783,4 +805,47 @@ fun ViewerScreen(
             )
         }
     }
+}
+
+
+@Composable
+private fun SpokenSentenceHighlight(
+    text: String,
+    range: TtsHighlight,
+    modifier: Modifier = Modifier
+) {
+    val start = range.start.coerceIn(0, text.length)
+    val end = range.end.coerceIn(start, text.length)
+    val sentence = buildAnnotatedString {
+        if (start >= end) {
+            append(text)
+        } else {
+            val punctuation = charArrayOf('.', '!', '?', '।', '\n')
+            val previous = if (start > 0) text.lastIndexOfAny(punctuation, start - 1) else -1
+            var sentenceStart = previous + 1
+            while (sentenceStart < start && text[sentenceStart].isWhitespace()) sentenceStart++
+            val next = text.indexOfAny(punctuation, end)
+            val sentenceEnd = if (next < 0) text.length else next + 1
+            append(text.substring(sentenceStart, start))
+            withStyle(
+                SpanStyle(
+                    background = Color(0xFFFFE082),
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold
+                )
+            ) {
+                append(text.substring(start, end))
+            }
+            append(text.substring(end, sentenceEnd))
+        }
+    }
+    Text(
+        text = sentence,
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
+            .padding(12.dp),
+        color = MaterialTheme.colorScheme.onSurface,
+        style = MaterialTheme.typography.bodyMedium,
+        maxLines = 4
+    )
 }
