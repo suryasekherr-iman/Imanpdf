@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -72,6 +73,7 @@ private fun toolTitleResource(id: String): Int = when (id) {
 enum class Tab(val labelRes: Int, val icon: ImageVector) {
     HOME(R.string.nav_home, Icons.Outlined.Home),
     CREATE(R.string.nav_create, Icons.Outlined.Create),
+    STUDENT(R.string.nav_student, Icons.Outlined.MenuBook),
     FILES(R.string.nav_files, Icons.Outlined.Folder),
     TOOLS(R.string.nav_tools, Icons.Outlined.GridView)
 }
@@ -280,6 +282,8 @@ fun MainScreen(incomingUri: Uri? = null) {
                         }
                     )
                 } else if (selected == 2) {
+                    StudentSpacesScreen()
+                } else if (selected == 3) {
                     FilesScreen(
                         onOpen = { openUri(it) },
                         onBrowse = { picker.launch(arrayOf("application/pdf")) }
