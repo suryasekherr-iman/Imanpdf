@@ -32,6 +32,10 @@
     <string name="settings_english">English</string>
     <string name="settings_bengali">বাংলা (बंगाली)</string>
     <string name="settings_hindi">हिन्दी</string>
+    <string name="settings_privacy">गोपनीयता</string>
+    <string name="settings_hide_recent_documents">हाल के दस्तावेज़ छिपाएँ</string>
+    <string name="settings_hide_recent_description">हाल की सूची और उसके खोज परिणाम छिपाएँ। पसंदीदा और डिवाइस की फ़ाइलें उपलब्ध रहेंगी।</string>
+    <string name="home_recent_hidden">हाल के दस्तावेज़ छिपे हुए हैं। इसे सेटिंग्स → गोपनीयता में बदलें।</string>
     <string name="settings_about">ऐप के बारे में</string>
     <string name="settings_version">ImAn PDF Reader • संस्करण 1.0</string>
 
