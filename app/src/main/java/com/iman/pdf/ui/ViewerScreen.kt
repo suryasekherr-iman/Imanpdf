@@ -537,6 +537,8 @@ fun ViewerScreen(
                                 annot = annot,
                                 nightMode = nightMode,
                                 sepiaMode = sepiaMode,
+                                searchHits = hits.filter { it.page == index },
+                                activeSearchHit = hits.getOrNull(activeHit)?.takeIf { it.page == index },
                                 documentId = documentId,
                                 ocrRevision = ocrRevision
                             )
