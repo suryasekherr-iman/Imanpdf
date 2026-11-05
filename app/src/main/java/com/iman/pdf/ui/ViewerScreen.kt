@@ -96,12 +96,14 @@ fun ViewerScreen(
     title: String,
     documentId: String,
     startMode: String = "",
-        onOpenTool: (String) -> Unit = {},
+    initialPage: Int? = null,
+    onOpenTool: (String) -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = LastPage.load(context, documentId, engine.pageCount)
+        initialFirstVisibleItemIndex = initialPage?.coerceIn(0, (engine.pageCount - 1).coerceAtLeast(0))
+            ?: LastPage.load(context, documentId, engine.pageCount)
     )
     val horizontalState = rememberScrollState()
     val scope = rememberCoroutineScope()
