@@ -38,14 +38,14 @@ fun AppSplash() {
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "Iman",
-                fontSize = 28.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
-                letterSpacing = 1.2.sp
+                letterSpacing = 1.sp
             )
         }
     }
