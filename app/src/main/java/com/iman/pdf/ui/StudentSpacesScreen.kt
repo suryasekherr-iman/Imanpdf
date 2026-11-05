@@ -139,7 +139,7 @@ fun StudentSpacesScreen() {
                                     IconButton(onClick = { store.removeNote(note.id); refresh++ }) { Icon(Icons.Outlined.Delete, contentDescription = "Delete note") }
                                 }
                                 Text(note.body, style = MaterialTheme.typography.bodyMedium)
-                                if (note.page != null) Text("PDF page " + note.page, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
+                                if (note.page != null) Text((if (note.documentId != null) "Linked PDF · page " else "PDF page ") + note.page, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
                             }
                         }
                     }
