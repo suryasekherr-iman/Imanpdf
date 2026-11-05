@@ -153,6 +153,9 @@ fun ViewerScreen(
     var ocrTotal by remember { mutableIntStateOf(0) }
     var ocrRevision by remember { mutableIntStateOf(0) }
     val studentStore = remember { StudentStore(context) }
+    LaunchedEffect(bookmarkList, documentId, title) {
+        bookmarkList.forEach { page -> studentStore.addBookmark(documentId, title, page + 1) }
+    }
     var flashcardDialog by remember { mutableStateOf(false) }
     var flashcardQuestion by remember { mutableStateOf("") }
     var flashcardAnswer by remember { mutableStateOf("") }
@@ -499,6 +502,7 @@ fun ViewerScreen(
                 onAddBookmark = {
                     val added = Bookmarks.add(context, documentId, engine.pageCount, currentPage)
                     bookmarkList = Bookmarks.load(context, documentId, engine.pageCount)
+                    if (added) studentStore.addBookmark(documentId, title, currentPage + 1)
                     Toast.makeText(
                         context,
                         if (added) {
@@ -809,6 +813,7 @@ fun ViewerScreen(
                 },
                 onRemove = { page ->
                     Bookmarks.remove(context, documentId, engine.pageCount, page)
+                    studentStore.removeBookmark("$documentId|${page + 1}")
                     bookmarkList = Bookmarks.load(context, documentId, engine.pageCount)
                 },
                 onDismiss = { bookmarksOpen = false }
