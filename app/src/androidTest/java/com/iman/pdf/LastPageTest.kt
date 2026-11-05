@@ -26,7 +26,7 @@ class LastPageTest {
 
         assertEquals(5, LastPage.load(context, "content://docs/one", 8))
         assertEquals(2, LastPage.load(context, "content://docs/two", 8))
-        assertEquals(7, LastPage.load(context, "content://docs/one", 3))
+        assertEquals(2, LastPage.load(context, "content://docs/one", 3))
     }
 
     @Test
