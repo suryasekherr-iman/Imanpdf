@@ -1,96 +1,56 @@
-package com.imran.pdf.core.pdf
+package com.iman.pdf.pdf
 
+import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.Matrix
-import android.graphics.RectF
-import com.artifex.mupdf.fitz.Document
-import com.artifex.mupdf.fitz.Matrix as MuMatrix
-import com.artifex.mupdf.fitz.Page
+import android.net.Uri
+import com.iman.pdf.core.pdf.MuPdfEngine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
-class MuPdfEngine {
-    private var document: Document? = null
-    private var currentPage: Page? = null
+/** Compatibility facade used by the existing Compose screens. */
+class PdfEngine private constructor(
+    val file: File,
+    private val mupdf: MuPdfEngine
+) {
+    val pageCount: Int get() = mupdf.pageCount
 
-    /**
-     * PDF File ko open karne ke liye
-     */
-    fun openDocument(filePath: String): Boolean {
-        return try {
-            closeDocument()
-            document = Document(filePath)
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
+    fun renderPage(index: Int, targetWidth: Int): Bitmap {
+        val ratio = pageAspectRatio(index).coerceAtLeast(0.1f)
+        val scale = targetWidth.coerceAtLeast(1) / (612f * ratio)
+        return checkNotNull(mupdf.renderPageToBitmap(index, scale)) {
+            "MuPDF could not render page ${index + 1}"
         }
     }
 
-    /**
-     * Total pages nikalne ke liye
-     */
-    fun getPageCount(): Int {
-        return document?.countPages() ?: 0
-    }
+    fun pageAspectRatio(index: Int): Float = mupdf.pageAspectRatio(index)
+    fun pageText(index: Int): String = mupdf.pageText(index)
+    fun searchPage(index: Int, query: String): List<FloatArray> = mupdf.searchPage(index, query)
+    fun save(output: File, options: String = "garbage=compact"): Boolean = mupdf.save(output, options)
+    fun close() = mupdf.closeDocument()
 
-    /**
-     * Specific page ko Bitmap mein render karne ke liye
-     * @param pageNumber 0-based index (0 = page 1)
-     * @param scale Zoom level (1.0f = 100%)
-     */
-    fun renderPageToBitmap(pageNumber: Int, scale: Float = 1.0f): Bitmap? {
-        val doc = document ?: return null
-        if (pageNumber < 0 || pageNumber >= doc.countPages()) return null
-
-        return try {
-            // Purane page ko clean karein
-            currentPage?.destroy()
-
-            // Naya page load karein
-            currentPage = doc.loadPage(pageNumber)
-            val page = currentPage ?: return null
-
-            // Page bounds nikaalein
-            val bounds = page.bounds
-            val matrix = MuMatrix(scale, scale)
-            
-            // Render pixels nikaalein
-            val pixmap = page.toPixmap(
-                matrix,
-                Color.WHITE, // Background color
-                false, // No alpha
-                true   // Show annotations
-            )
-
-            // Pixmap ko Android Bitmap mein convert karein
-            val bitmap = Bitmap.createBitmap(
-                pixmap.width,
-                pixmap.height,
-                Bitmap.Config.ARGB_8888
-            )
-
-            // MuPDF pixmap data ko bitmap mein copy karein
-            pixmap.toBitmap(bitmap, 0, 0)
-            
-            // Memory free karein
-            pixmap.destroy()
-            
-            bitmap
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+    companion object {
+        suspend fun open(context: Context, uri: Uri): PdfEngine? = withContext(Dispatchers.IO) {
+            var temp: File? = null
+            try {
+                val source = if (uri.scheme == "file") {
+                    File(checkNotNull(uri.path))
+                } else {
+                    temp = File(context.cacheDir, "mupdf_open_${System.nanoTime()}.pdf")
+                    val input = context.contentResolver.openInputStream(uri) ?: return@withContext null
+                    input.use { stream -> temp!!.outputStream().use { stream.copyTo(it) } }
+                    temp!!
+                }
+                val mupdf = MuPdfEngine()
+                if (!mupdf.openDocument(source.absolutePath)) {
+                    mupdf.closeDocument()
+                    return@withContext null
+                }
+                PdfEngine(source, mupdf)
+            } catch (_: Exception) {
+                temp?.delete()
+                null
+            }
         }
-    }
-
-    /**
-     * Resources free karne ke liye
-     */
-    fun closeDocument() {
-        currentPage?.destroy()
-        currentPage = null
-        
-        document?.destroy()
-        document = null
     }
 }
