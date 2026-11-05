@@ -90,6 +90,7 @@ fun FilesScreen(
     var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess(context)) }
     var scanning by remember { mutableStateOf(false) }
     var files by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
+    var scanError by remember { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableIntStateOf(0) }
     var refreshToken by remember { mutableIntStateOf(0) }
@@ -110,8 +111,12 @@ fun FilesScreen(
     LaunchedEffect(hasAccess, refreshToken) {
         if (hasAccess) {
             scanning = true
+            scanError = false
             try {
                 files = DeviceFiles.scan(context)
+            } catch (_: Exception) {
+                files = emptyList()
+                scanError = true
             } finally {
                 scanning = false
             }
@@ -281,7 +286,7 @@ fun FilesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.files_empty),
+                        text = if (scanError) "Could not scan device storage. Check the storage permission and try again." else stringResource(R.string.files_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
