@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,6 +67,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val theme by prefs.themeMode.collectAsState(initial = "SYSTEM")
     val language by prefs.language.collectAsState(initial = "system")
     val photo by prefs.photoPath.collectAsState(initial = "")
+    val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
     var nameField by remember { mutableStateOf("") }
 
     val picker = rememberLauncherForActivityResult(
@@ -204,6 +206,31 @@ fun SettingsScreen(onBack: () -> Unit) {
                     }
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle(stringResource(R.string.settings_privacy))
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable {
+                    scope.launch { prefs.setHideRecentDocuments(!hideRecent) }
+                }.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = hideRecent,
+                    onCheckedChange = { value -> scope.launch { prefs.setHideRecentDocuments(value) } }
+                )
+                Text(
+                    text = stringResource(R.string.settings_hide_recent_documents),
+                    modifier = Modifier.padding(start = 8.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            Text(
+                text = stringResource(R.string.settings_hide_recent_description),
+                modifier = Modifier.padding(horizontal = 56.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
             AppLockSection()
