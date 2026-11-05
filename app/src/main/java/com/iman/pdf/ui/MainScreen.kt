@@ -113,6 +113,7 @@ fun MainScreen(incomingUri: Uri? = null) {
     var pendingMode by remember { mutableStateOf("") }
     var viewerMode by remember { mutableStateOf("") }
     var currentUri by remember { mutableStateOf<Uri?>(null) }
+    var addOpen by remember { mutableStateOf(false) }
     val tabs = Tab.entries
 
     fun openUri(uri: Uri, unlocked: File? = null) {
@@ -199,14 +200,27 @@ fun MainScreen(incomingUri: Uri? = null) {
             }
         )
     } else {
+        if (addOpen) {
+            AddFileSheet(
+                onDismiss = { addOpen = false },
+                onPick = { id ->
+                    addOpen = false
+                    if (id == "open") {
+                        picker.launch(arrayOf("application/pdf"))
+                    } else {
+                        tool = id
+                    }
+                }
+            )
+        }
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             floatingActionButton = {
                 if (selected == 0) {
                     FloatingActionButton(
-                        onClick = { picker.launch(arrayOf("application/pdf")) }
+                        onClick = { addOpen = true }
                     ) {
-                        Icon(Icons.Filled.Add, contentDescription = "Open PDF")
+                        Icon(Icons.Filled.Add, contentDescription = "Add file")
                     }
                 }
             },

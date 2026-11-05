@@ -1,5 +1,14 @@
 package com.iman.pdf.ui
 
+import android.content.Context
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +62,16 @@ private class SheetItem(
     val action: () -> Unit
 )
 
+private class ViewerToolItem(
+    val id: String,
+    val icon: ImageVector,
+    val label: String,
+    val action: () -> Unit
+)
+
+private const val DEFAULT_BAR = "read_aloud,sign,text,highlight,draw"
+private const val MAX_BAR = 5
+
 @Composable
 fun ViewerBottomBar(
     onReadAloud: () -> Unit,
@@ -63,7 +82,35 @@ fun ViewerBottomBar(
     onPrint: () -> Unit,
     onSave: () -> Unit
 ) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("viewer_prefs", Context.MODE_PRIVATE) }
     var moreOpen by remember { mutableStateOf(false) }
+    var customizeOpen by remember { mutableStateOf(false) }
+    var barIds by remember {
+        mutableStateOf(
+            (prefs.getString("bar_tools", null) ?: DEFAULT_BAR)
+                .split(",")
+                .filter { it.isNotBlank() }
+        )
+    }
+
+    val all = listOf(
+        ViewerToolItem("read_aloud", Icons.Outlined.Headphones, "Read aloud") { onReadAloud() },
+        ViewerToolItem("sign", Icons.Outlined.Create, "Fill & Sign") { onTool(AnnotTool.SIGN) },
+        ViewerToolItem("text", Icons.Outlined.TextFields, "Text") { onTool(AnnotTool.TEXT) },
+        ViewerToolItem("highlight", Icons.Outlined.Highlight, "Highlight") { onTool(AnnotTool.HIGHLIGHT) },
+        ViewerToolItem("draw", Icons.Outlined.Draw, "Draw") { onTool(AnnotTool.DRAW) },
+        ViewerToolItem("note", Icons.Outlined.StickyNote2, "Note") { onTool(AnnotTool.NOTE) },
+        ViewerToolItem("check", Icons.Outlined.Check, "Tick") { onTool(AnnotTool.CHECK) },
+        ViewerToolItem("cross", Icons.Outlined.Cancel, "Cross") { onTool(AnnotTool.CROSS) },
+        ViewerToolItem("date", Icons.Outlined.CalendarToday, "Date") { onTool(AnnotTool.DATE) },
+        ViewerToolItem("liquid", Icons.Outlined.WaterDrop, "Liquid mode") { onLiquid() },
+        ViewerToolItem("search", Icons.Outlined.Search, "Search") { onSearch() },
+        ViewerToolItem("share", Icons.Outlined.Share, "Share") { onShare() },
+        ViewerToolItem("print", Icons.Outlined.Print, "Print") { onPrint() },
+        ViewerToolItem("save", Icons.Outlined.SaveAlt, "Save a copy") { onSave() }
+    )
+    val onBar = barIds.mapNotNull { id -> all.firstOrNull { it.id == id } }
 
     Row(
         modifier = Modifier
@@ -73,20 +120,8 @@ fun ViewerBottomBar(
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-        BarItem(Icons.Outlined.Headphones, "Read aloud", Modifier.weight(1f)) {
-            onReadAloud()
-        }
-        BarItem(Icons.Outlined.Create, "Fill & Sign", Modifier.weight(1f)) {
-            onTool(AnnotTool.SIGN)
-        }
-        BarItem(Icons.Outlined.TextFields, "Text", Modifier.weight(1f)) {
-            onTool(AnnotTool.TEXT)
-        }
-        BarItem(Icons.Outlined.Highlight, "Highlight", Modifier.weight(1f)) {
-            onTool(AnnotTool.HIGHLIGHT)
-        }
-        BarItem(Icons.Outlined.Draw, "Draw", Modifier.weight(1f)) {
-            onTool(AnnotTool.DRAW)
+        onBar.forEach { item ->
+            BarItem(item.icon, item.label, Modifier.weight(1f)) { item.action() }
         }
         BarItem(Icons.Outlined.GridView, "More tools", Modifier.weight(1f)) {
             moreOpen = true
@@ -95,20 +130,89 @@ fun ViewerBottomBar(
 
     if (moreOpen) {
         MoreToolsSheet(
-            items = listOf(
-                SheetItem(Icons.Outlined.WaterDrop, "Liquid mode") { onLiquid() },
-                SheetItem(Icons.Outlined.Search, "Search") { onSearch() },
-                SheetItem(Icons.Outlined.StickyNote2, "Note") { onTool(AnnotTool.NOTE) },
-                SheetItem(Icons.Outlined.Check, "Tick") { onTool(AnnotTool.CHECK) },
-                SheetItem(Icons.Outlined.Cancel, "Cross") { onTool(AnnotTool.CROSS) },
-                SheetItem(Icons.Outlined.CalendarToday, "Date") { onTool(AnnotTool.DATE) },
-                SheetItem(Icons.Outlined.Share, "Share") { onShare() },
-                SheetItem(Icons.Outlined.Print, "Print") { onPrint() },
-                SheetItem(Icons.Outlined.SaveAlt, "Save a copy") { onSave() }
-            ),
-            onDismiss = { moreOpen = false }
+            items = all
+                .filter { item -> barIds.none { it == item.id } }
+                .map { SheetItem(it.icon, it.label, it.action) },
+            onDismiss = { moreOpen = false },
+            onCustomize = {
+                moreOpen = false
+                customizeOpen = true
+            }
         )
     }
+
+    if (customizeOpen) {
+        CustomizeToolbarDialog(
+            tools = all.map { it.id to it.label },
+            selected = barIds,
+            onDismiss = { customizeOpen = false },
+            onSave = { ids ->
+                barIds = ids
+                prefs.edit().putString("bar_tools", ids.joinToString(",")).apply()
+                customizeOpen = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun CustomizeToolbarDialog(
+    tools: List<Pair<String, String>>,
+    selected: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (List<String>) -> Unit
+) {
+    var chosen by remember { mutableStateOf(selected) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Customize toolbar") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = "Pick up to $MAX_BAR tools for the bottom bar (" + chosen.size + "/" + MAX_BAR + ")",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                tools.forEach { (id, label) ->
+                    val on = chosen.contains(id)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                chosen = if (on) {
+                                    chosen - id
+                                } else if (chosen.size < MAX_BAR) {
+                                    chosen + id
+                                } else {
+                                    chosen
+                                }
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = on,
+                            onCheckedChange = null,
+                            modifier = Modifier.padding(end = 12.dp, top = 8.dp, bottom = 8.dp)
+                        )
+                        Text(label, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val order = tools.map { it.first }
+                    onSave(order.filter { chosen.contains(it) })
+                },
+                enabled = chosen.isNotEmpty()
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = { onSave(DEFAULT_BAR.split(",")) }) { Text("Reset") }
+        }
+    )
 }
 
 @Composable
@@ -144,7 +248,8 @@ private fun BarItem(
 @Composable
 private fun MoreToolsSheet(
     items: List<SheetItem>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onCustomize: () -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -199,6 +304,26 @@ private fun MoreToolsSheet(
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onCustomize() }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Tune,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Customize toolbar",
+                    modifier = Modifier.padding(start = 16.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
