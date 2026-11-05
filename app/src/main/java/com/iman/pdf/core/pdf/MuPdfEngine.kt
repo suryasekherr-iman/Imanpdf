@@ -85,6 +85,17 @@ class MuPdfEngine {
         }
     }
 
+    fun renderPageToWidth(index: Int, targetWidth: Int): Bitmap? {
+        val doc = document ?: return null
+        if (index !in 0 until doc.countPages()) return null
+        return try {
+            val page = doc.loadPage(index)
+            val width = try { (page.bounds.x1 - page.bounds.x0).coerceAtLeast(1f) }
+                finally { page.destroy() }
+            renderPageToBitmap(index, targetWidth.coerceAtLeast(1) / width)
+        } catch (_: Exception) { null }
+    }
+
     fun pageAspectRatio(index: Int): Float {
         val doc = document ?: return 1f / 1.414f
         if (index !in 0 until doc.countPages()) return 1f / 1.414f
