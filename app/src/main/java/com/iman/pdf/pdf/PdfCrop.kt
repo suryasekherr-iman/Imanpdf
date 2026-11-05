@@ -23,7 +23,7 @@ object PdfCrop {
             for (index in 0 until doc.countPages()) {
                 val page = doc.loadPage(index) as? PDFPage ?: continue
                 try {
-                    val box = page.bounds
+                    val box = page.getBounds(com.artifex.mupdf.fitz.Page.CROP_BOX)
                     val width = (box.x1 - box.x0).coerceAtLeast(1f)
                     val height = (box.y1 - box.y0).coerceAtLeast(1f)
                     val l = left.coerceIn(0f, 0.95f)
