@@ -5,6 +5,7 @@ import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.PDFAnnotation
 import com.artifex.mupdf.fitz.PDFDocument
 import com.artifex.mupdf.fitz.PDFPage
+import com.artifex.mupdf.fitz.Quad
 import com.artifex.mupdf.fitz.Point
 import com.artifex.mupdf.fitz.Rect
 import kotlinx.coroutines.Dispatchers
@@ -35,12 +36,14 @@ object AnnotBake {
                                         else -> PDFAnnotation.TYPE_HIGHLIGHT
                                     }
                                     val annotation = page.createAnnotation(type)
-                                    annotation.setRect(Rect(
+                                    val rect = Rect(
                                         bounds.x0 + mark.left * width,
                                         bounds.y0 + mark.top * height,
                                         bounds.x0 + mark.right * width,
                                         bounds.y0 + mark.bottom * height
-                                    ))
+                                    )
+                                    annotation.setRect(rect)
+                                    annotation.setQuadPoints(arrayOf(Quad(rect)))
                                     annotation.setColor(color(mark.color))
                                     annotation.setOpacity(if (mark.kind == 0) 0.42f else 1f)
                                     annotation.update()
