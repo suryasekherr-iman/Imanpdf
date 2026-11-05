@@ -33,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +76,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
+import com.iman.pdf.data.UserPrefs
 import com.iman.pdf.data.StudentStore
 import com.iman.pdf.data.StudyHighlight
 import kotlinx.coroutines.delay
@@ -125,11 +127,22 @@ fun ViewerScreen(
     var activeHit by remember { mutableIntStateOf(-1) }
 
     val reader = remember { ReadAloud(context) }
+    val userPrefs = remember { UserPrefs(context) }
+    val savedSpeedIndex by userPrefs.ttsSpeedIndex.collectAsState(initial = 1)
+    val savedVoiceIndex by userPrefs.ttsVoiceIndex.collectAsState(initial = 0)
     var readerOpen by remember { mutableStateOf(false) }
     var reading by remember { mutableStateOf(false) }
     var readPage by remember { mutableIntStateOf(0) }
     var speedIndex by remember { mutableIntStateOf(1) }
     var voiceIndex by remember { mutableIntStateOf(0) }
+    LaunchedEffect(savedSpeedIndex) {
+        speedIndex = savedSpeedIndex.coerceIn(speedValues.indices)
+        reader.setSpeed(speedValues[speedIndex])
+    }
+    LaunchedEffect(savedVoiceIndex) {
+        val selected = savedVoiceIndex.coerceIn(voiceTags.indices)
+        if (reader.setLanguage(voiceTags[selected])) voiceIndex = selected
+    }
     var liquidOpen by remember { mutableStateOf(false) }
 
     val annot = remember { AnnotController() }
@@ -748,6 +761,7 @@ fun ViewerScreen(
                     },
                     onSpeed = { index ->
                         speedIndex = index
+                        scope.launch { userPrefs.setTtsSpeedIndex(index) }
                         reader.setSpeed(speedValues[index])
                         if (reading) {
                             speakPage(readPage)
@@ -757,6 +771,7 @@ fun ViewerScreen(
                         val worked = reader.setLanguage(voiceTags[index])
                         if (worked) {
                             voiceIndex = index
+                            scope.launch { userPrefs.setTtsVoiceIndex(index) }
                             if (reading) {
                                 speakPage(readPage)
                             }
