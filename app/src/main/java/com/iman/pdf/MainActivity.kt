@@ -30,6 +30,27 @@ import kotlinx.coroutines.delay
 private const val RELOCK_AFTER_MS = 30_000L
 
 class MainActivity : FragmentActivity() {
+    /** Deletes temp files older than 24 hours that earlier sessions left in the cache. */
+    private fun cleanOldCache() {
+        val dir = cacheDir
+        Thread {
+            val limit = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+            try {
+                dir.listFiles()?.forEach { f ->
+                    if (f.isFile && f.lastModified() < limit) {
+                        f.delete()
+                    }
+                }
+                java.io.File(dir, "scans").listFiles()?.forEach { f ->
+                    if (f.isFile && f.lastModified() < limit) {
+                        f.delete()
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }.start()
+    }
+
     override fun onResume() {
         super.onResume()
         AppLock.applySecure(this)
@@ -37,6 +58,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        cleanOldCache()
         val prefs = UserPrefs(applicationContext)
         val incoming: Uri? =
             if (intent?.action == Intent.ACTION_VIEW) intent.data else null

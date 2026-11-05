@@ -18,6 +18,12 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 object PdfOcr {
+    // Created once and reused for every page (creating them per page was slow and heavy).
+    private val latin by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
+    private val devanagari by lazy {
+        TextRecognition.getClient(DevanagariTextRecognizerOptions.Builder().build())
+    }
+
     suspend fun recognize(context: Context, file: File, pageIndex: Int): OcrPage? =
         withContext(Dispatchers.IO) {
             var descriptor: ParcelFileDescriptor? = null
@@ -25,10 +31,6 @@ object PdfOcr {
             var bitmap: Bitmap? = null
             var imageWidth = 0
             var imageHeight = 0
-            val latin = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-            val devanagari = TextRecognition.getClient(
-                DevanagariTextRecognizerOptions.Builder().build()
-            )
             try {
                 val activeDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
                 descriptor = activeDescriptor
@@ -71,8 +73,6 @@ object PdfOcr {
                 null
             } finally {
                 bitmap?.recycle()
-                latin.close()
-                devanagari.close()
                 try { renderer?.close() } catch (_: Exception) {}
                 try { descriptor?.close() } catch (_: Exception) {}
             }
