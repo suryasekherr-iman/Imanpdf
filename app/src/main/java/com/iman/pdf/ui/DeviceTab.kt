@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.iman.pdf.R
 import com.iman.pdf.data.DevicePdf
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -87,7 +89,7 @@ internal fun DeviceTab(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (scanError) "Could not scan device storage. Check the storage permission and try again." else "No PDF files found on this phone.",
+                text = if (scanError) stringResource(R.string.files_scan_error) else stringResource(R.string.files_empty),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
