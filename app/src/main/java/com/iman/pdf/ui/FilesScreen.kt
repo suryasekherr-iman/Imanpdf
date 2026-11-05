@@ -1,8 +1,8 @@
 package com.iman.pdf.ui
 
-import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
@@ -83,7 +83,7 @@ fun FilesScreen(
     onBrowse: () -> Unit
 ) {
     val context = LocalContext.current
-    var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess()) }
+    var hasAccess by remember { mutableStateOf(DeviceFiles.hasFolderAccess(context)) }
     var scanning by remember { mutableStateOf(false) }
     var files by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -96,11 +96,19 @@ fun FilesScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                hasAccess = DeviceFiles.hasAllFilesAccess()
+                hasAccess = DeviceFiles.hasFolderAccess(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            DeviceFiles.saveTreeUri(context, uri)
+            hasAccess = true
+            refreshToken++
+        }
     }
 
     LaunchedEffect(hasAccess, refreshToken) {
@@ -114,18 +122,7 @@ fun FilesScreen(
         }
     }
 
-    fun requestAccess() {
-        try {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            intent.data = Uri.parse("package:" + context.packageName)
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            try {
-                context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
-            } catch (_: Exception) {
-            }
-        }
-    }
+    fun requestAccess() { folderPicker.launch(null) }
 
     val shown = remember(files, query, sort) {
         val filtered = if (query.isBlank()) {
