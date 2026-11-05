@@ -79,6 +79,6 @@
     <string name="edit_pdf_edit_failed">Could not edit this PDF. Check the file and text.</string>
     <string name="tool_split">Split PDF</string>
     <string name="tool_split_desc">Split a PDF into several files</string>
-    <string name="settings_open_source_licenses">Open-source licenses & notices</string>
+    <string name="settings_open_source_licenses">Open-source licenses and notices</string>
     <string name="settings_close">Close</string>
 </resources>
