@@ -32,6 +32,10 @@
     <string name="settings_english">English</string>
     <string name="settings_bengali">বাংলা (Bengali)</string>
     <string name="settings_hindi">हिन्दी (Hindi)</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_hide_recent_documents">Hide recent documents</string>
+    <string name="settings_hide_recent_description">Hide the Recent list and its search results. Starred files and files on your device remain available.</string>
+    <string name="home_recent_hidden">Recent documents are hidden. Change this in Settings → Privacy.</string>
     <string name="settings_about">About</string>
     <string name="settings_version">ImAn PDF Reader • Version 1.0</string>
 
