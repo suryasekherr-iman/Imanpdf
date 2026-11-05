@@ -278,9 +278,10 @@ fun ViewerScreen(
                     )
                 }
             )
-            withContext(Dispatchers.IO) {
+            val saved = withContext(Dispatchers.IO) {
                 OcrStore.savePage(context, documentId, ocrPage)
             }
+            if (!saved) throw IllegalStateException("OCR text could not be saved.")
             if (page == listState.firstVisibleItemIndex) {
                 extractedOcrText = ocrPage.text
             }
