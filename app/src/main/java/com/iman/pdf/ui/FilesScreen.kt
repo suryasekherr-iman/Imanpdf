@@ -286,7 +286,7 @@ fun FilesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (scanError) "Could not scan device storage. Check the storage permission and try again." else stringResource(R.string.files_empty),
+                        text = if (scanError) stringResource(R.string.files_scan_error) else stringResource(R.string.files_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
