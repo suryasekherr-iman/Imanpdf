@@ -1,59 +1,40 @@
 package com.iman.pdf.pdf
 
 import android.content.Context
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem
-import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode
+import com.artifex.mupdf.fitz.Document
+import com.artifex.mupdf.fitz.Outline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-data class TocEntry(
-    val title: String,
-    val page: Int,
-    val level: Int
-)
+data class TocEntry(val title: String, val page: Int, val level: Int)
 
 object Bookmarks {
-
     private const val PREFS = "iman_bookmarks"
-    private var initialized = false
+    private fun key(documentId: String, pageCount: Int) = documentId + "|" + pageCount
 
-    private fun key(documentId: String, pageCount: Int): String = documentId + "|" + pageCount
-
-    fun load(context: Context, documentId: String, pageCount: Int): List<Int> {
-        val text = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(key(documentId, pageCount), "") ?: ""
-        return text.split(",")
-            .mapNotNull { it.trim().toIntOrNull() }
-            .filter { it in 0 until pageCount }
-            .distinct()
-            .sorted()
-    }
+    fun load(context: Context, documentId: String, pageCount: Int): List<Int> =
+        (context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(key(documentId, pageCount), "") ?: "")
+            .split(",").mapNotNull { it.trim().toIntOrNull() }
+            .filter { it in 0 until pageCount }.distinct().sorted()
 
     private fun save(context: Context, documentId: String, pageCount: Int, pages: List<Int>) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(key(documentId, pageCount), pages.joinToString(","))
-            .apply()
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(key(documentId, pageCount), pages.joinToString(",")).apply()
     }
 
     fun add(context: Context, documentId: String, pageCount: Int, page: Int): Boolean {
         val current = load(context, documentId, pageCount)
-        if (current.contains(page)) {
-            return false
-        }
+        if (page in current) return false
         save(context, documentId, pageCount, (current + page).sorted())
         return true
     }
 
-    private fun noteKey(documentId: String, pageCount: Int, page: Int): String =
+    private fun noteKey(documentId: String, pageCount: Int, page: Int) =
         "note|" + key(documentId, pageCount) + "|" + page
 
     fun note(context: Context, documentId: String, pageCount: Int, page: Int): String =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(noteKey(documentId, pageCount, page), "") ?: ""
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(noteKey(documentId, pageCount, page), "") ?: ""
 
     fun saveNote(context: Context, documentId: String, pageCount: Int, page: Int, note: String) {
         val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
@@ -61,57 +42,32 @@ object Bookmarks {
         else editor.putString(noteKey(documentId, pageCount, page), note.trim())
         editor.apply()
     }
+
     fun remove(context: Context, documentId: String, pageCount: Int, page: Int) {
-        val current = load(context, documentId, pageCount)
-        save(context, documentId, pageCount, current.filter { it != page })
+        save(context, documentId, pageCount, load(context, documentId, pageCount).filter { it != page })
         saveNote(context, documentId, pageCount, page, "")
     }
 
-    suspend fun toc(context: Context, file: File): List<TocEntry> =
-        withContext(Dispatchers.IO) {
-            if (!initialized) {
-                PDFBoxResourceLoader.init(context.applicationContext)
-                initialized = true
-            }
-            val result = ArrayList<TocEntry>()
-            try {
-                PDDocument.load(file).use { document ->
-                    val outline = document.documentCatalog.documentOutline
-                    if (outline != null) {
-                        walk(document, outline, 0, result)
-                    }
-                }
-            } catch (e: Exception) {
-            }
-            result
-        }
+    suspend fun toc(context: Context, file: File): List<TocEntry> = withContext(Dispatchers.IO) {
+        var document: Document? = null
+        val result = ArrayList<TocEntry>()
+        try {
+            document = Document.openDocument(file.absolutePath)
+            walk(document, document.loadOutline() ?: emptyArray(), 0, result)
+        } catch (_: Exception) {
+        } finally { try { document?.destroy() } catch (_: Exception) {} }
+        result
+    }
 
-    private fun walk(
-        document: PDDocument,
-        node: PDOutlineNode,
-        level: Int,
-        out: MutableList<TocEntry>
-    ) {
-        var item: PDOutlineItem? = node.firstChild
-        var guard = 0
-        while (item != null && guard < 2000) {
-            guard++
-            var page = -1
-            try {
-                val target = item.findDestinationPage(document)
-                if (target != null) {
-                    page = document.pages.indexOf(target)
-                }
-            } catch (e: Exception) {
-            }
-            val title = item.title ?: ""
-            if (title.isNotBlank()) {
-                out.add(TocEntry(title.trim(), page, level))
-            }
-            if (level < 6) {
-                walk(document, item, level + 1, out)
-            }
-            item = item.nextSibling
+    private fun walk(document: Document, nodes: Array<Outline>, level: Int, out: MutableList<TocEntry>) {
+        if (level > 6 || out.size >= 2000) return
+        nodes.forEach { node ->
+            if (out.size >= 2000) return
+            val location = try { document.resolveLink(node) } catch (_: Exception) { null }
+            val page = try { document.pageNumberFromLocation(location) } catch (_: Exception) { -1 }
+            val title = node.title.orEmpty().trim()
+            if (title.isNotEmpty()) out.add(TocEntry(title, page, level))
+            node.down?.let { walk(document, it, level + 1, out) }
         }
     }
 }
