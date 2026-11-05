@@ -22,7 +22,7 @@ object Bookmarks {
 
     private fun key(documentId: String, pageCount: Int): String = documentId + "|" + pageCount
 
-    fun load(context: Context, name: String, pageCount: Int): List<Int> {
+    fun load(context: Context, documentId: String, pageCount: Int): List<Int> {
         val text = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(key(documentId, pageCount), "") ?: ""
         return text.split(",")
@@ -32,23 +32,23 @@ object Bookmarks {
             .sorted()
     }
 
-    private fun save(context: Context, name: String, pageCount: Int, pages: List<Int>) {
+    private fun save(context: Context, documentId: String, pageCount: Int, pages: List<Int>) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putString(key(name, pageCount), pages.joinToString(","))
+            .putString(key(documentId, pageCount), pages.joinToString(","))
             .apply()
     }
 
-    fun add(context: Context, name: String, pageCount: Int, page: Int): Boolean {
-        val current = load(context, name, pageCount)
+    fun add(context: Context, documentId: String, pageCount: Int, page: Int): Boolean {
+        val current = load(context, documentId, pageCount)
         if (current.contains(page)) {
             return false
         }
-        save(context, name, pageCount, (current + page).sorted())
+        save(context, documentId, pageCount, (current + page).sorted())
         return true
     }
 
-    fun remove(context: Context, name: String, pageCount: Int, page: Int) {
+    fun remove(context: Context, documentId: String, pageCount: Int, page: Int) {
         val current = load(context, name, pageCount)
         save(context, name, pageCount, current.filter { it != page })
     }
