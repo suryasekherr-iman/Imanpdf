@@ -7,14 +7,14 @@ object LastPage {
 
     private const val PREFS = "iman_reading_state"
 
-    private fun pageKey(documentId: String, pageCount: Int) =
-        "page:" + documentId + "|" + pageCount
+    private fun pageKey(documentId: String) =
+        "page:" + documentId
 
     private fun zoomKey(documentId: String) = "zoom:" + documentId
 
     fun load(context: Context, documentId: String, pageCount: Int): Int {
         val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getInt(pageKey(documentId, pageCount), 0)
+            .getInt(pageKey(documentId), 0)
         return saved.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
     }
 
