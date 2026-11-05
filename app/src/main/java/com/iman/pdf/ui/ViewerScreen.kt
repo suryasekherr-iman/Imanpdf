@@ -157,6 +157,9 @@ fun ViewerScreen(
     var flashcardQuestion by remember { mutableStateOf("") }
     var flashcardAnswer by remember { mutableStateOf("") }
     var flashcardLoading by remember { mutableStateOf(false) }
+    var noteDialog by remember { mutableStateOf(false) }
+    var studyNoteTitle by remember { mutableStateOf("") }
+    var studyNoteBody by remember { mutableStateOf("") }
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
     val saveLauncher = rememberLauncherForActivityResult(
@@ -617,6 +620,7 @@ fun ViewerScreen(
             }
                         if (!annotOpen && !readerOpen && !searchOpen) {
                 Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = { noteDialog = true; studyNoteTitle = ""; studyNoteBody = "" }) { Text("Add page note") }
                     TextButton(onClick = {
                         flashcardDialog = true
                         flashcardQuestion = ""
@@ -722,6 +726,29 @@ fun ViewerScreen(
                     }
                 )
             }
+        }
+
+        if (noteDialog) {
+            AlertDialog(
+                onDismissRequest = { noteDialog = false },
+                title = { Text("Note · page ${currentPage + 1}") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(value = studyNoteTitle, onValueChange = { studyNoteTitle = it }, label = { Text("Title") }, singleLine = true)
+                        OutlinedTextField(value = studyNoteBody, onValueChange = { studyNoteBody = it }, label = { Text("Note") }, minLines = 3)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (studyNoteTitle.isNotBlank() && studyNoteBody.isNotBlank()) {
+                            studentStore.addNote(studyNoteTitle, studyNoteBody, currentPage + 1, documentId)
+                            noteDialog = false
+                            Toast.makeText(context, "Note linked to this PDF page", Toast.LENGTH_SHORT).show()
+                        }
+                    }, enabled = studyNoteTitle.isNotBlank() && studyNoteBody.isNotBlank()) { Text("Save note") }
+                },
+                dismissButton = { TextButton(onClick = { noteDialog = false }) { Text("Cancel") } }
+            )
         }
 
         if (flashcardDialog) {
