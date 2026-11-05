@@ -18,11 +18,12 @@ object AnnotBake {
             if (marks.isEmpty()) return@withContext null
             var document: PDFDocument? = null
             try {
-                document = Document.openDocument(source.absolutePath) as? PDFDocument
+                val pdf = Document.openDocument(source.absolutePath) as? PDFDocument
                     ?: return@withContext null
+                document = pdf
                 marks.groupBy { it.page }.forEach { (index, pageMarks) ->
-                    if (index !in 0 until document.countPages()) return@forEach
-                    val page = document.loadPage(index) as? PDFPage ?: return@forEach
+                    if (index !in 0 until pdf.countPages()) return@forEach
+                    val page = pdf.loadPage(index) as? PDFPage ?: return@forEach
                     try {
                         val bounds = page.bounds
                         val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
@@ -98,7 +99,7 @@ object AnnotBake {
                     } finally { page.destroy() }
                 }
                 val output = File(context.cacheDir, "annotated_${System.nanoTime()}.pdf")
-                document.save(output.absolutePath, "garbage=compact,appearance=yes")
+                pdf.save(output.absolutePath, "garbage=compact,appearance=yes")
                 output.takeIf { it.isFile && it.length() > 0 }
             } catch (_: Exception) { null }
             finally { try { document?.destroy() } catch (_: Exception) {} }
