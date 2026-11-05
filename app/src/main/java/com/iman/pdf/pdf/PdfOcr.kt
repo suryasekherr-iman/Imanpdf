@@ -28,10 +28,11 @@ object PdfOcr {
             var bitmap: Bitmap? = null
             try {
                 if (!engine.openDocument(file.absolutePath)) return@withContext null
-                bitmap = engine.renderPageToBitmap(pageIndex, 2f) ?: return@withContext null
-                val imageWidth = bitmap.width
-                val imageHeight = bitmap.height
-                val input = InputImage.fromBitmap(bitmap, 0)
+                val rendered = engine.renderPageToBitmap(pageIndex, 2f) ?: return@withContext null
+                bitmap = rendered
+                val imageWidth = rendered.width
+                val imageHeight = rendered.height
+                val input = InputImage.fromBitmap(rendered, 0)
                 val latinResult = process(latin, input)
                 val devanagariResult = process(devanagari, input)
                 val lines = ArrayList<OcrLine>()
