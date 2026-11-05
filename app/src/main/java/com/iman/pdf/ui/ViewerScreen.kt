@@ -152,6 +152,11 @@ fun ViewerScreen(
     var bookmarkList by remember {
         mutableStateOf(Bookmarks.load(context, documentId, engine.pageCount))
     }
+    var bookmarkNotes by remember(documentId, engine.pageCount) {
+        mutableStateOf(bookmarkList.associateWith { page ->
+            Bookmarks.note(context, documentId, engine.pageCount, page)
+        })
+    }
     var tocList by remember { mutableStateOf<List<TocEntry>>(emptyList()) }
     var tocLoading by remember { mutableStateOf(false) }
     var ocrBusy by remember { mutableStateOf(false) }
@@ -842,14 +847,20 @@ fun ViewerScreen(
                 bookmarks = bookmarkList,
                 toc = tocList,
                 tocLoading = tocLoading,
+                notes = bookmarkNotes,
                 onJump = { page ->
                     bookmarksOpen = false
                     scope.launch { listState.scrollToItem(page) }
                 },
                 onRemove = { page ->
                     Bookmarks.remove(context, documentId, engine.pageCount, page)
+                    bookmarkNotes = bookmarkNotes - page
                     studentStore.removeBookmark("$documentId|${page + 1}")
                     bookmarkList = Bookmarks.load(context, documentId, engine.pageCount)
+                },
+                onSaveNote = { page, note ->
+                    Bookmarks.saveNote(context, documentId, engine.pageCount, page, note)
+                    bookmarkNotes = bookmarkNotes + (page to note.trim())
                 },
                 onDismiss = { bookmarksOpen = false }
             )
