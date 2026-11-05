@@ -22,16 +22,18 @@ object PdfOrganize {
         var other: PDFDocument? = null
         val output = PDFDocument()
         try {
-            input = Document.openDocument(source.absolutePath) as? PDFDocument
+            val inputDoc = Document.openDocument(source.absolutePath) as? PDFDocument
                 ?: return@withContext null
-            if (second != null) {
-                other = Document.openDocument(second.absolutePath) as? PDFDocument
+            input = inputDoc
+            val otherDoc = if (second != null) {
+                Document.openDocument(second.absolutePath) as? PDFDocument
                     ?: return@withContext null
-            }
+            } else null
+            other = otherDoc
             order.forEachIndexed { position, original ->
                 when {
                     original == -1 -> {
-                        val first = if (input.countPages() > 0) input.loadPage(0) else null
+                        val first = if (inputDoc.countPages() > 0) inputDoc.loadPage(0) else null
                         val bounds = try { first?.bounds } finally { first?.destroy() }
                         val width = bounds?.let { it.x1 - it.x0 } ?: 595f
                         val height = bounds?.let { it.y1 - it.y0 } ?: 842f
@@ -44,14 +46,14 @@ object PdfOrganize {
                         output.insertPage(-1, pageObject)
                     }
                     original <= -2 -> {
-                        val src = other ?: return@withContext null
+                        val src = otherDoc ?: return@withContext null
                         val sourceIndex = -original - 2
                         if (sourceIndex !in 0 until src.countPages()) return@withContext null
                         output.graftPage(position, src, sourceIndex)
                     }
                     else -> {
-                        if (original !in 0 until input.countPages()) return@withContext null
-                        output.graftPage(position, input, original)
+                        if (original !in 0 until inputDoc.countPages()) return@withContext null
+                        output.graftPage(position, inputDoc, original)
                     }
                 }
                 val page = output.loadPage(position) as? PDFPage
