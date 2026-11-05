@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.style.TextAlign
@@ -71,6 +72,7 @@ import com.iman.pdf.pdf.OcrStore
 import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
+import com.iman.pdf.data.StudentStore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -150,6 +152,11 @@ fun ViewerScreen(
     var ocrDone by remember { mutableIntStateOf(0) }
     var ocrTotal by remember { mutableIntStateOf(0) }
     var ocrRevision by remember { mutableIntStateOf(0) }
+    val studentStore = remember { StudentStore(context) }
+    var flashcardDialog by remember { mutableStateOf(false) }
+    var flashcardQuestion by remember { mutableStateOf("") }
+    var flashcardAnswer by remember { mutableStateOf("") }
+    var flashcardLoading by remember { mutableStateOf(false) }
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
     val saveLauncher = rememberLauncherForActivityResult(
