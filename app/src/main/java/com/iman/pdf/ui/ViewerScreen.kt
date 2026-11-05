@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -59,6 +60,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
+import com.iman.pdf.core.ocr.OcrEngine
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
 import com.iman.pdf.annot.SignatureStore
@@ -70,15 +72,18 @@ import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfExport
 import com.iman.pdf.pdf.PdfText
-import com.iman.pdf.pdf.PdfOcr
+import com.iman.pdf.pdf.OcrLine
+import com.iman.pdf.pdf.OcrPage
 import com.iman.pdf.pdf.OcrStore
 import com.iman.pdf.pdf.ReadAloudService
 import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.TtsHighlight
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val MAX_RENDER_WIDTH = 2200
 
@@ -120,7 +125,8 @@ fun ViewerScreen(
     var searched by remember { mutableStateOf(false) }
     var activeHit by remember { mutableIntStateOf(-1) }
     var ocrRevision by remember { mutableIntStateOf(0) }
-    var ocrRunning by remember { mutableStateOf(false) }
+    var isOcrProcessing by remember { mutableStateOf(false) }
+    var extractedOcrText by remember { mutableStateOf<String?>(null) }
 
     val reader = remember { ReadAloud(context) }
     val spokenText by reader.currentSpokenText.collectAsState()
@@ -251,29 +257,84 @@ fun ViewerScreen(
         }
     }
 
-    fun runOcr(pages: IntRange) {
-        if (ocrRunning) return
-        scope.launch {
-            ocrRunning = true
-            var completed = 0
-            var failed = 0
-            for (page in pages) {
-                val result = PdfOcr.recognize(context, engine.file, page)
-                if (result != null) {
-                    OcrStore.savePage(context, documentId, result)
-                    completed++
-                } else {
-                    failed++
+    suspend fun recognizeAndStorePage(page: Int): String? {
+        val bitmap = withContext(Dispatchers.IO) {
+            engine.renderPageToBitmap(page, 2f)
+        } ?: throw IllegalStateException("MuPDF could not render this page for OCR.")
+
+        try {
+            val recognizedLines = OcrEngine.extractLinesFromBitmap(bitmap)
+            if (recognizedLines.isEmpty()) return null
+
+            val ocrPage = OcrPage(
+                page = page,
+                lines = recognizedLines.map { line ->
+                    OcrLine(
+                        text = line.text,
+                        left = line.left,
+                        top = line.top,
+                        right = line.right,
+                        bottom = line.bottom
+                    )
                 }
+            )
+            withContext(Dispatchers.IO) {
+                OcrStore.savePage(context, documentId, ocrPage)
             }
-            ocrRevision++
-            ocrRunning = false
+            if (page == listState.firstVisibleItemIndex) {
+                extractedOcrText = ocrPage.text
+            }
+            return ocrPage.text
+        } finally {
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
+    }
+
+    fun runOcr(pages: IntRange) {
+        if (isOcrProcessing || pages.isEmpty()) return
+        scope.launch {
+            isOcrProcessing = true
+            var completed = 0
+            var unreadable = 0
+            var failed = 0
+            try {
+                for (page in pages) {
+                    try {
+                        if (recognizeAndStorePage(page).isNullOrBlank()) {
+                            unreadable++
+                        } else {
+                            completed++
+                        }
+                    } catch (_: Exception) {
+                        failed++
+                    }
+                }
+            } finally {
+                ocrRevision++
+                isOcrProcessing = false
+            }
+
+            val message = when {
+                completed == 0 && failed > 0 ->
+                    "OCR failed. Please try again with a clearer page."
+                completed == 0 ->
+                    "OCR could not detect readable text. Try a clearer scan."
+                unreadable + failed > 0 ->
+                    "OCR completed for $completed page(s); ${unreadable + failed} page(s) had low-quality text or failed."
+                else -> "OCR Complete! Text is now searchable."
+            }
             Toast.makeText(
                 context,
-                "OCR finished: $completed page(s) recognized, $failed skipped",
-                Toast.LENGTH_LONG
+                message,
+                if (pages.count() > 1) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    fun runOcrOnCurrentPage() {
+        if (engine.pageCount <= 0) return
+        val page = listState.firstVisibleItemIndex.coerceIn(0, engine.pageCount - 1)
+        runOcr(page..page)
     }
 
     fun speakPage(page: Int) {
@@ -289,7 +350,11 @@ fun ViewerScreen(
             }
             readPage = page
             listState.animateScrollToItem(page)
-            val text = PdfText.pageText(context, engine.file, page, documentId)
+            // PdfText uses MuPDF text first, then the saved OCR text for scanned pages.
+            val storedText = PdfText.pageText(context, engine.file, page, documentId)
+            val text = storedText.ifBlank {
+                if (page == listState.firstVisibleItemIndex) extractedOcrText.orEmpty() else ""
+            }
             if (!reading) {
                 return@launch
             }
@@ -404,6 +469,12 @@ fun ViewerScreen(
         derivedStateOf { listState.firstVisibleItemIndex }
     }
 
+    LaunchedEffect(documentId, currentPage, ocrRevision) {
+        extractedOcrText = withContext(Dispatchers.IO) {
+            OcrStore.loadPage(context, documentId, currentPage)?.text
+        }
+    }
+
     val progress by remember {
         derivedStateOf {
             val total = engine.pageCount
@@ -467,7 +538,7 @@ fun ViewerScreen(
                 onTool = { id -> onOpenTool(id) },
                 onViewSettings = { viewSettingsOpen = true },
                 onExport = { exportOpen = true },
-                onOcrPage = { runOcr(currentPage..currentPage) },
+                onOcrPage = { runOcrOnCurrentPage() },
                 onOcrDocument = { runOcr(0 until engine.pageCount) },
                 onComments = {
                     commentsOpen = true
@@ -640,7 +711,9 @@ fun ViewerScreen(
                     onSearch = { searchOpen = true },
                     onShare = { PdfActions.share(context, engine.file, title) },
                     onPrint = { PdfActions.print(context, engine.file, title) },
-                    onSave = { saveLauncher.launch(fileName) }
+                    onSave = { saveLauncher.launch(fileName) },
+                    onOcrPage = { runOcrOnCurrentPage() },
+                    onOcrDocument = { runOcr(0 until engine.pageCount) }
                 )
                         }
             if (annotOpen) {
@@ -809,6 +882,29 @@ fun ViewerScreen(
                     scope.launch { listState.scrollToItem(page) }
                 }
             )
+        }
+
+        if (isOcrProcessing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.28f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Text(
+                        text = "Recognizing PDF text...",
+                        modifier = Modifier.padding(top = 12.dp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
     }
 }
