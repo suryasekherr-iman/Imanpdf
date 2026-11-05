@@ -740,7 +740,7 @@ fun ViewerScreen(
                 onText = {
                     exportOpen = false
                     scope.launch {
-                        val text = PdfExport.allText(context, engine.file)
+                        val text = PdfExport.allText(context, engine.file, documentId)
                         if (text.isBlank()) {
                             Toast.makeText(
                                 context,
