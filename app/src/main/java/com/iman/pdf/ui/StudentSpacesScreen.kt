@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.iman.pdf.data.StudentStore
 
 private enum class StudentSection(val title: String) {
-    FLASHCARDS("Flashcards"), NOTES("Notes"), REVISION("Revision"), IMPORTANT_QUESTIONS("Important Questions")
+    FLASHCARDS("Flashcards"), NOTES("Notes"), BOOKMARKS("Bookmarks"), REVISION("Revision"), IMPORTANT_QUESTIONS("Important Questions")
 }
 
 @Composable
@@ -63,6 +63,7 @@ fun StudentSpacesScreen() {
     val notes = remember(refresh) { store.notes() }
     val revision = remember(refresh) { store.revisionItems() }
     val importantQuestions = remember(refresh) { store.importantQuestions() }
+    val bookmarks = remember(refresh) { store.bookmarks() }
 
     Column(Modifier.fillMaxSize()) {
         Text("Student Spaces", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
@@ -145,6 +146,22 @@ fun StudentSpacesScreen() {
                     }
                 }
             }
+            StudentSection.BOOKMARKS -> {
+                if (bookmarks.isEmpty()) EmptyStudyState("No bookmarks yet", "Bookmark pages while reading a PDF. They will appear here for revision.")
+                else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(bookmarks, key = { it.id }) { item ->
+                        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(item.documentTitle, style = MaterialTheme.typography.bodyLarge)
+                                    Text("Page ${item.page}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                IconButton(onClick = { store.removeBookmark(item.id); refresh++ }) { Icon(Icons.Outlined.Delete, contentDescription = "Remove bookmark") }
+                            }
+                        }
+                    }
+                }
+            }
             StudentSection.IMPORTANT_QUESTIONS -> {
                 if (importantQuestions.isEmpty()) EmptyStudyState("No important questions yet", "Save exam-focused questions here for quick revision.")
                 else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -199,6 +216,7 @@ fun StudentSpacesScreen() {
                             OutlinedTextField(value = noteBody, onValueChange = { noteBody = it }, label = { Text("Note") })
                             OutlinedTextField(value = notePage, onValueChange = { notePage = it.filter(Char::isDigit) }, label = { Text("PDF page (optional)") }, singleLine = true)
                         }
+                        StudentSection.BOOKMARKS -> Text("Bookmarks are added from the PDF viewer.")
                         StudentSection.REVISION -> OutlinedTextField(value = revisionText, onValueChange = { revisionText = it }, label = { Text("Topic to revise") }, singleLine = true)
                         StudentSection.IMPORTANT_QUESTIONS -> OutlinedTextField(value = importantQuestionText, onValueChange = { importantQuestionText = it }, label = { Text("Important question") })
                     }
@@ -209,6 +227,7 @@ fun StudentSpacesScreen() {
                     when (StudentSection.entries[section]) {
                         StudentSection.FLASHCARDS -> if (question.isNotBlank() && answer.isNotBlank()) store.addFlashcard(question, answer)
                         StudentSection.NOTES -> if (noteTitle.isNotBlank() && noteBody.isNotBlank()) store.addNote(noteTitle, noteBody, notePage.toIntOrNull()?.takeIf { it > 0 })
+                        StudentSection.BOOKMARKS -> Unit
                         StudentSection.REVISION -> if (revisionText.isNotBlank()) store.addRevisionItem(revisionText)
                         StudentSection.IMPORTANT_QUESTIONS -> if (importantQuestionText.isNotBlank()) store.addImportantQuestion(importantQuestionText)
                     }
