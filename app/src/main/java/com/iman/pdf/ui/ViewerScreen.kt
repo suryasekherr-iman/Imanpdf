@@ -70,6 +70,9 @@ import com.iman.pdf.pdf.PdfText
 import com.iman.pdf.pdf.PdfOcr
 import com.iman.pdf.pdf.OcrStore
 import com.iman.pdf.pdf.ReadAloud
+import com.iman.pdf.pdf.ReadAloudService
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
 import com.iman.pdf.data.StudentStore
@@ -220,7 +223,11 @@ fun ViewerScreen(
     }
 
     DisposableEffect(Unit) {
-        onDispose { reader.shutdown() }
+        onDispose {
+            reader.shutdown()
+            ReadAloudService.onStopRequested = null
+            ReadAloudService.stop(context)
+        }
     }
 
     fun closeSearch() {
@@ -305,7 +312,11 @@ fun ViewerScreen(
                 return@launch
             }
             readPage = page
-            listState.animateScrollToItem(page)
+            val visible = (context as? LifecycleOwner)?.lifecycle?.currentState
+                ?.isAtLeast(Lifecycle.State.RESUMED) ?: true
+            if (visible) {
+                listState.animateScrollToItem(page)
+            }
             val text = PdfText.pageText(context, engine.file, page, documentId)
             if (!reading) {
                 return@launch
@@ -336,7 +347,22 @@ fun ViewerScreen(
         readerOpen = false
     }
 
+    val notifPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    LaunchedEffect(reading) {
+        if (reading) {
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+            ReadAloudService.start(context, title)
+        } else {
+            ReadAloudService.stop(context)
+        }
+    }
+
     SideEffect {
+        ReadAloudService.onStopRequested = { stopReading() }
         reader.onPageFinished = {
             if (reading) {
                 speakPage(readPage + 1)
