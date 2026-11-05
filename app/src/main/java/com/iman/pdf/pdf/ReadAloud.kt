@@ -26,6 +26,7 @@ class ReadAloud(context: Context) {
     private var counter = 0
     private var rate = 1.0f
     var onPageFinished: (() -> Unit)? = null
+    var onRangeStart: ((start: Int, end: Int) -> Unit)? = null
 
     init {
         tts = TextToSpeech(context.applicationContext) { status ->
@@ -40,7 +41,10 @@ class ReadAloud(context: Context) {
                             start = (offset + start).coerceAtLeast(0),
                             end = (offset + end).coerceAtLeast(offset + start)
                         )
-                        mainHandler.post { _currentSpokenRange.value = range }
+                        mainHandler.post {
+                            this@ReadAloud.onRangeStart?.invoke(offset + start, offset + end)
+                            _currentSpokenRange.value = range
+                        }
                     }
 
                     override fun onDone(utteranceId: String?) {
