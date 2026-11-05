@@ -123,8 +123,8 @@ fun ViewerScreen(
     var ocrRunning by remember { mutableStateOf(false) }
 
     val reader = remember { ReadAloud(context) }
-    val spokenRange by reader.currentSpokenRange.collectAsState()
     val spokenText by reader.currentSpokenText.collectAsState()
+    var ttsHighlight by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var readerOpen by remember { mutableStateOf(false) }
     var reading by remember { mutableStateOf(false) }
     var readPage by remember { mutableIntStateOf(0) }
@@ -282,6 +282,7 @@ fun ViewerScreen(
                 return@launch
             }
             if (page >= engine.pageCount) {
+                ttsHighlight = null
                 reading = false
                 ReadAloudService.stop(context)
                 return@launch
@@ -311,6 +312,7 @@ fun ViewerScreen(
 
     fun stopReading() {
         reading = false
+        ttsHighlight = null
         reader.stop()
         ReadAloudService.stop(context)
     }
@@ -318,6 +320,10 @@ fun ViewerScreen(
     fun closeReader() {
         stopReading()
         readerOpen = false
+    }
+
+    LaunchedEffect(reader) {
+        reader.onRangeStart = { start, end -> ttsHighlight = start to end }
     }
 
     SideEffect {
@@ -568,10 +574,10 @@ fun ViewerScreen(
                 }
 
                 if (reading && spokenText.isNotBlank()) {
-                    spokenRange?.let { range ->
+                    ttsHighlight?.let { (start, end) ->
                         SpokenSentenceHighlight(
                             text = spokenText,
-                            range = range,
+                            range = TtsHighlight(start, end),
                             modifier = Modifier.align(Alignment.BottomCenter)
                                 .fillMaxWidth()
                                 .padding(12.dp)
