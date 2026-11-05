@@ -13,6 +13,7 @@
     <string name="files_sort_name">नाम</string>
     <string name="files_sort_size">आकार</string>
     <string name="files_empty">कोई PDF फ़ाइल नहीं मिली।</string>
+    <string name="files_scan_error">डिवाइस की फ़ाइलें स्कैन नहीं हो सकीं। स्टोरेज अनुमति जाँचकर फिर कोशिश करें।</string>
     <string name="settings_title">सेटिंग्स</string>
     <string name="settings_back">वापस</string>
     <string name="settings_profile">प्रोफ़ाइल</string>
