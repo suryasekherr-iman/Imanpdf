@@ -30,6 +30,11 @@ import kotlinx.coroutines.delay
 private const val RELOCK_AFTER_MS = 30_000L
 
 class MainActivity : FragmentActivity() {
+    override fun onResume() {
+        super.onResume()
+        AppLock.applySecure(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val prefs = UserPrefs(applicationContext)

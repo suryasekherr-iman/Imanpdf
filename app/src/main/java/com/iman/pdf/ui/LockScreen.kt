@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,8 +47,7 @@ fun LockScreen(onUnlocked: () -> Unit) {
     val activity = context as? FragmentActivity
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
-    var fails by remember { mutableIntStateOf(0) }
-    var blocked by remember { mutableStateOf(false) }
+    var blocked by remember { mutableStateOf(AppLock.lockRemainingMs(context) > 0L) }
     val useBio = remember {
         AppLock.biometricEnabled(context) && AppLock.canUseBiometric(context)
     }
@@ -81,13 +79,13 @@ fun LockScreen(onUnlocked: () -> Unit) {
         pin += digit
         if (pin.length == PIN_LENGTH) {
             if (AppLock.checkPin(context, pin)) {
+                AppLock.clearFails(context)
                 onUnlocked()
             } else {
                 error = true
                 pin = ""
-                fails++
-                if (fails >= 5) {
-                    fails = 0
+                AppLock.registerFail(context)
+                if (AppLock.lockRemainingMs(context) > 0L) {
                     blocked = true
                 }
             }
@@ -104,7 +102,7 @@ fun LockScreen(onUnlocked: () -> Unit) {
 
     LaunchedEffect(blocked) {
         if (blocked) {
-            delay(30_000)
+            delay(AppLock.lockRemainingMs(context).coerceAtLeast(0L))
             blocked = false
             error = false
         }

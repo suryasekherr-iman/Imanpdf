@@ -1,6 +1,8 @@
 package com.iman.pdf.data
 
+import android.app.Activity
 import android.content.Context
+import android.view.WindowManager
 import android.util.Base64
 import androidx.biometric.BiometricManager
 import java.security.MessageDigest
@@ -13,6 +15,10 @@ object AppLock {
     private const val KEY_HASH = "pin_hash"
     private const val KEY_SALT = "pin_salt"
     private const val KEY_BIO = "biometric"
+    private const val KEY_FAILS = "fails"
+    private const val KEY_LOCKED_UNTIL = "locked_until"
+    private const val MAX_FAILS = 5
+    private const val LOCK_MS = 30_000L
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -62,4 +68,40 @@ object AppLock {
         BiometricManager.from(context)
             .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) ==
             BiometricManager.BIOMETRIC_SUCCESS
+
+    /** Milliseconds left before another PIN try is allowed (0 = allowed now). Survives app restarts. */
+    fun lockRemainingMs(context: Context): Long {
+        val until = prefs(context).getLong(KEY_LOCKED_UNTIL, 0L)
+        val left = until - System.currentTimeMillis()
+        // A clock set far back must not give a huge wait.
+        return if (left in 1..LOCK_MS) left else 0L
+    }
+
+    /** Saves a wrong try. After 5 wrong tries the lock starts. */
+    fun registerFail(context: Context) {
+        val p = prefs(context)
+        val fails = p.getInt(KEY_FAILS, 0) + 1
+        if (fails >= MAX_FAILS) {
+            p.edit().putInt(KEY_FAILS, 0)
+                .putLong(KEY_LOCKED_UNTIL, System.currentTimeMillis() + LOCK_MS).apply()
+        } else {
+            p.edit().putInt(KEY_FAILS, fails).apply()
+        }
+    }
+
+    fun clearFails(context: Context) {
+        prefs(context).edit().putInt(KEY_FAILS, 0).putLong(KEY_LOCKED_UNTIL, 0L).apply()
+    }
+
+    /** Hides app content in Recent apps and blocks screenshots while the lock is ON. */
+    fun applySecure(activity: Activity) {
+        if (isEnabled(activity)) {
+            activity.window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE
+            )
+        } else {
+            activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
 }

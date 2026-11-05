@@ -52,6 +52,7 @@ fun AppLockSection() {
             setupOpen = true
         } else {
             AppLock.disable(context)
+            (context as? android.app.Activity)?.let { AppLock.applySecure(it) }
             enabled = false
             bio = false
         }
@@ -79,6 +80,7 @@ fun AppLockSection() {
         PinSetupDialog(
             onSave = { pin ->
                 AppLock.setPin(context, pin)
+                (context as? android.app.Activity)?.let { AppLock.applySecure(it) }
                 enabled = true
                 setupOpen = false
             },
