@@ -51,7 +51,7 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     if (splash) {
-                        delay(900)
+                        delay(700)
                         splash = false
                     }
                 }
