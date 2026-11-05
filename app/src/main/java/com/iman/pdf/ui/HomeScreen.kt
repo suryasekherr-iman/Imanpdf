@@ -1,9 +1,9 @@
 package com.iman.pdf.ui
 
-import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -115,9 +115,18 @@ fun HomeScreen(
     var selectMode by remember { mutableStateOf(false) }
     val selected = remember { mutableStateListOf<String>() }
 
-    var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess()) }
+    var hasAccess by remember { mutableStateOf(DeviceFiles.hasFolderAccess(context)) }
     var scanning by remember { mutableStateOf(false) }
     var deviceFiles by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
+
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            DeviceFiles.saveTreeUri(context, uri)
+            hasAccess = true
+            scanning = true
+            scope.launch { deviceFiles = DeviceFiles.scan(context); scanning = false }
+        }
+    }
 
     fun exitSelect() {
         selectMode = false
@@ -151,18 +160,7 @@ fun HomeScreen(
         }
     }
 
-    fun requestAccess() {
-        try {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            intent.data = Uri.parse("package:" + context.packageName)
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            try {
-                context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
-            } catch (_: Exception) {
-            }
-        }
-    }
+    fun requestAccess() { folderPicker.launch(null) }
 
     val starredList = entries.filter { it.starred }
     val currentList: List<PdfEntry> = if (selectedTab == 0) entries else starredList
