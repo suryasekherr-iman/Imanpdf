@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -64,6 +66,8 @@ import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfExport
 import com.iman.pdf.pdf.PdfText
+import com.iman.pdf.pdf.PdfOcr
+import com.iman.pdf.pdf.OcrStore
 import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
@@ -142,6 +146,9 @@ fun ViewerScreen(
     }
     var tocList by remember { mutableStateOf<List<TocEntry>>(emptyList()) }
     var tocLoading by remember { mutableStateOf(false) }
+    var ocrBusy by remember { mutableStateOf(false) }
+    var ocrDone by remember { mutableIntStateOf(0) }
+    var ocrTotal by remember { mutableIntStateOf(0) }
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
     val saveLauncher = rememberLauncherForActivityResult(
@@ -229,9 +236,46 @@ fun ViewerScreen(
             searched = false
             activeHit = -1
             keyboard?.hide()
-            hits = PdfText.search(context, engine.file, text)
+            hits = PdfText.search(context, engine.file, text, documentId)
             searching = false
             searched = true
+        }
+    }
+
+    fun runOcr(pages: IntRange) {
+        if (ocrBusy || pages.isEmpty()) return
+        stopReading()
+        ocrBusy = true
+        ocrDone = 0
+        ocrTotal = pages.count()
+        scope.launch {
+            var recognized = 0
+            var failed = 0
+            try {
+                for (page in pages) {
+                    val existingText = PdfText.pageText(context, engine.file, page, documentId)
+                    if (existingText.isBlank()) {
+                        val result = PdfOcr.recognize(context, engine.file, page)
+                        if (result != null && result.text.isNotBlank()) {
+                            OcrStore.savePage(context, documentId, result)
+                            recognized++
+                        } else {
+                            failed++
+                        }
+                    }
+                    ocrDone++
+                }
+            } catch (_: Exception) {
+                failed++
+            } finally {
+                ocrBusy = false
+            }
+            val message = when {
+                recognized > 0 -> "OCR completed: $recognized page(s) recognized"
+                failed > 0 -> "No readable text found. Check scan quality and try again."
+                else -> "No scanned pages found; text is already available."
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -246,7 +290,7 @@ fun ViewerScreen(
             }
             readPage = page
             listState.animateScrollToItem(page)
-            val text = PdfText.pageText(context, engine.file, page)
+            val text = PdfText.pageText(context, engine.file, page, documentId)
             if (!reading) {
                 return@launch
             }
@@ -418,6 +462,8 @@ fun ViewerScreen(
                 onTool = { id -> onOpenTool(id) },
                 onViewSettings = { viewSettingsOpen = true },
                 onExport = { exportOpen = true },
+                onOcrPage = { runOcr(currentPage..currentPage) },
+                onOcrDocument = { runOcr(0 until engine.pageCount) },
                 onComments = {
                     commentsOpen = true
                     commentsLoading = true
@@ -652,6 +698,23 @@ fun ViewerScreen(
                     }
                 )
             }
+        }
+
+        if (ocrBusy) {
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("Recognizing scanned text") },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator()
+                        Text(
+                            "Page $ocrDone of $ocrTotal",
+                            modifier = Modifier.padding(top = 12.dp)
+                        )
+                    }
+                },
+                confirmButton = {}
+            )
         }
 
         if (bookmarksOpen) {
