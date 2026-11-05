@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -149,7 +150,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 viewerMode = pendingMode
                 pendingMode = ""
                 engine = opened
-                currentUri = source
+                currentUri = uri
                 title = displayName
             }
         }
@@ -173,9 +174,11 @@ fun MainScreen(incomingUri: Uri? = null) {
 
     val current = engine
     if (current != null) {
+        key(currentUri) {
         ViewerScreen(
             engine = current,
             title = title,
+            documentId = currentUri?.toString() ?: title,
             startMode = viewerMode,
                         onOpenTool = { id ->
                 ToolSeed.uri = if (seedableTools.contains(id)) currentUri else null
@@ -188,6 +191,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 engine = null
             }
         )
+        }
     } else if (showSettings) {
         SettingsScreen(onBack = { showSettings = false })
     } else if (implementedTools.contains(tool)) {

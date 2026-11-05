@@ -81,13 +81,14 @@ private val voiceLabels = listOf("System", "English", "Hindi", "Bengali")
 fun ViewerScreen(
     engine: PdfEngine,
     title: String,
+    documentId: String,
     startMode: String = "",
         onOpenTool: (String) -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = LastPage.load(context, title, engine.pageCount)
+        initialFirstVisibleItemIndex = LastPage.load(context, documentId, engine.pageCount)
     )
     val horizontalState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -97,7 +98,7 @@ fun ViewerScreen(
     val focusRequester = remember { FocusRequester() }
     val screenWidthPx = configuration.screenWidthDp * density.density
 
-    val zoom = remember { ZoomState() }
+    val zoom = remember(documentId) { ZoomState().apply { scale = LastPage.loadZoom(context, documentId) } }
     val scale = zoom.scale
     var renderScale by remember { mutableFloatStateOf(1f) }
 
@@ -134,7 +135,7 @@ fun ViewerScreen(
         onDispose { hostView.keepScreenOn = false }
     }
     var bookmarkList by remember {
-        mutableStateOf(Bookmarks.load(context, title, engine.pageCount))
+        mutableStateOf(Bookmarks.load(context, documentId, engine.pageCount))
     }
     var tocList by remember { mutableStateOf<List<TocEntry>>(emptyList()) }
     var tocLoading by remember { mutableStateOf(false) }
@@ -327,6 +328,7 @@ fun ViewerScreen(
 
     LaunchedEffect(scale) {
         zoom.settle(listState, horizontalState)
+        LastPage.saveZoom(context, documentId, scale)
     }
 
     LaunchedEffect(searchOpen) {
@@ -368,7 +370,7 @@ fun ViewerScreen(
 
     LaunchedEffect(currentPage) {
         delay(500)
-        LastPage.save(context, title, engine.pageCount, currentPage)
+        LastPage.save(context, documentId, engine.pageCount, currentPage)
     }
 
     val scrolling = listState.isScrollInProgress
@@ -431,8 +433,8 @@ fun ViewerScreen(
                     }
                 },
                 onAddBookmark = {
-                    val added = Bookmarks.add(context, title, engine.pageCount, currentPage)
-                    bookmarkList = Bookmarks.load(context, title, engine.pageCount)
+                    val added = Bookmarks.add(context, documentId, engine.pageCount, currentPage)
+                    bookmarkList = Bookmarks.load(context, documentId, engine.pageCount)
                     Toast.makeText(
                         context,
                         if (added) {
@@ -655,8 +657,8 @@ fun ViewerScreen(
                     scope.launch { listState.scrollToItem(page) }
                 },
                 onRemove = { page ->
-                    Bookmarks.remove(context, title, engine.pageCount, page)
-                    bookmarkList = Bookmarks.load(context, title, engine.pageCount)
+                    Bookmarks.remove(context, documentId, engine.pageCount, page)
+                    bookmarkList = Bookmarks.load(context, documentId, engine.pageCount)
                 },
                 onDismiss = { bookmarksOpen = false }
             )

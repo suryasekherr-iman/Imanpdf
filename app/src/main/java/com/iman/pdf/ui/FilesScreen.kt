@@ -1,5 +1,7 @@
 package com.iman.pdf.ui
 
+import android.Manifest
+import android.os.Build
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -36,6 +38,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -83,9 +87,10 @@ fun FilesScreen(
     onBrowse: () -> Unit
 ) {
     val context = LocalContext.current
-    var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess()) }
+    var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess(context)) }
     var scanning by remember { mutableStateOf(false) }
     var files by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
+    var scanError by remember { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableIntStateOf(0) }
     var refreshToken by remember { mutableIntStateOf(0) }
@@ -96,7 +101,7 @@ fun FilesScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                hasAccess = DeviceFiles.hasAllFilesAccess()
+                hasAccess = DeviceFiles.hasAllFilesAccess(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -106,15 +111,29 @@ fun FilesScreen(
     LaunchedEffect(hasAccess, refreshToken) {
         if (hasAccess) {
             scanning = true
+            scanError = false
             try {
                 files = DeviceFiles.scan(context)
+            } catch (_: Exception) {
+                files = emptyList()
+                scanError = true
             } finally {
                 scanning = false
             }
         }
     }
 
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        hasAccess = DeviceFiles.hasAllFilesAccess(context)
+    }
+
     fun requestAccess() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            return
+        }
         try {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             intent.data = Uri.parse("package:" + context.packageName)
@@ -267,7 +286,7 @@ fun FilesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.files_empty),
+                        text = if (scanError) stringResource(R.string.files_scan_error) else stringResource(R.string.files_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
