@@ -4,8 +4,8 @@
     <string name="files_title">Files</string>
     <string name="files_browse_locations">Browse other locations</string>
     <string name="files_on_device">On this device</string>
-    <string name="files_permission_message">Allow access to all files so ImAn can find PDF files on your phone.</string>
-    <string name="files_allow_access">Allow access</string>
+    <string name="files_permission_message">Choose a folder so ImAn can list PDFs stored inside it.</string>
+    <string name="files_allow_access">Choose folder</string>
     <string name="files_search">Search files</string>
     <string name="files_count">%1$d files</string>
     <string name="files_sort">Sort: %1$s</string>
