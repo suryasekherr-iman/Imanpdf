@@ -48,9 +48,23 @@ object Bookmarks {
         return true
     }
 
+    private fun noteKey(documentId: String, pageCount: Int, page: Int): String =
+        "note|" + key(documentId, pageCount) + "|" + page
+
+    fun note(context: Context, documentId: String, pageCount: Int, page: Int): String =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(noteKey(documentId, pageCount, page), "") ?: ""
+
+    fun saveNote(context: Context, documentId: String, pageCount: Int, page: Int, note: String) {
+        val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        if (note.isBlank()) editor.remove(noteKey(documentId, pageCount, page))
+        else editor.putString(noteKey(documentId, pageCount, page), note.trim())
+        editor.apply()
+    }
     fun remove(context: Context, documentId: String, pageCount: Int, page: Int) {
         val current = load(context, documentId, pageCount)
         save(context, documentId, pageCount, current.filter { it != page })
+        saveNote(context, documentId, pageCount, page, "")
     }
 
     suspend fun toc(context: Context, file: File): List<TocEntry> =
