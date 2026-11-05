@@ -606,7 +606,7 @@ fun ViewerScreen(
                 },
                 onRemove = { page ->
                     Bookmarks.remove(context, documentId, engine.pageCount, page)
-                    bookmarkList = Bookmarks.load(context, title, engine.pageCount)
+                    bookmarkList = Bookmarks.load(context, documentId, engine.pageCount)
                 },
                 onDismiss = { bookmarksOpen = false }
             )
