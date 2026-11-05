@@ -6,7 +6,7 @@ import org.json.JSONObject
 import java.util.UUID
 
 data class StudyFlashcard(val id: String, val question: String, val answer: String)
-data class StudyNote(val id: String, val title: String, val body: String, val page: Int?)
+data class StudyNote(val id: String, val title: String, val body: String, val page: Int?, val documentId: String? = null)
 data class RevisionItem(val id: String, val text: String, val done: Boolean)
 data class ImportantQuestion(val id: String, val text: String)
 
@@ -18,7 +18,7 @@ class StudentStore(context: Context) {
     }
     fun notes(): List<StudyNote> = readArray("notes") {
         StudyNote(it.getString("id"), it.getString("title"), it.getString("body"),
-            if (it.isNull("page")) null else it.optInt("page"))
+            if (it.isNull("page")) null else it.optInt("page"),\n            it.optString("documentId").takeIf { value -> value.isNotBlank() })
     }
     fun revisionItems(): List<RevisionItem> = readArray("revision") {
         RevisionItem(it.getString("id"), it.getString("text"), it.optBoolean("done"))
@@ -35,7 +35,7 @@ class StudentStore(context: Context) {
     })
     fun addNote(title: String, body: String, page: Int?) {
         val values = notes() + StudyNote(UUID.randomUUID().toString(), title.trim(), body.trim(), page)
-        writeArray("notes", values.map { JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("page", it.page ?: JSONObject.NULL) })
+        writeArray("notes", values.map { JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("page", it.page ?: JSONObject.NULL).put("documentId", it.documentId) })
     }
     fun removeNote(id: String) = writeArray("notes", notes().filterNot { it.id == id }.map {
         JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("page", it.page ?: JSONObject.NULL)
