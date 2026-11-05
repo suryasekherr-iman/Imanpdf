@@ -55,6 +55,8 @@ fun StudentSpacesScreen() {
     var notePage by remember { mutableStateOf("") }
     var revisionText by remember { mutableStateOf("") }
     var revealed by remember { mutableStateOf(setOf<String>()) }
+    var studyMode by remember { mutableStateOf(false) }
+    var studyIndex by remember { mutableIntStateOf(0) }
 
     val flashcards = remember(refresh) { store.flashcards() }
     val notes = remember(refresh) { store.notes() }
@@ -70,7 +72,45 @@ fun StudentSpacesScreen() {
         when (StudentSection.entries[section]) {
             StudentSection.FLASHCARDS -> {
                 if (flashcards.isEmpty()) EmptyStudyState("No flashcards yet", "Create cards with a question and answer for offline revision.")
-                else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                else if (studyMode) {
+                    val currentIndex = studyIndex.coerceIn(0, flashcards.lastIndex)
+                    val card = flashcards[currentIndex]
+                    Column(
+                        Modifier.fillMaxSize().padding(20.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("STUDY MODE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text("Card ${currentIndex + 1} of ${flashcards.size}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                        Surface(
+                            shape = MaterialTheme.shapes.extraLarge,
+                            tonalElevation = 3.dp,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp).clickable {
+                                revealed = if (card.id in revealed) revealed - card.id else revealed + card.id
+                            }
+                        ) {
+                            Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (card.id in revealed) "ANSWER" else "QUESTION", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    if (card.id in revealed) card.answer else card.question,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    modifier = Modifier.padding(top = 18.dp)
+                                )
+                                Text("Tap card to ${if (card.id in revealed) "see question" else "reveal answer"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 20.dp))
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            TextButton(onClick = {
+                                studyIndex = (currentIndex - 1).coerceAtLeast(0)
+                            }, enabled = currentIndex > 0) { Text("Previous") }
+                            TextButton(onClick = {
+                                studyIndex = (currentIndex + 1).coerceAtMost(flashcards.lastIndex)
+                                revealed = revealed - card.id
+                            }, enabled = currentIndex < flashcards.lastIndex) { Text("Next") }
+                        }
+                        TextButton(onClick = { studyMode = false; revealed = emptySet() }) { Text("Exit study mode") }
+                    }
+                } else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(flashcards, key = { it.id }) { card ->
                         Surface(shape = MaterialTheme.shapes.large, tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth().clickable {
                             revealed = if (card.id in revealed) revealed - card.id else revealed + card.id
@@ -118,7 +158,10 @@ fun StudentSpacesScreen() {
                 }
             }
         }
-        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.End) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
+            if (section == 0 && flashcards.isNotEmpty() && !studyMode) {
+                Button(onClick = { studyIndex = 0; studyMode = true; revealed = emptySet() }) { Text("Study mode") }
+            }
             FloatingActionButton(onClick = { addOpen = true }) {
                 Icon(Icons.Outlined.Add, contentDescription = "Add study item")
             }
