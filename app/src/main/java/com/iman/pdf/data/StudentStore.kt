@@ -18,7 +18,8 @@ class StudentStore(context: Context) {
     }
     fun notes(): List<StudyNote> = readArray("notes") {
         StudyNote(it.getString("id"), it.getString("title"), it.getString("body"),
-            if (it.isNull("page")) null else it.optInt("page"),\n            it.optString("documentId").takeIf { value -> value.isNotBlank() })
+            if (it.isNull("page")) null else it.optInt("page"),
+            it.optString("documentId").takeIf { value -> value.isNotBlank() })
     }
     fun revisionItems(): List<RevisionItem> = readArray("revision") {
         RevisionItem(it.getString("id"), it.getString("text"), it.optBoolean("done"))
@@ -33,12 +34,12 @@ class StudentStore(context: Context) {
     fun removeFlashcard(id: String) = writeArray("flashcards", flashcards().filterNot { it.id == id }.map {
         JSONObject().put("id", it.id).put("question", it.question).put("answer", it.answer)
     })
-    fun addNote(title: String, body: String, page: Int?) {
-        val values = notes() + StudyNote(UUID.randomUUID().toString(), title.trim(), body.trim(), page)
+    fun addNote(title: String, body: String, page: Int?, documentId: String? = null) {
+        val values = notes() + StudyNote(UUID.randomUUID().toString(), title.trim(), body.trim(), page, documentId)
         writeArray("notes", values.map { JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("page", it.page ?: JSONObject.NULL).put("documentId", it.documentId) })
     }
     fun removeNote(id: String) = writeArray("notes", notes().filterNot { it.id == id }.map {
-        JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("page", it.page ?: JSONObject.NULL)
+        JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("page", it.page ?: JSONObject.NULL).put("documentId", it.documentId)
     })
     fun addImportantQuestion(text: String) {
         val values = importantQuestions() + ImportantQuestion(UUID.randomUUID().toString(), text.trim())
