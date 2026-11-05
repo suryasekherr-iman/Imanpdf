@@ -8,6 +8,9 @@ import com.iman.pdf.annot.StrokeMark
 import com.iman.pdf.annot.TextMark
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup
+import com.tom_roush.pdfbox.text.PDFTextStripperByArea
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -43,7 +46,11 @@ object Comments {
                             annotations.forEach { annotation ->
                                 val label = shown[annotation.subtype]
                                 if (label != null) {
-                                    val text = (annotation.contents ?: "").trim()
+                                    val text = if (annotation is PDAnnotationTextMarkup) {
+                                        extractMarkedText(document, index, annotation)
+                                    } else {
+                                        (annotation.contents ?: "").trim()
+                                    }
                                     result.add(CommentItem(index, label, text, true))
                                 }
                             }
@@ -57,6 +64,40 @@ object Comments {
             }
             result
         }
+
+    private fun extractMarkedText(
+        document: PDDocument,
+        pageIndex: Int,
+        annotation: PDAnnotationTextMarkup
+    ): String {
+        val points = annotation.quadPoints ?: return (annotation.contents ?: "").trim()
+        if (points.size < 8) return (annotation.contents ?: "").trim()
+        return try {
+            val stripper = PDFTextStripperByArea()
+            val regionNames = ArrayList<String>()
+            for (offset in points.indices step 8) {
+                if (offset + 7 >= points.size) break
+                val xs = listOf(points[offset], points[offset + 2], points[offset + 4], points[offset + 6])
+                val ys = listOf(points[offset + 1], points[offset + 3], points[offset + 5], points[offset + 7])
+                val left = xs.minOrNull() ?: continue
+                val right = xs.maxOrNull() ?: continue
+                val bottom = ys.minOrNull() ?: continue
+                val top = ys.maxOrNull() ?: continue
+                if (right <= left || top <= bottom) continue
+                val name = "highlight_${regionNames.size}"
+                stripper.addRegion(name, PDRectangle(left, bottom, right - left, top - bottom))
+                regionNames.add(name)
+            }
+            if (regionNames.isEmpty()) return (annotation.contents ?: "").trim()
+            stripper.extractRegions(document.getPage(pageIndex))
+            regionNames.map { stripper.getTextForRegion(it).trim() }
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
+                .ifBlank { (annotation.contents ?: "").trim() }
+        } catch (_: Exception) {
+            (annotation.contents ?: "").trim()
+        }
+    }
 
     fun fromMarks(marks: List<Mark>): List<CommentItem> =
         marks.map { mark ->
