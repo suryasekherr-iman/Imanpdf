@@ -5,10 +5,17 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -22,10 +29,18 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.SearchHit
+import com.iman.pdf.pdf.OcrStore
+import com.iman.pdf.pdf.OcrLine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val NIGHT_MATRIX = ColorMatrix(
     floatArrayOf(
@@ -54,8 +69,17 @@ fun PdfPageItem(
     nightMode: Boolean = false,
     sepiaMode: Boolean = false,
     searchHits: List<SearchHit> = emptyList(),
-    activeSearchHit: SearchHit? = null
+    activeSearchHit: SearchHit? = null,
+    documentId: String = engine.file.absolutePath,
+    ocrRevision: Int = 0
 ) {
+    val context = LocalContext.current
+    var ocrLines by remember(index, documentId) { mutableStateOf<List<OcrLine>>(emptyList()) }
+    LaunchedEffect(index, documentId, ocrRevision) {
+        ocrLines = withContext(Dispatchers.IO) {
+            OcrStore.loadPage(context, documentId, index)?.lines.orEmpty()
+        }
+    }
     var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
 
@@ -101,6 +125,35 @@ fun PdfPageItem(
                         topLeft = Offset(left, top),
                         size = Size((right - left).coerceAtLeast(0f), (bottom - top).coerceAtLeast(0f))
                     )
+                }
+            }
+        }
+        if (ocrLines.isNotEmpty()) {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                SelectionContainer {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        ocrLines.forEach { line ->
+                            val lineWidth = (line.right - line.left).coerceAtLeast(0.001f)
+                            val lineHeight = (line.bottom - line.top).coerceAtLeast(0.001f)
+                            BasicText(
+                                text = line.text,
+                                modifier = Modifier
+                                    .offset(
+                                        x = maxWidth * line.left.coerceIn(0f, 1f),
+                                        y = maxHeight * line.top.coerceIn(0f, 1f)
+                                    )
+                                    .width(maxWidth * lineWidth.coerceAtMost(1f))
+                                    .height(maxHeight * lineHeight.coerceAtMost(1f)),
+                                style = TextStyle(
+                                    color = Color.Transparent,
+                                    fontSize = (maxHeight * lineHeight).value.coerceAtLeast(1f).sp
+                                ),
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Clip
+                            )
+                        }
+                    }
                 }
             }
         }
