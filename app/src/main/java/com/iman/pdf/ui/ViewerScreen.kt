@@ -236,7 +236,7 @@ fun ViewerScreen(
             searched = false
             activeHit = -1
             keyboard?.hide()
-            hits = PdfText.search(context, engine.file, text)
+            hits = PdfText.search(context, engine.file, text, documentId)
             searching = false
             searched = true
         }
@@ -279,7 +279,7 @@ fun ViewerScreen(
             }
             readPage = page
             listState.animateScrollToItem(page)
-            val text = PdfText.pageText(context, engine.file, page)
+            val text = PdfText.pageText(context, engine.file, page, documentId)
             if (!reading) {
                 return@launch
             }
@@ -719,7 +719,7 @@ fun ViewerScreen(
                 onText = {
                     exportOpen = false
                     scope.launch {
-                        val text = PdfExport.allText(context, engine.file)
+                        val text = PdfExport.allText(context, engine.file, documentId)
                         if (text.isBlank()) {
                             Toast.makeText(
                                 context,
