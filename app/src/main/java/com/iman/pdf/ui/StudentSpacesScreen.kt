@@ -13,6 +13,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Notes
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.Style
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -80,9 +87,32 @@ fun StudentSpacesScreen() {
 
     Column(Modifier.fillMaxSize()) {
         Text("Student Spaces", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
-        TabRow(selectedTabIndex = section) {
-            StudentSection.entries.forEachIndexed { index, item ->
-                Tab(selected = section == index, onClick = { section = index }, text = { Text(item.title) })
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val sectionIcons = listOf(
+                Icons.Outlined.Style,
+                Icons.Outlined.Notes,
+                Icons.Outlined.BookmarkBorder,
+                Icons.Outlined.Replay,
+                Icons.Outlined.HelpOutline
+            )
+            sectionIcons.forEachIndexed { index, image ->
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = if (section == index) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.weight(1f).padding(horizontal = 3.dp)
+                ) {
+                    IconButton(onClick = { section = index }) {
+                        Icon(
+                            image,
+                            contentDescription = StudentSection.entries[index].title,
+                            tint = if (section == index) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
         when (StudentSection.entries[section]) {
@@ -234,10 +264,14 @@ fun StudentSpacesScreen() {
         }
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
             if (section == 0 && flashcards.isNotEmpty() && !studyMode) {
-                Button(onClick = { studyIndex = 0; studyMode = true; revealed = emptySet() }) { Text("Study mode") }
+                IconButton(onClick = { studyIndex = 0; studyMode = true; revealed = emptySet() }) {
+                    Icon(Icons.Outlined.School, contentDescription = "Start flashcard study mode")
+                }
             }
             if (section == 1 && studyMaterials.isNotEmpty() && !notesStudyMode) {
-                Button(onClick = { studyIndex = 0; notesStudyMode = true }) { Text("Study notes & highlights") }
+                IconButton(onClick = { studyIndex = 0; notesStudyMode = true }) {
+                    Icon(Icons.Outlined.School, contentDescription = "Study notes and highlights")
+                }
             }
             FloatingActionButton(onClick = {
                 if (section == 0) {
