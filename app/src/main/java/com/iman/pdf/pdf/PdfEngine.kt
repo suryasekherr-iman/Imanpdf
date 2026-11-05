@@ -53,14 +53,15 @@ class PdfEngine private constructor(
             descriptor.close()
         } catch (_: Exception) {
         }
+        file.delete()
     }
 
     companion object {
         suspend fun open(context: Context, uri: Uri): PdfEngine? =
             withContext(Dispatchers.IO) {
+                val cacheFile = File(context.cacheDir, "open_" + System.nanoTime() + ".pdf")
                 var pfd: ParcelFileDescriptor? = null
                 try {
-                    val cacheFile = File(context.cacheDir, "open_" + System.nanoTime() + ".pdf")
                     val input = context.contentResolver.openInputStream(uri)
                         ?: return@withContext null
                     input.use { source ->
@@ -75,6 +76,7 @@ class PdfEngine private constructor(
                         pfd?.close()
                     } catch (_: Exception) {
                     }
+                    cacheFile.delete()
                     null
                 }
             }
