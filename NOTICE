@@ -1,0 +1,38 @@
+ImAn PDF Reader — Third-Party Notices
+======================================
+
+Project license
+---------------
+This project is licensed under the GNU Affero General Public License, version 3
+(AGPL-3.0-only). See the LICENSE file distributed with this application.
+
+Third-party components
+----------------------
+
+1. Apache PDFBox Android
+   Maven coordinate: com.tom-roush:pdfbox-android:2.0.27.0
+   License: Apache License 2.0
+   Project: https://github.com/TomRoush/PdfBox-Android
+   License text: https://www.apache.org/licenses/LICENSE-2.0
+
+2. AndroidX and Jetpack Compose
+   Maven groups: androidx.* (including Activity, AppCompat, Core, Lifecycle,
+   Navigation, DataStore, Compose UI and Material)
+   License: Apache License 2.0
+   Project: https://developer.android.com/jetpack/androidx
+   License text: https://www.apache.org/licenses/LICENSE-2.0
+
+3. Kotlin
+   License: Apache License 2.0
+   Project: https://kotlinlang.org/
+   License text: https://www.apache.org/licenses/LICENSE-2.0
+
+4. Android Gradle Plugin
+   Build-time tool; not bundled as application runtime code.
+   License: Apache License 2.0
+   Project: https://developer.android.com/build
+   License text: https://www.apache.org/licenses/LICENSE-2.0
+
+This notice is a summary of the dependencies declared directly by the project.
+The resolved dependency graph should be checked for transitive components before
+each public release. Each component remains subject to its own license terms.
