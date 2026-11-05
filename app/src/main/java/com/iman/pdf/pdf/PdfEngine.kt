@@ -1,84 +1,96 @@
-package com.iman.pdf.pdf
+package com.imran.pdf.core.pdf
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.pdf.PdfRenderer
-import android.net.Uri
-import android.os.ParcelFileDescriptor
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
+import android.graphics.Matrix
+import android.graphics.RectF
+import com.artifex.mupdf.fitz.Document
+import com.artifex.mupdf.fitz.Matrix as MuMatrix
+import com.artifex.mupdf.fitz.Page
 import java.io.File
 
-class PdfEngine private constructor(
-    val file: File,
-    private val descriptor: ParcelFileDescriptor,
-    private val renderer: PdfRenderer
-) {
-    private val mutex = Mutex()
+class MuPdfEngine {
+    private var document: Document? = null
+    private var currentPage: Page? = null
 
-    val pageCount: Int = renderer.pageCount
-
-    suspend fun pageAspectRatio(index: Int): Float = withContext(Dispatchers.IO) {
-        mutex.withLock {
-            renderer.openPage(index).use { page ->
-                page.height.toFloat() / page.width.toFloat()
-            }
+    /**
+     * PDF File ko open karne ke liye
+     */
+    fun openDocument(filePath: String): Boolean {
+        return try {
+            closeDocument()
+            document = Document(filePath)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 
-    suspend fun renderPage(index: Int, targetWidth: Int): Bitmap =
-        withContext(Dispatchers.IO) {
-            mutex.withLock {
-                renderer.openPage(index).use { page ->
-                    val width = targetWidth.coerceAtLeast(1)
-                    val ratio = page.height.toFloat() / page.width.toFloat()
-                    val height = (width * ratio).toInt().coerceAtLeast(1)
-                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                    bitmap.eraseColor(Color.WHITE)
-                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                    bitmap
-                }
-            }
-        }
-
-    fun close() {
-        try {
-            renderer.close()
-        } catch (_: Exception) {
-        }
-        try {
-            descriptor.close()
-        } catch (_: Exception) {
-        }
-        file.delete()
+    /**
+     * Total pages nikalne ke liye
+     */
+    fun getPageCount(): Int {
+        return document?.countPages() ?: 0
     }
 
-    companion object {
-        suspend fun open(context: Context, uri: Uri): PdfEngine? =
-            withContext(Dispatchers.IO) {
-                val cacheFile = File(context.cacheDir, "open_" + System.nanoTime() + ".pdf")
-                var pfd: ParcelFileDescriptor? = null
-                try {
-                    val input = context.contentResolver.openInputStream(uri)
-                        ?: return@withContext null
-                    input.use { source ->
-                        cacheFile.outputStream().use { target ->
-                            source.copyTo(target)
-                        }
-                    }
-                    pfd = ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY)
-                    PdfEngine(cacheFile, pfd, PdfRenderer(pfd))
-                } catch (e: Exception) {
-                    try {
-                        pfd?.close()
-                    } catch (_: Exception) {
-                    }
-                    cacheFile.delete()
-                    null
-                }
-            }
+    /**
+     * Specific page ko Bitmap mein render karne ke liye
+     * @param pageNumber 0-based index (0 = page 1)
+     * @param scale Zoom level (1.0f = 100%)
+     */
+    fun renderPageToBitmap(pageNumber: Int, scale: Float = 1.0f): Bitmap? {
+        val doc = document ?: return null
+        if (pageNumber < 0 || pageNumber >= doc.countPages()) return null
+
+        return try {
+            // Purane page ko clean karein
+            currentPage?.destroy()
+
+            // Naya page load karein
+            currentPage = doc.loadPage(pageNumber)
+            val page = currentPage ?: return null
+
+            // Page bounds nikaalein
+            val bounds = page.bounds
+            val matrix = MuMatrix(scale, scale)
+            
+            // Render pixels nikaalein
+            val pixmap = page.toPixmap(
+                matrix,
+                Color.WHITE, // Background color
+                false, // No alpha
+                true   // Show annotations
+            )
+
+            // Pixmap ko Android Bitmap mein convert karein
+            val bitmap = Bitmap.createBitmap(
+                pixmap.width,
+                pixmap.height,
+                Bitmap.Config.ARGB_8888
+            )
+
+            // MuPDF pixmap data ko bitmap mein copy karein
+            pixmap.toBitmap(bitmap, 0, 0)
+            
+            // Memory free karein
+            pixmap.destroy()
+            
+            bitmap
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Resources free karne ke liye
+     */
+    fun closeDocument() {
+        currentPage?.destroy()
+        currentPage = null
+        
+        document?.destroy()
+        document = null
     }
 }
