@@ -176,6 +176,7 @@ fun MainScreen(incomingUri: Uri? = null) {
         ViewerScreen(
             engine = current,
             title = title,
+            documentId = currentUri?.toString() ?: title,
             startMode = viewerMode,
                         onOpenTool = { id ->
                 ToolSeed.uri = if (seedableTools.contains(id)) currentUri else null
