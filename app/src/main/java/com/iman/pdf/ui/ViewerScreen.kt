@@ -19,6 +19,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -95,6 +106,7 @@ fun ViewerScreen(
     var hits by remember { mutableStateOf<List<SearchHit>>(emptyList()) }
     var searching by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
+    var activeHit by remember { mutableIntStateOf(-1) }
 
     val reader = remember { ReadAloud(context) }
     var readerOpen by remember { mutableStateOf(false) }
@@ -115,6 +127,7 @@ fun ViewerScreen(
     var commentItems by remember { mutableStateOf<List<CommentItem>>(emptyList()) }
     var keepScreenOn by remember { mutableStateOf(false) }
     var nightMode by remember { mutableStateOf(false) }
+    var sepiaMode by remember { mutableStateOf(false) }
     val hostView = LocalView.current
     DisposableEffect(keepScreenOn) {
         hostView.keepScreenOn = keepScreenOn
@@ -190,6 +203,16 @@ fun ViewerScreen(
         hits = emptyList()
         searching = false
         searched = false
+        activeHit = -1
+    }
+
+    fun goToHit(index: Int) {
+        if (hits.isEmpty()) {
+            return
+        }
+        val target = ((index % hits.size) + hits.size) % hits.size
+        activeHit = target
+        scope.launch { listState.scrollToItem(hits[target].page) }
     }
 
     fun runSearch() {
@@ -200,6 +223,7 @@ fun ViewerScreen(
         scope.launch {
             searching = true
             searched = false
+            activeHit = -1
             keyboard?.hide()
             hits = PdfText.search(context, engine.file, text)
             searching = false
@@ -379,6 +403,7 @@ fun ViewerScreen(
                     query = ""
                     hits = emptyList()
                     searched = false
+                    activeHit = -1
                 },
                 onBack = onBack,
                 onCloseSearch = { closeSearch() },
@@ -467,7 +492,8 @@ fun ViewerScreen(
                                 index = index,
                                 renderWidth = renderWidth,
                                 annot = annot,
-                                nightMode = nightMode
+                                nightMode = nightMode,
+                                sepiaMode = sepiaMode
                             )
                         }
                     }
@@ -489,11 +515,37 @@ fun ViewerScreen(
                     SearchResults(
                         searching = searching,
                         hits = hits,
-                        onPick = { page ->
-                            closeSearch()
-                            scope.launch { listState.scrollToItem(page) }
+                        onPick = { position, _ ->
+                            searched = false
+                            goToHit(position)
                         }
                     )
+                }
+            }
+            if (searchOpen && !searching && !searched && activeHit >= 0 && hits.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = { searched = true }) {
+                        Text("List")
+                    }
+                    Text(
+                        text = (activeHit + 1).toString() + " / " + hits.size,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(onClick = { goToHit(activeHit - 1) }) {
+                        Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Previous result")
+                    }
+                    IconButton(onClick = { goToHit(activeHit + 1) }) {
+                        Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Next result")
+                    }
                 }
             }
                         if (!annotOpen && !readerOpen && !searchOpen) {
@@ -652,8 +704,16 @@ fun ViewerScreen(
             ViewSettingsSheet(
                 keepScreenOn = keepScreenOn,
                 nightMode = nightMode,
+                sepiaMode = sepiaMode,
                 onKeepScreenOn = { keepScreenOn = it },
-                onNightMode = { nightMode = it },
+                onNightMode = {
+                    nightMode = it
+                    if (it) sepiaMode = false
+                },
+                onSepiaMode = {
+                    sepiaMode = it
+                    if (it) nightMode = false
+                },
                 onDismiss = { viewSettingsOpen = false }
             )
         }

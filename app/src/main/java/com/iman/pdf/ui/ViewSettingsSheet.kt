@@ -22,8 +22,10 @@ import androidx.compose.ui.unit.dp
 fun ViewSettingsSheet(
     keepScreenOn: Boolean,
     nightMode: Boolean,
+    sepiaMode: Boolean,
     onKeepScreenOn: (Boolean) -> Unit,
     onNightMode: (Boolean) -> Unit,
+    onSepiaMode: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -45,6 +47,12 @@ fun ViewSettingsSheet(
                 subtitle = "Invert page colors for dark reading",
                 checked = nightMode,
                 onChange = onNightMode
+            )
+            SettingRow(
+                title = "Sepia mode",
+                subtitle = "Warm paper-like page colors",
+                checked = sepiaMode,
+                onChange = onSepiaMode
             )
             Spacer(Modifier.height(24.dp))
         }

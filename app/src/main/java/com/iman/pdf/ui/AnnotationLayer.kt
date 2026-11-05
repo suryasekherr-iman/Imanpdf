@@ -67,7 +67,12 @@ fun AnnotationLayer(
                     )
                 }
 
-                AnnotTool.HIGHLIGHT -> {
+                AnnotTool.HIGHLIGHT, AnnotTool.UNDERLINE, AnnotTool.STRIKE -> {
+                    val kind = when (tool) {
+                        AnnotTool.UNDERLINE -> 1
+                        AnnotTool.STRIKE -> 2
+                        else -> 0
+                    }
                     var startX = 0f
                     var startY = 0f
                     detectDragGestures(
@@ -80,7 +85,8 @@ fun AnnotationLayer(
                                 startX,
                                 startY,
                                 startX,
-                                startY
+                                startY,
+                                kind
                             )
                         },
                         onDrag = { change, _ ->
@@ -93,7 +99,8 @@ fun AnnotationLayer(
                                 minOf(startX, x),
                                 minOf(startY, y),
                                 maxOf(startX, x),
-                                maxOf(startY, y)
+                                maxOf(startY, y),
+                                kind
                             )
                         },
                         onDragEnd = {

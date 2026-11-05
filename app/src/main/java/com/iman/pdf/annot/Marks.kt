@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-enum class AnnotTool { NONE, HIGHLIGHT, DRAW, TEXT, NOTE, SIGN, CHECK, CROSS, DATE }
+enum class AnnotTool { NONE, HIGHLIGHT, DRAW, TEXT, NOTE, SIGN, CHECK, CROSS, DATE, UNDERLINE, STRIKE, ERASE }
 
 class SignatureData(
     val strokes: List<List<Pair<Float, Float>>>,
@@ -37,7 +37,8 @@ data class HighlightMark(
     val left: Float,
     val top: Float,
     val right: Float,
-    val bottom: Float
+    val bottom: Float,
+    val kind: Int = 0
 ) : Mark()
 
 data class TextMark(
@@ -75,6 +76,7 @@ class AnnotController {
     var signature by mutableStateOf<SignatureData?>(null)
     var needSignature by mutableStateOf(false)
     val marks = mutableStateListOf<Mark>()
+    val redoMarks = mutableStateListOf<Mark>()
 
     fun select(newTool: AnnotTool) {
         tool = newTool
@@ -88,6 +90,10 @@ class AnnotController {
             AnnotTool.CHECK -> color = 0xFF000000.toInt()
             AnnotTool.CROSS -> color = 0xFF000000.toInt()
             AnnotTool.DATE -> color = 0xFF000000.toInt()
+            AnnotTool.UNDERLINE -> color = 0xFFE53935.toInt()
+            AnnotTool.STRIKE -> color = 0xFFE53935.toInt()
+            AnnotTool.ERASE -> {
+            }
             AnnotTool.NONE -> {
             }
         }
@@ -98,6 +104,7 @@ class AnnotController {
 
     fun placeAt(page: Int, x: Float, y: Float) {
         when (tool) {
+            AnnotTool.ERASE -> eraseAt(page, x, y)
             AnnotTool.CHECK -> add(TextMark(page, x - 0.025f, y - 0.025f, "✓", color, 0.05f, false))
             AnnotTool.CROSS -> add(TextMark(page, x - 0.025f, y - 0.025f, "✗", color, 0.05f, false))
             AnnotTool.DATE -> {
@@ -127,16 +134,56 @@ class AnnotController {
 
     fun add(mark: Mark) {
         marks.add(mark)
+        redoMarks.clear()
     }
 
     fun undo() {
         if (marks.isNotEmpty()) {
-            marks.removeAt(marks.size - 1)
+            redoMarks.add(marks.removeAt(marks.size - 1))
+        }
+    }
+
+    fun redo() {
+        if (redoMarks.isNotEmpty()) {
+            marks.add(redoMarks.removeAt(redoMarks.size - 1))
+        }
+    }
+
+    private fun hit(mark: Mark, x: Float, y: Float): Boolean {
+        val tol = 0.03f
+        return when (mark) {
+            is StrokeMark -> mark.points.any {
+                kotlin.math.abs(it.first - x) < tol && kotlin.math.abs(it.second - y) < tol
+            }
+            is HighlightMark ->
+                x >= mark.left - tol && x <= mark.right + tol &&
+                    y >= mark.top - tol && y <= mark.bottom + tol
+            is TextMark -> {
+                val lines = mark.text.split("\n")
+                val longest = lines.maxOf { it.length }
+                x >= mark.x - tol && x <= mark.x + mark.size * 0.6f * longest + tol &&
+                    y >= mark.y - tol && y <= mark.y + mark.size * 0.9f * lines.size + tol
+            }
+            is SignMark ->
+                x >= mark.x - tol && x <= mark.x + mark.width + tol &&
+                    y >= mark.y - tol &&
+                    y <= mark.y + mark.width / mark.signature.aspect * 0.7f + tol
+        }
+    }
+
+    fun eraseAt(page: Int, x: Float, y: Float) {
+        for (i in marks.indices.reversed()) {
+            val mark = marks[i]
+            if (mark.page == page && hit(mark, x, y)) {
+                marks.removeAt(i)
+                return
+            }
         }
     }
 
     fun clearAll() {
         marks.clear()
+        redoMarks.clear()
         live = null
         pendingText = null
     }
@@ -195,6 +242,18 @@ object MarkPainter {
     private fun drawHighlight(canvas: Canvas, width: Float, height: Float, mark: HighlightMark) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         paint.color = mark.color
+        if (mark.kind != 0) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = maxOf(3f, 0.003f * width)
+            paint.strokeCap = Paint.Cap.ROUND
+            val lineY = if (mark.kind == 1) {
+                mark.bottom * height
+            } else {
+                (mark.top + mark.bottom) / 2f * height
+            }
+            canvas.drawLine(mark.left * width, lineY, mark.right * width, lineY, paint)
+            return
+        }
         paint.alpha = 100
         paint.style = Paint.Style.FILL
         canvas.drawRect(

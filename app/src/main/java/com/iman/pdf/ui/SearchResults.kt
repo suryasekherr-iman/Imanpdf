@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,7 +23,7 @@ import com.iman.pdf.pdf.SearchHit
 fun SearchResults(
     searching: Boolean,
     hits: List<SearchHit>,
-    onPick: (Int) -> Unit
+    onPick: (Int, Int) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -56,11 +56,11 @@ fun SearchResults(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(hits) { hit ->
+                    itemsIndexed(hits) { position, hit ->
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onPick(hit.page) }
+                                .clickable { onPick(position, hit.page) }
                                 .padding(horizontal = 16.dp, vertical = 10.dp)
                         ) {
                             Text(

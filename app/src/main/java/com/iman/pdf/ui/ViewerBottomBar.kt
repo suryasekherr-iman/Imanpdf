@@ -26,6 +26,9 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.Draw
+import androidx.compose.material.icons.outlined.FormatUnderlined
+import androidx.compose.material.icons.outlined.StrikethroughS
+import androidx.compose.material.icons.outlined.Backspace
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Highlight
@@ -99,6 +102,9 @@ fun ViewerBottomBar(
         ViewerToolItem("sign", Icons.Outlined.Create, "Fill & Sign") { onTool(AnnotTool.SIGN) },
         ViewerToolItem("text", Icons.Outlined.TextFields, "Text") { onTool(AnnotTool.TEXT) },
         ViewerToolItem("highlight", Icons.Outlined.Highlight, "Highlight") { onTool(AnnotTool.HIGHLIGHT) },
+        ViewerToolItem("underline", Icons.Outlined.FormatUnderlined, "Underline") { onTool(AnnotTool.UNDERLINE) },
+        ViewerToolItem("strike", Icons.Outlined.StrikethroughS, "Strikethrough") { onTool(AnnotTool.STRIKE) },
+        ViewerToolItem("erase", Icons.Outlined.Backspace, "Eraser") { onTool(AnnotTool.ERASE) },
         ViewerToolItem("draw", Icons.Outlined.Draw, "Draw") { onTool(AnnotTool.DRAW) },
         ViewerToolItem("note", Icons.Outlined.StickyNote2, "Note") { onTool(AnnotTool.NOTE) },
         ViewerToolItem("check", Icons.Outlined.Check, "Tick") { onTool(AnnotTool.CHECK) },

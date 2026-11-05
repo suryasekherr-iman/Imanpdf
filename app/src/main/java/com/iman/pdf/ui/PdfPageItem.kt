@@ -32,13 +32,23 @@ private val NIGHT_MATRIX = ColorMatrix(
     )
 )
 
+private val SEPIA_MATRIX = ColorMatrix(
+    floatArrayOf(
+        0.98f, 0f, 0f, 0f, 0f,
+        0f, 0.93f, 0f, 0f, 0f,
+        0f, 0f, 0.78f, 0f, 0f,
+        0f, 0f, 0f, 1f, 0f
+    )
+)
+
 @Composable
 fun PdfPageItem(
     engine: PdfEngine,
     index: Int,
     renderWidth: Int,
     annot: AnnotController? = null,
-    nightMode: Boolean = false
+    nightMode: Boolean = false,
+    sepiaMode: Boolean = false
 ) {
     var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
@@ -61,7 +71,11 @@ fun PdfPageItem(
                 contentDescription = "Page ${index + 1}",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds,
-                colorFilter = if (nightMode) ColorFilter.colorMatrix(NIGHT_MATRIX) else null
+                colorFilter = when {
+                    nightMode -> ColorFilter.colorMatrix(NIGHT_MATRIX)
+                    sepiaMode -> ColorFilter.colorMatrix(SEPIA_MATRIX)
+                    else -> null
+                }
             )
         }
         if (annot != null) {

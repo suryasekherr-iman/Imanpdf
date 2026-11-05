@@ -63,7 +63,16 @@ object Comments {
             when (mark) {
                 is TextMark -> CommentItem(mark.page, "Text", mark.text, false)
                 is StrokeMark -> CommentItem(mark.page, "Drawing", "", false)
-                is HighlightMark -> CommentItem(mark.page, "Highlight", "", false)
+                is HighlightMark -> CommentItem(
+                    mark.page,
+                    when (mark.kind) {
+                        1 -> "Underline"
+                        2 -> "Strikethrough"
+                        else -> "Highlight"
+                    },
+                    "",
+                    false
+                )
                 is SignMark -> CommentItem(mark.page, "Signature", "", false)
             }
         }

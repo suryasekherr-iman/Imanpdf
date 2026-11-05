@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FormatUnderlined
+import androidx.compose.material.icons.outlined.StrikethroughS
+import androidx.compose.material.icons.outlined.Backspace
+import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.CalendarToday
@@ -139,6 +143,12 @@ fun AnnotToolbar(
                 ToolButton(Icons.Outlined.Highlight, annot.tool == AnnotTool.HIGHLIGHT) {
                     annot.select(toggle(annot.tool, AnnotTool.HIGHLIGHT))
                 }
+                ToolButton(Icons.Outlined.FormatUnderlined, annot.tool == AnnotTool.UNDERLINE) {
+                    annot.select(toggle(annot.tool, AnnotTool.UNDERLINE))
+                }
+                ToolButton(Icons.Outlined.StrikethroughS, annot.tool == AnnotTool.STRIKE) {
+                    annot.select(toggle(annot.tool, AnnotTool.STRIKE))
+                }
                 ToolButton(Icons.Outlined.Draw, annot.tool == AnnotTool.DRAW) {
                     annot.select(toggle(annot.tool, AnnotTool.DRAW))
                 }
@@ -160,6 +170,15 @@ fun AnnotToolbar(
                 ToolButton(Icons.Outlined.CalendarToday, annot.tool == AnnotTool.DATE) {
                     annot.select(toggle(annot.tool, AnnotTool.DATE))
                 }
+                ToolButton(Icons.Outlined.Backspace, annot.tool == AnnotTool.ERASE) {
+                    annot.select(toggle(annot.tool, AnnotTool.ERASE))
+                }
+            }
+            IconButton(
+                onClick = { annot.redo() },
+                enabled = annot.redoMarks.isNotEmpty()
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo")
             }
             IconButton(
                 onClick = { annot.undo() },
@@ -254,6 +273,14 @@ fun AnnotToolbar(
                     Text("Change")
                 }
             }
+        }
+
+        if (annot.tool == AnnotTool.ERASE) {
+            Text(
+                "Tap a mark to erase it",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
         }
 
         if (annot.tool == AnnotTool.CHECK || annot.tool == AnnotTool.CROSS) {
