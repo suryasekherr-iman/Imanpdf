@@ -17,9 +17,10 @@ object PdfOcr {
             var bitmap: Bitmap? = null
             try {
                 if (!engine.openDocument(file.absolutePath)) return@withContext null
-                bitmap = engine.renderPageToBitmap(pageIndex, 2f)
+                val rendered = engine.renderPageToBitmap(pageIndex, 2f)
                     ?: return@withContext null
-                val recognized = OcrEngine.extractLinesFromBitmap(bitmap)
+                bitmap = rendered
+                val recognized = OcrEngine.extractLinesFromBitmap(rendered)
                 val lines = recognized.map { line ->
                     OcrLine(
                         text = line.text,
