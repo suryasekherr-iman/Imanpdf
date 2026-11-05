@@ -64,6 +64,9 @@ import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfExport
 import com.iman.pdf.pdf.PdfText
+import com.iman.pdf.pdf.PdfOcr
+import com.iman.pdf.pdf.OcrStore
+import com.iman.pdf.pdf.ReadAloudService
 import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
@@ -108,6 +111,8 @@ fun ViewerScreen(
     var searching by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
     var activeHit by remember { mutableIntStateOf(-1) }
+    var ocrRevision by remember { mutableIntStateOf(0) }
+    var ocrRunning by remember { mutableStateOf(false) }
 
     val reader = remember { ReadAloud(context) }
     var readerOpen by remember { mutableStateOf(false) }
@@ -196,7 +201,11 @@ fun ViewerScreen(
     }
 
     DisposableEffect(Unit) {
-        onDispose { reader.shutdown() }
+        onDispose {
+            reader.shutdown()
+            ReadAloudService.stop(context)
+            ReadAloudService.onStopRequested = null
+        }
     }
 
     fun closeSearch() {
@@ -232,6 +241,31 @@ fun ViewerScreen(
         }
     }
 
+    fun runOcr(pages: IntRange) {
+        if (ocrRunning) return
+        scope.launch {
+            ocrRunning = true
+            var completed = 0
+            var failed = 0
+            for (page in pages) {
+                val result = PdfOcr.recognize(context, engine.file, page)
+                if (result != null) {
+                    OcrStore.savePage(context, documentId, result)
+                    completed++
+                } else {
+                    failed++
+                }
+            }
+            ocrRevision++
+            ocrRunning = false
+            Toast.makeText(
+                context,
+                "OCR finished: $completed page(s) recognized, $failed skipped",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     fun speakPage(page: Int) {
         scope.launch {
             if (!reading) {
@@ -239,6 +273,7 @@ fun ViewerScreen(
             }
             if (page >= engine.pageCount) {
                 reading = false
+                ReadAloudService.stop(context)
                 return@launch
             }
             readPage = page
@@ -266,6 +301,7 @@ fun ViewerScreen(
     fun stopReading() {
         reading = false
         reader.stop()
+        ReadAloudService.stop(context)
     }
 
     fun closeReader() {
@@ -274,6 +310,7 @@ fun ViewerScreen(
     }
 
     SideEffect {
+        ReadAloudService.onStopRequested = { stopReading() }
         reader.onPageFinished = {
             if (reading) {
                 speakPage(readPage + 1)
@@ -413,6 +450,8 @@ fun ViewerScreen(
                 onTool = { id -> onOpenTool(id) },
                 onViewSettings = { viewSettingsOpen = true },
                 onExport = { exportOpen = true },
+                onOcrPage = { runOcr(currentPage..currentPage) },
+                onOcrDocument = { runOcr(0 until engine.pageCount) },
                 onComments = {
                     commentsOpen = true
                     commentsLoading = true
@@ -495,7 +534,9 @@ fun ViewerScreen(
                                 renderWidth = renderWidth,
                                 annot = annot,
                                 nightMode = nightMode,
-                                sepiaMode = sepiaMode
+                                sepiaMode = sepiaMode,
+                                documentId = documentId,
+                                ocrRevision = ocrRevision
                             )
                         }
                     }
@@ -598,6 +639,7 @@ fun ViewerScreen(
                             stopReading()
                         } else {
                             reading = true
+                            ReadAloudService.start(context, title)
                             speakPage(currentPage)
                         }
                     },
