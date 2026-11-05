@@ -42,7 +42,9 @@ fun ViewerMenu(
     onAddBookmark: () -> Unit = {},
     onViewSettings: () -> Unit = {},
     onComments: () -> Unit = {},
-    onExport: () -> Unit = {}
+    onExport: () -> Unit = {},
+    onOcrPage: () -> Unit = {},
+    onOcrDocument: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
@@ -95,6 +97,14 @@ fun ViewerMenu(
             MenuRow(Icons.Outlined.SaveAlt, "Export") {
                 open = false
                 onExport()
+            }
+            MenuRow(Icons.Outlined.Article, "Recognize text on this page (OCR)") {
+                open = false
+                onOcrPage()
+            }
+            MenuRow(Icons.Outlined.Article, "Recognize text in entire PDF (OCR)") {
+                open = false
+                onOcrDocument()
             }
             HorizontalDivider()
             MenuRow(Icons.Outlined.Compress, "Compress PDF") {
