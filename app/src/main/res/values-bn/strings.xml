@@ -79,4 +79,6 @@
     <string name="edit_pdf_edit_failed">PDF সম্পাদনা করা যায়নি। ফাইল ও লেখা পরীক্ষা করুন।</string>
     <string name="tool_split">PDF ভাগ করুন</string>
     <string name="tool_split_desc">একটি PDF কে একাধিক ফাইলে ভাগ করুন</string>
+    <string name="settings_open_source_licenses">ওপেন-সোর্স লাইসেন্স ও নোটিশ</string>
+    <string name="settings_close">বন্ধ করুন</string>
 </resources>
