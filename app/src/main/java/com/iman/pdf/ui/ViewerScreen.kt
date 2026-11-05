@@ -76,6 +76,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
 import com.iman.pdf.data.StudentStore
+import com.iman.pdf.data.StudyHighlight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -158,6 +159,12 @@ fun ViewerScreen(
     val studentStore = remember { StudentStore(context) }
     LaunchedEffect(bookmarkList, documentId, title) {
         bookmarkList.forEach { page -> studentStore.addBookmark(documentId, title, page + 1) }
+    }
+    LaunchedEffect(documentId, engine.file.lastModified()) {
+        val savedHighlights = Comments.load(context, engine.file)
+            .filter { it.type == "Highlight" || it.type == "Underline" || it.type == "Strikethrough" }
+            .map { item -> StudyHighlight("", title, item.page + 1, item.type, item.text) }
+        studentStore.replaceHighlights(documentId, title, savedHighlights)
     }
     var flashcardDialog by remember { mutableStateOf(false) }
     var flashcardQuestion by remember { mutableStateOf("") }
