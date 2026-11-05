@@ -616,6 +616,18 @@ fun ViewerScreen(
                 }
             }
                         if (!annotOpen && !readerOpen && !searchOpen) {
+                Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = {
+                        flashcardDialog = true
+                        flashcardQuestion = ""
+                        flashcardAnswer = ""
+                        flashcardLoading = true
+                        scope.launch {
+                            flashcardQuestion = PdfText.pageText(context, engine.file, currentPage, documentId).trim()
+                            flashcardLoading = false
+                        }
+                    }) { Text("Create flashcard from page") }
+                }
                 ViewerBottomBar(
                     onReadAloud = { readerOpen = true },
                     onTool = { tool ->
@@ -710,6 +722,36 @@ fun ViewerScreen(
                     }
                 )
             }
+        }
+
+        if (flashcardDialog) {
+            AlertDialog(
+                onDismissRequest = { if (!flashcardLoading) flashcardDialog = false },
+                title = { Text("Create flashcard · page ${currentPage + 1}") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (flashcardLoading) {
+                            CircularProgressIndicator()
+                            Text("Extracting page text...")
+                        } else {
+                            OutlinedTextField(value = flashcardQuestion, onValueChange = { flashcardQuestion = it }, label = { Text("Question / source text") }, minLines = 3)
+                            OutlinedTextField(value = flashcardAnswer, onValueChange = { flashcardAnswer = it }, label = { Text("Answer") }, minLines = 2)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (flashcardQuestion.isNotBlank() && flashcardAnswer.isNotBlank()) {
+                            studentStore.addFlashcard(flashcardQuestion, flashcardAnswer)
+                            flashcardDialog = false
+                            Toast.makeText(context, "Flashcard saved offline", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Add both question and answer", Toast.LENGTH_SHORT).show()
+                        }
+                    }, enabled = !flashcardLoading && flashcardQuestion.isNotBlank() && flashcardAnswer.isNotBlank()) { Text("Save card") }
+                },
+                dismissButton = { TextButton(onClick = { flashcardDialog = false }) { Text("Cancel") } }
+            )
         }
 
         if (ocrBusy) {
