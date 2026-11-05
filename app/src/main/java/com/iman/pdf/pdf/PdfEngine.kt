@@ -43,7 +43,8 @@ class PdfEngine private constructor(
                     engine.closeDocument()
                     return@withContext null
                 }
-                PdfEngine(source, engine, copiedToCache)
+                val deleteOnClose = copiedToCache || source.absolutePath.startsWith(context.cacheDir.absolutePath + File.separator)
+                PdfEngine(source, engine, deleteOnClose)
             } catch (_: Exception) {
                 temp?.delete()
                 null
