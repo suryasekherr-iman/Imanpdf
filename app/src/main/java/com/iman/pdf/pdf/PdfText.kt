@@ -19,6 +19,7 @@ object PdfText {
         val engine = MuPdfEngine()
         try {
             if (!engine.openDocument(file.absolutePath)) return@withContext ""
+            // Use saved on-device OCR whenever MuPDF has no selectable text (for example, scanned pages).
             engine.pageText(pageIndex).ifBlank {
                 OcrStore.loadPage(context, documentId, pageIndex)?.text.orEmpty()
             }
@@ -56,7 +57,8 @@ object PdfText {
                     )
                     if (hits.size >= 500) return@withContext hits
                 }
-                if (nativeHits.isEmpty() && text.isBlank()) {
+                // Scanned/image-only pages have no MuPDF text or native hit rectangles.
+                if (text.isBlank()) {
                     hits.addAll(OcrStore.searchHits(context, documentId, page, query).take(500 - hits.size))
                 }
                 if (hits.size >= 500) break
