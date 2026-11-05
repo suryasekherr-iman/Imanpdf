@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,6 +53,8 @@ fun StudentSpacesScreen() {
     var addOpen by remember { mutableStateOf(false) }
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
+    var highlightMode by remember { mutableStateOf(false) }
+    var selectedHighlightId by remember { mutableStateOf<String?>(null) }
     var noteTitle by remember { mutableStateOf("") }
     var noteBody by remember { mutableStateOf("") }
     var notePage by remember { mutableStateOf("") }
@@ -68,6 +71,7 @@ fun StudentSpacesScreen() {
     val importantQuestions = remember(refresh) { store.importantQuestions() }
     val bookmarks = remember(refresh) { store.bookmarks() }
     val highlights = remember(refresh) { store.highlights() }
+    val textHighlights = remember(highlights) { highlights.filter { it.text.isNotBlank() } }
     val studyMaterials = remember(notes, highlights) {
         (notes.map { StudyMaterial(it.id, "NOTE", it.title, it.body, it.page) } +
             highlights.map { StudyMaterial(it.id, it.type.uppercase(), "PDF highlight", it.text.ifBlank { "Highlighted area saved in PDF" }, it.page) })
@@ -235,7 +239,15 @@ fun StudentSpacesScreen() {
             if (section == 1 && studyMaterials.isNotEmpty() && !notesStudyMode) {
                 Button(onClick = { studyIndex = 0; notesStudyMode = true }) { Text("Study notes & highlights") }
             }
-            FloatingActionButton(onClick = { addOpen = true }) {
+            FloatingActionButton(onClick = {
+                if (section == 0) {
+                    question = ""
+                    answer = ""
+                    highlightMode = false
+                    selectedHighlightId = null
+                }
+                addOpen = true
+            }) {
                 Icon(Icons.Outlined.Add, contentDescription = "Add study item")
             }
         }
@@ -249,8 +261,34 @@ fun StudentSpacesScreen() {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     when (StudentSection.entries[section]) {
                         StudentSection.FLASHCARDS -> {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { highlightMode = false }) { Text(if (!highlightMode) "✓ Manual" else "Manual") }
+                                TextButton(onClick = { highlightMode = true }) { Text(if (highlightMode) "✓ From highlight" else "From highlight") }
+                            }
+                            if (highlightMode) {
+                                Text("Choose a saved PDF highlight. Its text will be added as the answer; you can edit both fields.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (textHighlights.isEmpty()) {
+                                    Text("No text highlights found. Highlight selectable text in a PDF first, then return here.", style = MaterialTheme.typography.bodyMedium)
+                                } else {
+                                    LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        items(textHighlights, key = { it.id }) { highlight ->
+                                            Surface(shape = MaterialTheme.shapes.medium, tonalElevation = if (selectedHighlightId == highlight.id) 3.dp else 1.dp, modifier = Modifier.fillMaxWidth().clickable {
+                                                selectedHighlightId = highlight.id
+                                                question = "What is the key idea in this highlight?"
+                                                answer = highlight.text
+                                            }) {
+                                                Column(Modifier.padding(10.dp)) {
+                                                    Text("${highlight.documentTitle} · page ${highlight.page}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                                    Text(highlight.text.take(180), style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+                                                    if (selectedHighlightId == highlight.id) Text("Selected", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             OutlinedTextField(value = question, onValueChange = { question = it }, label = { Text("Question") }, singleLine = true)
-                            OutlinedTextField(value = answer, onValueChange = { answer = it }, label = { Text("Answer") })
+                            OutlinedTextField(value = answer, onValueChange = { answer = it }, label = { Text("Answer") }, minLines = 2)
                         }
                         StudentSection.NOTES -> {
                             OutlinedTextField(value = noteTitle, onValueChange = { noteTitle = it }, label = { Text("Title") }, singleLine = true)
@@ -272,7 +310,7 @@ fun StudentSpacesScreen() {
                         StudentSection.REVISION -> if (revisionText.isNotBlank()) store.addRevisionItem(revisionText)
                         StudentSection.IMPORTANT_QUESTIONS -> if (importantQuestionText.isNotBlank()) store.addImportantQuestion(importantQuestionText)
                     }
-                    question = ""; answer = ""; noteTitle = ""; noteBody = ""; notePage = ""; revisionText = ""; importantQuestionText = ""
+                    question = ""; answer = ""; highlightMode = false; selectedHighlightId = null; noteTitle = ""; noteBody = ""; notePage = ""; revisionText = ""; importantQuestionText = ""
                     addOpen = false
                     refresh++
                 }) { Text("Save") }
