@@ -122,6 +122,7 @@ fun HomeScreen(
     var hasAccess by remember { mutableStateOf(DeviceFiles.hasAllFilesAccess(context)) }
     var scanning by remember { mutableStateOf(false) }
     var deviceFiles by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
+    var scanError by remember { mutableStateOf(false) }
 
     fun exitSelect() {
         selectMode = false
@@ -150,8 +151,15 @@ fun HomeScreen(
         if (selectMode) exitSelect()
         if (selectedTab == 2 && hasAccess) {
             scanning = true
-            deviceFiles = DeviceFiles.scan(context)
-            scanning = false
+            scanError = false
+            try {
+                deviceFiles = DeviceFiles.scan(context)
+            } catch (_: Exception) {
+                deviceFiles = emptyList()
+                scanError = true
+            } finally {
+                scanning = false
+            }
         }
     }
 
@@ -390,6 +398,7 @@ fun HomeScreen(
                         hasAccess = hasAccess,
                         scanning = scanning,
                         files = deviceFiles,
+                        scanError = scanError,
                         onGrant = { requestAccess() },
                         onOpen = onOpen
                     )
