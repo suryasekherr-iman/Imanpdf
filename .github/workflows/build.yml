@@ -38,6 +38,21 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Retry Android Emulator SDK installation
+        run: |
+          set -e
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          for attempt in 1 2 3; do
+            if "$SDKMANAGER" --install "emulator" --channel=0; then
+              exit 0
+            fi
+            echo "Emulator SDK download failed (attempt $attempt/3); clearing partial package and retrying."
+            rm -rf "$ANDROID_HOME/emulator"
+            sleep 10
+          done
+          echo "Unable to install Android Emulator after 3 attempts."
+          exit 1
+
       - name: Run Android emulator UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
