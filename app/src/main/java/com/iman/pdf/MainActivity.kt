@@ -3,22 +3,33 @@ package com.iman.pdf
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.os.SystemClock
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.iman.pdf.data.AppLock
 import com.iman.pdf.data.UserPrefs
 import com.iman.pdf.ui.AppSplash
+import com.iman.pdf.ui.LockScreen
 import com.iman.pdf.ui.MainScreen
 import com.iman.pdf.ui.theme.ImanTheme
 import com.iman.pdf.ui.theme.ThemeMode
 import kotlinx.coroutines.delay
 
-class MainActivity : ComponentActivity() {
+private const val RELOCK_AFTER_MS = 30_000L
+
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val prefs = UserPrefs(applicationContext)
@@ -34,17 +45,47 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.SYSTEM
             }
             ImanTheme(mode = mode) {
+                val context = LocalContext.current
                 var splash by rememberSaveable { mutableStateOf(showSplashFirst) }
+                var locked by rememberSaveable { mutableStateOf(AppLock.isEnabled(context)) }
+
                 LaunchedEffect(Unit) {
                     if (splash) {
                         delay(900)
                         splash = false
                     }
                 }
+
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                DisposableEffect(lifecycle) {
+                    var stoppedAt = 0L
+                    val observer = LifecycleEventObserver { _, event ->
+                        when (event) {
+                            Lifecycle.Event.ON_STOP -> stoppedAt = SystemClock.elapsedRealtime()
+                            Lifecycle.Event.ON_START -> {
+                                val away = stoppedAt != 0L &&
+                                    SystemClock.elapsedRealtime() - stoppedAt > RELOCK_AFTER_MS
+                                if (away && AppLock.isEnabled(context)) {
+                                    locked = true
+                                }
+                                stoppedAt = 0L
+                            }
+                            else -> Unit
+                        }
+                    }
+                    lifecycle.addObserver(observer)
+                    onDispose { lifecycle.removeObserver(observer) }
+                }
+
                 if (splash) {
                     AppSplash()
                 } else {
-                    MainScreen(incomingUri = incoming)
+                    Box {
+                        MainScreen(incomingUri = incoming)
+                        if (locked) {
+                            LockScreen(onUnlocked = { locked = false })
+                        }
+                    }
                 }
             }
         }

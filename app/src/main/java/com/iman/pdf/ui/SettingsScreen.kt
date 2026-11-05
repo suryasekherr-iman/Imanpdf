@@ -206,6 +206,9 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            AppLockSection()
+
+            Spacer(modifier = Modifier.height(16.dp))
             SectionTitle(stringResource(R.string.settings_about))
             Text(
                 text = stringResource(R.string.settings_version),
