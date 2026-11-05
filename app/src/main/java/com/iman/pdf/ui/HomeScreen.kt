@@ -108,6 +108,7 @@ fun HomeScreen(
     val store = remember { FileStore(context) }
     val name by prefs.userName.collectAsState(initial = "Indrajit")
     val photo by prefs.photoPath.collectAsState(initial = "")
+    val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
     val entries by store.entries.collectAsState(initial = emptyList())
     val tabs = listOf("Recent", "Starred", "On device")
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 3 })
@@ -186,8 +187,9 @@ fun HomeScreen(
         }
     }
 
+    val recentEntries = if (hideRecent) emptyList() else entries
     val starredList = entries.filter { it.starred }
-    val currentList: List<PdfEntry> = if (selectedTab == 0) entries else starredList
+    val currentList: List<PdfEntry> = if (selectedTab == 0) recentEntries else starredList
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -403,14 +405,15 @@ fun HomeScreen(
                         onOpen = onOpen
                     )
                 } else {
-                    val list = if (page == 0) entries else starredList
+                    val list = if (page == 0) recentEntries else starredList
                     if (list.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (page == 0) "No files yet. Tap + to open a PDF."
+                                text = if (page == 0 && hideRecent) stringResource(R.string.home_recent_hidden)
+                                else if (page == 0) "No files yet. Tap + to open a PDF."
                                 else "No starred files yet.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -448,7 +451,7 @@ fun HomeScreen(
 
         if (searching) {
             HomeSearch(
-                entries = entries,
+                entries = recentEntries,
                 onOpen = onOpen,
                 onClose = { searching = false }
             )
