@@ -1,68 +1,76 @@
 package com.iman.pdf.pdf
 
 import android.content.Context
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.pdmodel.PDPage
-import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
+import com.artifex.mupdf.fitz.Document
+import com.artifex.mupdf.fitz.PDFDocument
+import com.artifex.mupdf.fitz.PDFPage
+import com.artifex.mupdf.fitz.Rect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
 object PdfOrganize {
-
     suspend fun apply(
         context: Context,
         source: File,
         order: List<Int>,
         rotations: List<Int>,
         second: File? = null
-    ): File? =
-        withContext(Dispatchers.IO) {
-            if (order.isEmpty() || order.size != rotations.size) {
-                return@withContext null
+    ): File? = withContext(Dispatchers.IO) {
+        if (order.isEmpty() || order.size != rotations.size) return@withContext null
+        var input: PDFDocument? = null
+        var other: PDFDocument? = null
+        val output = PDFDocument()
+        try {
+            input = Document.openDocument(source.absolutePath) as? PDFDocument
+                ?: return@withContext null
+            if (second != null) {
+                other = Document.openDocument(second.absolutePath) as? PDFDocument
+                    ?: return@withContext null
             }
-            try {
-                PDFBoxResourceLoader.init(context.applicationContext)
-                val other = if (second != null) PDDocument.load(second) else null
-                PDDocument.load(source).use { input ->
-                    val output = PDDocument()
-                    try {
-                        order.forEachIndexed { position, original ->
-                            // original >= 0: page of source, -1: blank page, <= -2: page of second PDF
-                            val imported = if (original == -1) {
-                                val size = if (input.numberOfPages > 0) {
-                                    input.getPage(0).mediaBox
-                                } else {
-                                    PDRectangle.A4
-                                }
-                                val blank = PDPage(PDRectangle(size.width, size.height))
-                                output.addPage(blank)
-                                blank
-                            } else if (original <= -2) {
-                                output.importPage(checkNotNull(other) { "Second PDF missing" }.getPage(-original - 2))
-                            } else {
-                                output.importPage(input.getPage(original))
-                            }
-                            val extra = rotations[position]
-                            if (extra != 0) {
-                                val total = (imported.rotation + extra) % 360
-                                imported.rotation = (total + 360) % 360
-                            }
-                        }
-                        val out = File(
-                            context.cacheDir,
-                            "organized_" + System.nanoTime() + ".pdf"
+            order.forEachIndexed { position, original ->
+                when {
+                    original == -1 -> {
+                        val first = if (input.countPages() > 0) input.loadPage(0) else null
+                        val bounds = try { first?.bounds } finally { first?.destroy() }
+                        val width = bounds?.let { it.x1 - it.x0 } ?: 595f
+                        val height = bounds?.let { it.y1 - it.y0 } ?: 842f
+                        val pageObject = output.addPage(
+                            Rect(0f, 0f, width, height),
+                            0,
+                            output.newDictionary(),
+                            ""
                         )
-                        output.save(out)
-                        out
-                    } finally {
-                        output.close()
-                        other?.close()
+                        output.insertPage(-1, pageObject)
+                    }
+                    original <= -2 -> {
+                        val src = other ?: return@withContext null
+                        val sourceIndex = -original - 2
+                        if (sourceIndex !in 0 until src.countPages()) return@withContext null
+                        output.graftPage(position, src, sourceIndex)
+                    }
+                    else -> {
+                        if (original !in 0 until input.countPages()) return@withContext null
+                        output.graftPage(position, input, original)
                     }
                 }
-            } catch (e: Exception) {
-                null
+                val page = output.loadPage(position) as? PDFPage
+                if (page != null) {
+                    try {
+                        val rotation = ((page.getObject().get("Rotate")?.asInteger() ?: 0) + rotations[position]) % 360
+                        page.getObject().put("Rotate", (rotation + 360) % 360)
+                        page.update()
+                    } finally { page.destroy() }
+                }
             }
+            val file = File(context.cacheDir, "organized_${System.nanoTime()}.pdf")
+            output.save(file.absolutePath, "garbage=compact")
+            file.takeIf { it.isFile && it.length() > 0 }
+        } catch (_: Exception) { null }
+        finally {
+            try { output.destroy() } catch (_: Exception) {}
+            try { input?.destroy() } catch (_: Exception) {}
+            try { other?.destroy() } catch (_: Exception) {}
         }
+    }
 }
