@@ -86,13 +86,14 @@ fun ViewerScreen(
     title: String,
     documentId: String,
     startMode: String = "",
-        onOpenTool: (String) -> Unit = {},
+    initialPage: Int? = null,
+    onOpenTool: (String) -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = LastPage.load(context, documentId, engine.pageCount)
-    )
+    val initial = initialPage?.takeIf { it in 0 until engine.pageCount }
+        ?: LastPage.load(context, documentId, engine.pageCount)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initial)
     val horizontalState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
@@ -694,6 +695,12 @@ fun ViewerScreen(
                 bookmarks = bookmarkList,
                 toc = tocList,
                 tocLoading = tocLoading,
+                notes = bookmarkList.associateWith { page ->
+                    Bookmarks.note(context, documentId, engine.pageCount, page)
+                },
+                onSaveNote = { page, note ->
+                    Bookmarks.saveNote(context, documentId, engine.pageCount, page, note)
+                },
                 onJump = { page ->
                     bookmarksOpen = false
                     scope.launch { listState.scrollToItem(page) }
