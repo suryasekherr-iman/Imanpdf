@@ -8,21 +8,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/** Compatibility facade used by the existing Compose screens. */
-class PdfEngine private constructor(
-    val file: File,
-    private val mupdf: MuPdfEngine
-) {
+/** Compatibility facade for existing screens; all PDF work is delegated to MuPDF. */
+class PdfEngine private constructor(val file: File, private val mupdf: MuPdfEngine) {
     val pageCount: Int get() = mupdf.pageCount
-
     fun renderPage(index: Int, targetWidth: Int): Bitmap {
-        val ratio = pageAspectRatio(index).coerceAtLeast(0.1f)
-        val scale = targetWidth.coerceAtLeast(1) / (612f * ratio)
-        return checkNotNull(mupdf.renderPageToBitmap(index, scale)) {
-            "MuPDF could not render page ${index + 1}"
-        }
+        val scale = targetWidth.coerceAtLeast(1) / 612f
+        return checkNotNull(mupdf.renderPageToBitmap(index, scale)) { "MuPDF render failed" }
     }
-
     fun pageAspectRatio(index: Int): Float = mupdf.pageAspectRatio(index)
     fun pageText(index: Int): String = mupdf.pageText(index)
     fun searchPage(index: Int, query: String): List<FloatArray> = mupdf.searchPage(index, query)
@@ -33,20 +25,18 @@ class PdfEngine private constructor(
         suspend fun open(context: Context, uri: Uri): PdfEngine? = withContext(Dispatchers.IO) {
             var temp: File? = null
             try {
-                val source = if (uri.scheme == "file") {
-                    File(checkNotNull(uri.path))
-                } else {
-                    temp = File(context.cacheDir, "mupdf_open_${System.nanoTime()}.pdf")
+                val source = if (uri.scheme == "file") File(checkNotNull(uri.path)) else {
+                    temp = File(context.cacheDir, "mupdf_${System.nanoTime()}.pdf")
                     val input = context.contentResolver.openInputStream(uri) ?: return@withContext null
                     input.use { stream -> temp!!.outputStream().use { stream.copyTo(it) } }
                     temp!!
                 }
-                val mupdf = MuPdfEngine()
-                if (!mupdf.openDocument(source.absolutePath)) {
-                    mupdf.closeDocument()
+                val engine = MuPdfEngine()
+                if (!engine.openDocument(source.absolutePath)) {
+                    engine.closeDocument()
                     return@withContext null
                 }
-                PdfEngine(source, mupdf)
+                PdfEngine(source, engine)
             } catch (_: Exception) {
                 temp?.delete()
                 null
