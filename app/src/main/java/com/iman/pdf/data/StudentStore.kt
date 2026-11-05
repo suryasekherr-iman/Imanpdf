@@ -23,6 +23,9 @@ class StudentStore(context: Context) {
     fun revisionItems(): List<RevisionItem> = readArray("revision") {
         RevisionItem(it.getString("id"), it.getString("text"), it.optBoolean("done"))
     }
+    fun importantQuestions(): List<ImportantQuestion> = readArray("important_questions") {
+        ImportantQuestion(it.getString("id"), it.getString("text"))
+    }
     fun addFlashcard(question: String, answer: String) {
         val values = flashcards() + StudyFlashcard(UUID.randomUUID().toString(), question.trim(), answer.trim())
         writeArray("flashcards", values.map { JSONObject().put("id", it.id).put("question", it.question).put("answer", it.answer) })
@@ -36,6 +39,13 @@ class StudentStore(context: Context) {
     }
     fun removeNote(id: String) = writeArray("notes", notes().filterNot { it.id == id }.map {
         JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("page", it.page ?: JSONObject.NULL)
+    })
+    fun addImportantQuestion(text: String) {
+        val values = importantQuestions() + ImportantQuestion(UUID.randomUUID().toString(), text.trim())
+        writeArray("important_questions", values.map { JSONObject().put("id", it.id).put("text", it.text) })
+    }
+    fun removeImportantQuestion(id: String) = writeArray("important_questions", importantQuestions().filterNot { it.id == id }.map {
+        JSONObject().put("id", it.id).put("text", it.text)
     })
     fun addRevisionItem(text: String) {
         val values = revisionItems() + RevisionItem(UUID.randomUUID().toString(), text.trim(), false)
