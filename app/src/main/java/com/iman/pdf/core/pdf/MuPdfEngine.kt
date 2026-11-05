@@ -23,7 +23,7 @@ class MuPdfEngine {
             val file = File(path)
             require(file.isFile && file.canRead())
             val opened = Document.openDocument(file.absolutePath)
-            if (!opened.isPDF || opened.needsPassword()) {
+            if (!opened.isPDF() || opened.needsPassword()) {
                 opened.destroy()
                 return false
             }
