@@ -14,9 +14,12 @@ class MuPdfEngine {
     private var pdf: PDFDocument? = null
     private var source: File? = null
 
+    @get:Synchronized
     val pageCount: Int get() = document?.countPages() ?: 0
+    @get:Synchronized
     val file: File? get() = source
 
+    @Synchronized
     fun openDocument(path: String): Boolean {
         closeDocument()
         return try {
@@ -37,6 +40,7 @@ class MuPdfEngine {
         }
     }
 
+    @Synchronized
     fun authenticate(password: String): Boolean {
         val opened = document ?: return false
         return try {
@@ -46,8 +50,10 @@ class MuPdfEngine {
         } catch (_: Exception) { false }
     }
 
+    @Synchronized
     fun needsPassword(): Boolean = try { document?.needsPassword() ?: false } catch (_: Exception) { false }
 
+    @Synchronized
     fun renderPageToBitmap(index: Int, scale: Float = 1f): Bitmap? {
         val doc = document ?: return null
         if (index !in 0 until doc.countPages()) return null
@@ -85,6 +91,7 @@ class MuPdfEngine {
         }
     }
 
+    @Synchronized
     fun renderPageToWidth(index: Int, targetWidth: Int): Bitmap? {
         val doc = document ?: return null
         if (index !in 0 until doc.countPages()) return null
@@ -96,6 +103,7 @@ class MuPdfEngine {
         } catch (_: Exception) { null }
     }
 
+    @Synchronized
     fun pageAspectRatio(index: Int): Float {
         val doc = document ?: return 1f / 1.414f
         if (index !in 0 until doc.countPages()) return 1f / 1.414f
@@ -108,6 +116,7 @@ class MuPdfEngine {
         } catch (_: Exception) { 1f / 1.414f }
     }
 
+    @Synchronized
     fun pageText(index: Int): String {
         val doc = document ?: return ""
         if (index !in 0 until doc.countPages()) return ""
@@ -130,6 +139,7 @@ class MuPdfEngine {
         } catch (_: Exception) { "" }
     }
 
+    @Synchronized
     fun searchPage(index: Int, query: String): List<FloatArray> {
         val doc = document ?: return emptyList()
         if (query.isBlank() || index !in 0 until doc.countPages()) return emptyList()
@@ -154,6 +164,7 @@ class MuPdfEngine {
         } catch (_: Exception) { emptyList() }
     }
 
+    @Synchronized
     fun save(output: File, options: String = "garbage=compact"): Boolean {
         val doc = pdf ?: return false
         return try {
@@ -162,9 +173,12 @@ class MuPdfEngine {
         } catch (_: Exception) { false }
     }
 
+    @Synchronized
     fun pdfDocument(): PDFDocument? = pdf
+    @Synchronized
     fun document(): Document? = document
 
+    @Synchronized
     fun closeDocument() {
         try { document?.destroy() } catch (_: Exception) {}
         document = null
