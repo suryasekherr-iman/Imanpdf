@@ -12,8 +12,7 @@ import java.io.File
 class PdfEngine private constructor(val file: File, private val mupdf: MuPdfEngine) {
     val pageCount: Int get() = mupdf.pageCount
     fun renderPage(index: Int, targetWidth: Int): Bitmap {
-        val scale = targetWidth.coerceAtLeast(1) / 612f
-        return checkNotNull(mupdf.renderPageToBitmap(index, scale)) { "MuPDF render failed" }
+        return checkNotNull(mupdf.renderPageToWidth(index, targetWidth)) { "MuPDF render failed" }
     }
     fun pageAspectRatio(index: Int): Float = mupdf.pageAspectRatio(index)
     fun pageText(index: Int): String = mupdf.pageText(index)
