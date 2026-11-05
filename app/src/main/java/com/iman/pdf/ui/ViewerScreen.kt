@@ -244,7 +244,8 @@ fun ViewerScreen(
 
     fun runOcr(pages: IntRange) {
         if (ocrBusy || pages.isEmpty()) return
-        stopReading()
+        reading = false
+        reader.stop()
         ocrBusy = true
         ocrDone = 0
         ocrTotal = pages.count()
