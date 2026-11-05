@@ -4,8 +4,10 @@
     <string name="files_title">फ़ाइलें</string>
     <string name="files_browse_locations">अन्य स्थानों से ब्राउज़ करें</string>
     <string name="files_on_device">इस डिवाइस पर</string>
-    <string name="files_permission_message">ImAn को आपके फ़ोन की PDF फ़ाइलें ढूँढने के लिए सभी फ़ाइलों की अनुमति दें।</string>
-    <string name="files_allow_access">अनुमति दें</string>
+    <string name="files_permission_message">वह फ़ोल्डर चुनें जिसमें और जिसके सबफ़ोल्डर में Iman PDF खोज सके।</string>
+    <string name="files_allow_access">फ़ोल्डर चुनें</string>
+    <string name="files_add_folder">फ़ोल्डर जोड़ें</string>
+    <string name="files_folder_access_message">जिस फ़ोल्डर की PDF शामिल करनी हैं, उसे चुनें। आप एक से अधिक फ़ोल्डर जोड़ सकते हैं।</string>
     <string name="files_search">फ़ाइलें खोजें</string>
     <string name="files_count">%1$d फ़ाइलें</string>
     <string name="files_sort">क्रम: %1$s</string>
