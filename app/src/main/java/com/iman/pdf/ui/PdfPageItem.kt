@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -146,7 +145,7 @@ fun PdfPageItem(
                                     .height(maxHeight * lineHeight.coerceAtMost(1f)),
                                 style = TextStyle(
                                     color = Color.Transparent,
-                                    fontSize = (maxHeight * lineHeight).value.coerceAtLeast(1f).sp
+                                    fontSize = (maxHeight * lineHeight * 0.75f).value.coerceAtLeast(1f).sp
                                 ),
                                 maxLines = 1,
                                 softWrap = false,
