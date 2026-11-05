@@ -2,8 +2,7 @@ package com.iman.pdf.pdf
 
 import android.graphics.Bitmap
 import android.graphics.Rect
-import android.graphics.pdf.PdfRenderer
-import android.os.ParcelFileDescriptor
+import com.iman.pdf.core.pdf.MuPdfEngine
 import android.content.Context
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -13,7 +12,6 @@ import com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -24,47 +22,28 @@ object PdfOcr {
         TextRecognition.getClient(DevanagariTextRecognizerOptions.Builder().build())
     }
 
-    suspend fun recognize(context: Context, file: File, pageIndex: Int): OcrPage? =
+    suspend fun recognize(context: Context, file: java.io.File, pageIndex: Int): OcrPage? =
         withContext(Dispatchers.IO) {
-            var descriptor: ParcelFileDescriptor? = null
-            var renderer: PdfRenderer? = null
+            val engine = MuPdfEngine()
             var bitmap: Bitmap? = null
-            var imageWidth = 0
-            var imageHeight = 0
             try {
-                val activeDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                descriptor = activeDescriptor
-                val activeRenderer = PdfRenderer(activeDescriptor)
-                renderer = activeRenderer
-                if (pageIndex !in 0 until activeRenderer.pageCount) return@withContext null
-                val page = activeRenderer.openPage(pageIndex)
-                try {
-                    imageWidth = (page.width * 2).coerceIn(900, 1800)
-                    imageHeight = (imageWidth.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
-                    val created = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
-                    bitmap = created
-                    created.eraseColor(android.graphics.Color.WHITE)
-                    page.render(created, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                } finally {
-                    page.close()
-                }
-
-                val input = InputImage.fromBitmap(checkNotNull(bitmap), 0)
+                if (!engine.openDocument(file.absolutePath)) return@withContext null
+                val rendered = engine.renderPageToBitmap(pageIndex, 2f) ?: return@withContext null
+                bitmap = rendered
+                val imageWidth = rendered.width
+                val imageHeight = rendered.height
+                val input = InputImage.fromBitmap(rendered, 0)
                 val latinResult = process(latin, input)
                 val devanagariResult = process(devanagari, input)
                 val lines = ArrayList<OcrLine>()
                 lines.addAll(toLines(latinResult, imageWidth, imageHeight))
                 toLines(devanagariResult, imageWidth, imageHeight).forEach { candidate ->
-                    val duplicate = lines.indexOfFirst { existing ->
-                        overlap(existing, candidate) > 0.55f
-                    }
-                    if (duplicate < 0) {
-                        lines.add(candidate)
-                    } else {
+                    val duplicate = lines.indexOfFirst { existing -> overlap(existing, candidate) > 0.55f }
+                    if (duplicate < 0) lines.add(candidate)
+                    else {
                         val existing = lines[duplicate]
                         val merged = listOf(existing.text, candidate.text)
-                            .distinctBy { it.lowercase() }
-                            .joinToString(" ")
+                            .distinctBy { it.lowercase() }.joinToString(" ")
                         lines[duplicate] = existing.copy(text = merged)
                     }
                 }
@@ -74,8 +53,7 @@ object PdfOcr {
                 null
             } finally {
                 bitmap?.recycle()
-                try { renderer?.close() } catch (_: Exception) {}
-                try { descriptor?.close() } catch (_: Exception) {}
+                engine.closeDocument()
             }
         }
 

@@ -1,15 +1,13 @@
 package com.iman.pdf.pdf
 
 import android.content.Context
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
+import com.artifex.mupdf.fitz.PDFDocument
+import com.artifex.mupdf.fitz.PDFPage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
 object PdfCrop {
-
     suspend fun apply(
         context: Context,
         source: File,
@@ -17,41 +15,35 @@ object PdfCrop {
         top: Float,
         right: Float,
         bottom: Float
-    ): File? =
-        withContext(Dispatchers.IO) {
-            try {
-                PDFBoxResourceLoader.init(context.applicationContext)
-                PDDocument.load(source).use { document ->
-                    for (index in 0 until document.numberOfPages) {
-                        val page = document.getPage(index)
-                        val box = page.cropBox
-                        val rotation = ((page.rotation % 360) + 360) % 360
-
-                        // order: left, top, right, bottom of the unrotated page
-                        val m = when (rotation) {
-                            90 -> floatArrayOf(top, right, bottom, left)
-                            180 -> floatArrayOf(right, bottom, left, top)
-                            270 -> floatArrayOf(bottom, left, top, right)
-                            else -> floatArrayOf(left, top, right, bottom)
-                        }
-
-                        val width = box.width
-                        val height = box.height
-                        val x0 = box.lowerLeftX + width * m[0]
-                        val y0 = box.lowerLeftY + height * m[3]
-                        val x1 = box.upperRightX - width * m[2]
-                        val y1 = box.upperRightY - height * m[1]
-                        page.cropBox = PDRectangle(x0, y0, x1 - x0, y1 - y0)
+    ): File? = withContext(Dispatchers.IO) {
+        var doc: PDFDocument? = null
+        try {
+            val opened = com.artifex.mupdf.fitz.Document.openDocument(source.absolutePath)
+            doc = opened as? PDFDocument ?: run { opened.destroy(); return@withContext null }
+            for (index in 0 until doc.countPages()) {
+                val page = doc.loadPage(index) as? PDFPage ?: continue
+                try {
+                    val box = page.getBounds(com.artifex.mupdf.fitz.Page.CROP_BOX)
+                    val width = (box.x1 - box.x0).coerceAtLeast(1f)
+                    val height = (box.y1 - box.y0).coerceAtLeast(1f)
+                    val l = left.coerceIn(0f, 0.95f)
+                    val t = top.coerceIn(0f, 0.95f)
+                    val r = right.coerceIn(l + 0.01f, 1f)
+                    val b = bottom.coerceIn(t + 0.01f, 1f)
+                    val rect = doc.newArray().apply {
+                        push(box.x0 + width * l)
+                        push(box.y0 + height * t)
+                        push(box.x0 + width * r)
+                        push(box.y0 + height * b)
                     }
-                    val out = File(
-                        context.cacheDir,
-                        "cropped_" + System.nanoTime() + ".pdf"
-                    )
-                    document.save(out)
-                    out
-                }
-            } catch (e: Exception) {
-                null
+                    page.getObject().put("CropBox", rect)
+                    page.update()
+                } finally { page.destroy() }
             }
-        }
+            val output = File(context.cacheDir, "cropped_${System.nanoTime()}.pdf")
+            doc.save(output.absolutePath, "garbage=compact")
+            output.takeIf { it.isFile && it.length() > 0 }
+        } catch (_: Exception) { null }
+        finally { try { doc?.destroy() } catch (_: Exception) {} }
+    }
 }

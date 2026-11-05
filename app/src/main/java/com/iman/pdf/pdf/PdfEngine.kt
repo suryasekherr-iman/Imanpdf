@@ -1,49 +1,54 @@
-package com.imran.pdf.core.pdf
+package com.iman.pdf.pdf
 
+import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
-import com.artifex.mupdf.fitz.Document
-import com.artifex.mupdf.fitz.Matrix as MuMatrix
-import com.artifex.mupdf.fitz.Page
+import android.net.Uri
+import com.iman.pdf.core.pdf.MuPdfEngine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
-class MuPdfEngine {
-    private var document: Document? = null
-    private var currentPage: Page? = null
-
-    fun openDocument(filePath: String): Boolean {
-        return try {
-            closeDocument()
-            document = Document(filePath)
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
+/** Compatibility facade for existing screens; all PDF work is delegated to MuPDF. */
+class PdfEngine private constructor(
+    val file: File,
+    private val mupdf: MuPdfEngine,
+    private val deleteFileOnClose: Boolean
+) {
+    val pageCount: Int get() = mupdf.pageCount
+    fun renderPage(index: Int, targetWidth: Int): Bitmap {
+        return checkNotNull(mupdf.renderPageToWidth(index, targetWidth)) { "MuPDF render failed" }
+    }
+    fun pageAspectRatio(index: Int): Float = mupdf.pageAspectRatio(index)
+    fun pageText(index: Int): String = mupdf.pageText(index)
+    fun searchPage(index: Int, query: String): List<FloatArray> = mupdf.searchPage(index, query)
+    fun save(output: File, options: String = "garbage=compact"): Boolean = mupdf.save(output, options)
+    fun close() {
+        mupdf.closeDocument()
+        if (deleteFileOnClose) file.delete()
     }
 
-    fun getPageCount(): Int = document?.countPages() ?: 0
-
-    fun renderPageToBitmap(pageNumber: Int, scale: Float = 1.0f): Bitmap? {
-        val doc = document ?: return null
-        if (pageNumber < 0 || pageNumber >= doc.countPages()) return null
-        return try {
-            currentPage?.destroy()
-            currentPage = doc.loadPage(pageNumber)
-            val page = currentPage ?: return null
-            val pixmap = page.toPixmap(MuMatrix(scale, scale), Color.WHITE, false, true)
-            val bitmap = Bitmap.createBitmap(pixmap.width, pixmap.height, Bitmap.Config.ARGB_8888)
-            pixmap.destroy()
-            bitmap
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+    companion object {
+        suspend fun open(context: Context, uri: Uri): PdfEngine? = withContext(Dispatchers.IO) {
+            var temp: File? = null
+            try {
+                val copiedToCache = uri.scheme != "file"
+                val source = if (!copiedToCache) File(checkNotNull(uri.path)) else {
+                    temp = File(context.cacheDir, "mupdf_${System.nanoTime()}.pdf")
+                    val input = context.contentResolver.openInputStream(uri) ?: return@withContext null
+                    input.use { stream -> temp!!.outputStream().use { stream.copyTo(it) } }
+                    temp!!
+                }
+                val engine = MuPdfEngine()
+                if (!engine.openDocument(source.absolutePath)) {
+                    engine.closeDocument()
+                    return@withContext null
+                }
+                val deleteOnClose = copiedToCache || source.absolutePath.startsWith(context.cacheDir.absolutePath + File.separator)
+                PdfEngine(source, engine, deleteOnClose)
+            } catch (_: Exception) {
+                temp?.delete()
+                null
+            }
         }
-    }
-
-    fun closeDocument() {
-        currentPage?.destroy()
-        currentPage = null
-        document?.destroy()
-        document = null
     }
 }

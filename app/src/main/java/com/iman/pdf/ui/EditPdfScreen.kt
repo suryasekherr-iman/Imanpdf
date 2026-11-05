@@ -1,15 +1,7 @@
 package com.iman.pdf.ui
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Typeface
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.text.Layout
-import android.text.StaticLayout
-import android.text.TextPaint
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -29,38 +21,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.R
 import com.iman.pdf.pdf.PdfActions
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
-import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.io.File
-
-private fun renderTextAsPng(text: String, widthPx: Int, textSizePx: Float): ByteArray {
-    val paint = TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
-        color = Color.BLACK
-        textSize = textSizePx
-        typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-    }
-    val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, widthPx)
-        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-        .setIncludePad(true)
-        .setLineSpacing(0f, 1.15f)
-        .build()
-    val bitmap = Bitmap.createBitmap(widthPx, layout.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-    Canvas(bitmap).apply {
-        drawColor(Color.TRANSPARENT)
-        layout.draw(this)
-    }
-    return ByteArrayOutputStream().use { output ->
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-        bitmap.recycle()
-        output.toByteArray()
-    }
-}
+import com.artifex.mupdf.fitz.Document
+import com.artifex.mupdf.fitz.Image
+import com.artifex.mupdf.fitz.PDFAnnotation
+import com.artifex.mupdf.fitz.PDFDocument
+import com.artifex.mupdf.fitz.PDFPage
+import com.artifex.mupdf.fitz.Rect
+import com.iman.pdf.pdf.UriActions
 
 private suspend fun editPdf(
     context: android.content.Context,
@@ -71,54 +42,56 @@ private suspend fun editPdf(
     imageUri: Uri?
 ): File? = withContext(Dispatchers.IO) {
     var source: File? = null
+    var document: PDFDocument? = null
     try {
-        PDFBoxResourceLoader.init(context.applicationContext)
-        source = File(context.cacheDir, "editor_source_${System.nanoTime()}.pdf")
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            source.outputStream().use { output -> input.copyTo(output) }
-        } ?: return@withContext null
-
-        PDDocument.load(source).use { document ->
-            if (document.numberOfPages == 0) return@withContext null
-            val page = document.getPage((pageNumber - 1).coerceIn(0, document.numberOfPages - 1))
-            val pageWidth = page.mediaBox.width
-            val pageHeight = page.mediaBox.height
-
+        source = UriActions.copyToCache(context, uri) ?: return@withContext null
+        document = Document.openDocument(source.absolutePath) as? PDFDocument
+            ?: return@withContext null
+        if (document.countPages() == 0) return@withContext null
+        val page = document.loadPage((pageNumber - 1).coerceIn(0, document.countPages() - 1)) as? PDFPage
+            ?: return@withContext null
+        try {
+            val bounds = page.bounds
+            val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
+            val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
             if (text.isNotBlank()) {
-                val displayWidth = (pageWidth - 80f).coerceAtLeast(40f)
-                val bitmapWidth = (displayWidth * 2f).toInt().coerceAtLeast(80)
-                val png = renderTextAsPng(text, bitmapWidth, size * 2f)
-                val textImage = PDImageXObject.createFromByteArray(document, png, "added-text")
-                val displayHeight = textImage.height / 2f
-                PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { stream ->
-                    stream.drawImage(
-                        textImage,
-                        40f,
-                        (pageHeight - 40f - displayHeight).coerceAtLeast(0f),
-                        displayWidth,
-                        displayHeight
-                    )
-                }
+                val annotation = page.createAnnotation(PDFAnnotation.TYPE_FREE_TEXT)
+                val fontSize = size.coerceIn(8f, 36f)
+                val textWidth = (text.lines().maxOfOrNull { it.length } ?: 1) * fontSize * 0.65f
+                val textHeight = text.lines().size * fontSize * 1.35f
+                annotation.setRect(Rect(bounds.x0 + 40f, bounds.y0 + 40f,
+                    (bounds.x0 + 40f + textWidth).coerceAtMost(bounds.x1),
+                    (bounds.y0 + 40f + textHeight).coerceAtMost(bounds.y1)))
+                annotation.setContents(text)
+                annotation.setColor(floatArrayOf(0f, 0f, 0f))
+                annotation.setDefaultAppearance("Helv", fontSize, floatArrayOf(0f, 0f, 0f))
+                annotation.update()
+                annotation.destroy()
             }
-
             if (imageUri != null) {
                 val bytes = context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
                     ?: return@withContext null
-                val image = PDImageXObject.createFromByteArray(document, bytes, "inserted-image")
-                val width = (pageWidth * 0.4f).coerceAtMost(image.width.toFloat())
-                val scale = width / image.width
-                PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { stream ->
-                    stream.drawImage(image, 40f, 40f, width, image.height * scale)
-                }
+                val image = Image(bytes)
+                try {
+                    val annotation = page.createAnnotation(PDFAnnotation.TYPE_STAMP)
+                    val imageWidth = width * 0.4f
+                    val imageHeight = imageWidth * image.height / image.width.coerceAtLeast(1)
+                    annotation.setRect(Rect(bounds.x0 + 40f, bounds.y1 - imageHeight - 40f,
+                        bounds.x0 + 40f + imageWidth, bounds.y1 - 40f))
+                    annotation.setAppearance(image)
+                    annotation.update()
+                    annotation.destroy()
+                } finally { image.destroy() }
             }
-
-            val output = File(context.cacheDir, "edited_${System.nanoTime()}.pdf")
-            document.save(output)
-            output
-        }
+            page.update()
+        } finally { page.destroy() }
+        val output = File(context.cacheDir, "edited_${System.nanoTime()}.pdf")
+        document.save(output.absolutePath, "garbage=compact,appearance=yes")
+        output.takeIf { it.isFile && it.length() > 0 }
     } catch (_: Exception) {
         null
     } finally {
+        try { document?.destroy() } catch (_: Exception) {}
         source?.delete()
     }
 }
