@@ -122,7 +122,7 @@ fun ViewerScreen(
         onDispose { hostView.keepScreenOn = false }
     }
     var bookmarkList by remember {
-        mutableStateOf(Bookmarks.load(context, title, engine.pageCount))
+        mutableStateOf(Bookmarks.load(context, documentId, engine.pageCount))
     }
     var tocList by remember { mutableStateOf<List<TocEntry>>(emptyList()) }
     var tocLoading by remember { mutableStateOf(false) }
@@ -408,7 +408,7 @@ fun ViewerScreen(
                     }
                 },
                 onAddBookmark = {
-                    val added = Bookmarks.add(context, title, engine.pageCount, currentPage)
+                    val added = Bookmarks.add(context, documentId, engine.pageCount, currentPage)
                     bookmarkList = Bookmarks.load(context, title, engine.pageCount)
                     Toast.makeText(
                         context,
@@ -605,7 +605,7 @@ fun ViewerScreen(
                     scope.launch { listState.scrollToItem(page) }
                 },
                 onRemove = { page ->
-                    Bookmarks.remove(context, title, engine.pageCount, page)
+                    Bookmarks.remove(context, documentId, engine.pageCount, page)
                     bookmarkList = Bookmarks.load(context, title, engine.pageCount)
                 },
                 onDismiss = { bookmarksOpen = false }
