@@ -75,6 +75,7 @@ fun PdfPageItem(
     ocrRevision: Int = 0,
     annotationRevision: Int = 0,
     onHighlight: ((Int, RectF) -> Unit)? = null,
+    onUnderline: ((Int, RectF) -> Unit)? = null,
     onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -172,6 +173,7 @@ fun PdfPageItem(
                 annot = annot,
                 modifier = Modifier.fillMaxSize(),
                 onHighlight = onHighlight,
+                onUnderline = onUnderline,
                 onInk = onInk
             )
         }
