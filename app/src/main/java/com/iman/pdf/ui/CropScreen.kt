@@ -123,7 +123,15 @@ fun CropScreen(
                         Toast.LENGTH_LONG
                     ).show()
                 } else {
-                    val first = opened.renderPage(0, 900)
+                    val first = withContext(Dispatchers.IO) {
+                        try { opened.renderPage(0, 900) } catch (_: Exception) { null }
+                    }
+                    if (first == null) {
+                        opened.close()
+                        busy = false
+                        Toast.makeText(context, "Could not render this PDF", Toast.LENGTH_LONG).show()
+                        return@launch
+                    }
                     busy = false
                     engine?.close()
                     engine = opened
