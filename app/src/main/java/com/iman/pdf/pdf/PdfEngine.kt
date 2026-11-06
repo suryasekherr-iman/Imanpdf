@@ -28,6 +28,10 @@ class PdfEngine private constructor(
     fun save(output: File, options: String = "garbage=compact"): Boolean = mupdf.save(output, options)
     fun addHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
         mupdf.addHighlightAnnotation(pageNumber, rects)
+    fun getTextRectsForSelection(pageNum: Int, startX: Float, startY: Float, endX: Float, endY: Float): List<RectF> =
+        mupdf.getTextRectsForSelection(pageNum, startX, startY, endX, endY)
+    fun addTextHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
+        mupdf.addTextHighlightAnnotation(pageNumber, rects)
     fun addUnderlineAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
         mupdf.addUnderlineAnnotation(pageNumber, rects)
     fun addInkAnnotation(
