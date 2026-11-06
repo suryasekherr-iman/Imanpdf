@@ -111,6 +111,22 @@ class MuPdfEngine {
     }
 
     @Synchronized
+    fun pageBounds(index: Int): RectF? {
+        val doc = document ?: return null
+        if (index !in 0 until doc.countPages()) return null
+        var page: com.artifex.mupdf.fitz.Page? = null
+        return try {
+            page = doc.loadPage(index)
+            val bounds = page.bounds
+            RectF(bounds.x0, bounds.y0, bounds.x1, bounds.y1)
+        } catch (_: Exception) {
+            null
+        } finally {
+            try { page?.destroy() } catch (_: Exception) {}
+        }
+    }
+
+    @Synchronized
     fun pageAspectRatio(index: Int): Float {
         val doc = document ?: return 1f / 1.414f
         if (index !in 0 until doc.countPages()) return 1f / 1.414f
