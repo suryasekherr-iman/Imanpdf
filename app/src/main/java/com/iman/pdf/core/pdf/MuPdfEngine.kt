@@ -211,9 +211,18 @@ class MuPdfEngine {
             page = loadedPage
             val loadedText = loadedPage.toStructuredText()
             structuredText = loadedText
+            val rawLeft = minOf(startX, endX)
+            val rawTop = minOf(startY, endY)
+            val rawRight = maxOf(startX, endX)
+            val rawBottom = maxOf(startY, endY)
+            // A normal finger drag is often almost horizontal/vertical. A zero-height
+            // selection would intersect no glyphs, so give the narrow axis a small
+            // page-space tolerance while retaining exact glyph bounds in the result.
             val selection = RectF(
-                minOf(startX, endX), minOf(startY, endY),
-                maxOf(startX, endX), maxOf(startY, endY)
+                if (rawRight - rawLeft < 4f) (rawLeft + rawRight) / 2f - 2f else rawLeft,
+                if (rawBottom - rawTop < 6f) (rawTop + rawBottom) / 2f - 3f else rawTop,
+                if (rawRight - rawLeft < 4f) (rawLeft + rawRight) / 2f + 2f else rawRight,
+                if (rawBottom - rawTop < 6f) (rawTop + rawBottom) / 2f + 3f else rawBottom
             )
             buildList {
                 loadedText.blocks.forEach { block ->
@@ -445,7 +454,12 @@ class MuPdfEngine {
             false
         } finally {
             try { tempFile.delete() } catch (_: Exception) {}
-            try { backupFile.delete() } catch (_: Exception) {}
+            // Never delete the only recoverable copy if replacement/reopen failed.
+            try {
+                if (!backupFile.exists() || (originalFile.isFile && document != null)) {
+                    backupFile.delete()
+                }
+            } catch (_: Exception) {}
         }
     }
 
