@@ -213,6 +213,45 @@ class MuPdfEngine {
         }
     }
 
+    @Synchronized
+    fun addUnderlineAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
+        val doc = document ?: return false
+        if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
+        var pageToDestroy: PDFPage? = null
+        return try {
+            val page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            pageToDestroy = page
+            val bounds = page.bounds
+            val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
+            val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
+            rects.forEach { input ->
+                val left = input.left.coerceIn(0f, 1f)
+                val top = input.top.coerceIn(0f, 1f)
+                val right = input.right.coerceIn(0f, 1f)
+                val bottom = input.bottom.coerceIn(0f, 1f)
+                if (right - left > 0.001f && bottom - top > 0.001f) {
+                    val rect = Rect(
+                        bounds.x0 + left * width,
+                        bounds.y0 + top * height,
+                        bounds.x0 + right * width,
+                        bounds.y0 + bottom * height
+                    )
+                    val annotation = page.createAnnotation(PDFAnnotation.TYPE_UNDERLINE)
+                    annotation.setQuadPoints(arrayOf(Quad(rect)))
+                    annotation.setRect(rect)
+                    annotation.setColor(floatArrayOf(0.90f, 0.18f, 0.18f))
+                    annotation.setOpacity(1f)
+                    check(annotation.update()) { "MuPDF could not update underline annotation." }
+                }
+            }
+            page.update()
+        } catch (_: Exception) {
+            false
+        } finally {
+            pageToDestroy?.destroy()
+        }
+    }
+
     /**
      * Adds normalized page-relative paths (0..1) as real PDF ink annotations.
      */
