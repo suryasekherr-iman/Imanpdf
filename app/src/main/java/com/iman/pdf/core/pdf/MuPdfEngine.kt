@@ -20,9 +20,11 @@ class MuPdfEngine {
     private var document: Document? = null
     private var pdf: PDFDocument? = null
     private var source: File? = null
+    private var cachedPageCount: Int = 0
 
+    // Cached during openDocument (called from Dispatchers.IO) so Compose reads never touch MuPDF.
     @get:Synchronized
-    val pageCount: Int get() = document?.countPages() ?: 0
+    val pageCount: Int get() = cachedPageCount
     @get:Synchronized
     val file: File? get() = source
 
@@ -39,6 +41,7 @@ class MuPdfEngine {
             }
             document = opened
             pdf = opened as? PDFDocument
+            cachedPageCount = opened.countPages()
             source = file
             pdf != null
         } catch (_: Exception) {
@@ -219,7 +222,8 @@ class MuPdfEngine {
                             val glyph = character.quad.toRect()
                             val glyphRect = RectF(glyph.x0, glyph.y0, glyph.x1, glyph.y1)
                             if (glyphRect.width() > 0f && glyphRect.height() > 0f &&
-                                glyphRect.intersects(selection.left, selection.top, selection.right, selection.bottom)
+                                glyphRect.left < selection.right && glyphRect.right > selection.left &&
+                                glyphRect.top < selection.bottom && glyphRect.bottom > selection.top
                             ) add(glyphRect)
                         }
                     }
@@ -470,5 +474,6 @@ class MuPdfEngine {
         document = null
         pdf = null
         source = null
+        cachedPageCount = 0
     }
 }
