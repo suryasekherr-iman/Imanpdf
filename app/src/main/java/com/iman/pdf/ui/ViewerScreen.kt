@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -91,6 +92,28 @@ import kotlinx.coroutines.withContext
 
 private const val MAX_RENDER_WIDTH = 2200
 
+private fun screenToPdfCoordinates(
+    touchX: Float,
+    touchY: Float,
+    zoomScale: Float,
+    panOffset: Offset,
+    pageWidthPx: Float,
+    pageHeightPx: Float,
+    pageBounds: RectF
+): PointF {
+    // PointerInput positions are page-local: Compose has already inverted the parent graphicsLayer.
+    // Therefore callers pass 1x/zero-pan here to avoid applying the zoom transform twice.
+    val safeScale = zoomScale.coerceAtLeast(0.0001f)
+    val localX = (touchX - panOffset.x) / safeScale
+    val localY = (touchY - panOffset.y) / safeScale
+    val xFraction = (localX / pageWidthPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
+    val yFraction = (localY / pageHeightPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
+    return PointF(
+        pageBounds.left + xFraction * pageBounds.width(),
+        pageBounds.top + yFraction * pageBounds.height()
+    )
+}
+
 private val speedValues = listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
 private val speedLabels = listOf("0.75x", "1x", "1.25x", "1.5x", "2x")
 private val voiceTags = listOf("system", "en", "hi", "bn")
@@ -114,6 +137,7 @@ fun ViewerScreen(
     val scope = rememberCoroutineScope()
     val annotationSnackbarHostState = remember { SnackbarHostState() }
     var annotationRevision by remember { mutableIntStateOf(0) }
+    var isSavingPdf by remember { mutableStateOf(false) }
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -172,11 +196,33 @@ fun ViewerScreen(
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri ->
         if (uri != null) {
-            val ok = PdfActions.saveCopy(context, engine.file, uri)
             scope.launch {
-                annotationSnackbarHostState.showSnackbar(
-                    if (ok) "PDF Saved with Annotations" else "Could not save the annotated PDF"
-                )
+                val ok = withContext(Dispatchers.IO) {
+                    PdfActions.saveCopy(context, engine.file, uri)
+                }
+                Toast.makeText(
+                    context,
+                    if (ok) "Saved successfully." else "Could not save the annotated PDF.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    fun saveAnnotatedPdf() {
+        if (isSavingPdf) return
+        scope.launch {
+            isSavingPdf = true
+            val filePath = engine.file.absolutePath
+            val saved = withContext(Dispatchers.IO) {
+                try { engine.saveDocument(filePath) } catch (_: Exception) { false }
+            }
+            isSavingPdf = false
+            if (saved) {
+                annotationRevision++
+                saveLauncher.launch(fileName)
+            } else {
+                Toast.makeText(context, "Could not save PDF.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -348,26 +394,41 @@ fun ViewerScreen(
         scope.launch {
             val filePath = engine.file.absolutePath
             val saved = withContext(Dispatchers.IO) {
-                apply() && engine.saveDocument(filePath)
+                try {
+                    apply() && engine.saveDocument(filePath)
+                } catch (_: Exception) {
+                    false
+                }
             }
             if (saved) {
-                val reloaded = withContext(Dispatchers.IO) { engine.reloadDocument(filePath) }
-                if (reloaded) {
-                    annotationRevision++
-                    annotationSnackbarHostState.showSnackbar("Annotation applied. Tap Save to export the PDF.")
-                } else {
-                    annotationSnackbarHostState.showSnackbar("Annotation applied, but PDF refresh failed")
-                }
+                // saveDocument closes, replaces and reopens the PDF itself.
+                annotationRevision++
+                annotationSnackbarHostState.showSnackbar("Annotation applied and saved.")
             } else {
                 annotationSnackbarHostState.showSnackbar("Could not save PDF annotations")
             }
         }
     }
 
-    fun applyHighlight(pageNumber: Int, rects: List<RectF>) {
-        if (rects.isEmpty()) return
+    fun applyHighlight(pageNumber: Int, rect: RectF, pageWidthPx: Float, pageHeightPx: Float) {
         persistPdfAnnotations(pageNumber) {
-            engine.addHighlightAnnotation(pageNumber, rects)
+            val bounds = engine.pageBounds(pageNumber)
+            if (bounds == null) {
+                false
+            } else {
+                val start = screenToPdfCoordinates(
+                    rect.left * pageWidthPx, rect.top * pageHeightPx,
+                    1f, Offset.Zero, pageWidthPx, pageHeightPx, bounds
+                )
+                val end = screenToPdfCoordinates(
+                    rect.right * pageWidthPx, rect.bottom * pageHeightPx,
+                    1f, Offset.Zero, pageWidthPx, pageHeightPx, bounds
+                )
+                val textRects = engine.getTextRectsForSelection(
+                    pageNumber, start.x, start.y, end.x, end.y
+                )
+                engine.addTextHighlightAnnotation(pageNumber, textRects)
+            }
         }
     }
 
@@ -638,7 +699,7 @@ fun ViewerScreen(
                 },
                 onShare = { PdfActions.share(context, engine.file, title) },
                 onPrint = { PdfActions.print(context, engine.file, title) },
-                onSave = { saveLauncher.launch(fileName) }
+                onSave = { saveAnnotatedPdf() }
             )
 
             Box(
@@ -681,8 +742,8 @@ fun ViewerScreen(
                                 documentId = documentId,
                                 ocrRevision = ocrRevision,
                                 annotationRevision = annotationRevision,
-                                onHighlight = { page, rect -> applyHighlight(page, listOf(rect)) },
-                                onUnderline = { page, rect -> applyUnderline(page, listOf(rect)) },
+                                onHighlight = { page, rect, pageWidth, pageHeight -> applyHighlight(page, rect, pageWidth, pageHeight) },
+                                onUnderline = { page, rect, _, _ -> applyUnderline(page, listOf(rect)) },
                                 onInk = { page, paths, color, thickness ->
                                     applyInk(page, paths, color, thickness)
                                 }
@@ -770,7 +831,7 @@ fun ViewerScreen(
                     onSearch = { searchOpen = true },
                     onShare = { PdfActions.share(context, engine.file, title) },
                     onPrint = { PdfActions.print(context, engine.file, title) },
-                    onSave = { saveLauncher.launch(fileName) },
+                    onSave = { saveAnnotatedPdf() },
                     onOcrPage = { runOcrOnCurrentPage() },
                     onOcrDocument = { runOcr(0 until engine.pageCount) }
                 )
@@ -780,20 +841,7 @@ fun ViewerScreen(
                     annot = annot,
                     engine = engine,
                     title = title,
-                    onSaveAnnotations = {
-                        val filePath = engine.file.absolutePath
-                        scope.launch {
-                            val saved = withContext(Dispatchers.IO) {
-                                engine.saveDocument(filePath) && engine.reloadDocument(filePath)
-                            }
-                            if (saved) {
-                                annotationRevision++
-                                saveLauncher.launch(fileName)
-                            } else {
-                                annotationSnackbarHostState.showSnackbar("Could not prepare annotated PDF for saving")
-                            }
-                        }
-                    },
+                    onSaveAnnotations = { saveAnnotatedPdf() },
                     onClose = {
                         annot.select(AnnotTool.NONE)
                         annotOpen = false
@@ -955,6 +1003,20 @@ fun ViewerScreen(
                     scope.launch { listState.scrollToItem(page) }
                 }
             )
+        }
+
+        if (isSavingPdf) {
+            androidx.compose.ui.window.Dialog(onDismissRequest = {}) {
+                Column(
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Text("Saving PDF...", modifier = Modifier.padding(top = 12.dp))
+                }
+            }
         }
 
         if (isOcrProcessing) {
