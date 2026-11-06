@@ -24,6 +24,7 @@ fun AnnotationLayer(
     annot: AnnotController,
     modifier: Modifier = Modifier,
     onHighlight: ((Int, RectF) -> Unit)? = null,
+    onUnderline: ((Int, RectF) -> Unit)? = null,
     onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
 ) {
     val marks = annot.marks.filter { it.page == page }
@@ -115,11 +116,18 @@ fun AnnotationLayer(
                         onDragEnd = {
                             val finished = annot.live
                             if (finished != null) {
-                                if (onHighlight != null && finished is HighlightMark && kind == 0) {
-                                    onHighlight(
-                                        page,
-                                        RectF(finished.left, finished.top, finished.right, finished.bottom)
+                                if (finished is HighlightMark) {
+                                    val rect = RectF(
+                                        finished.left,
+                                        finished.top,
+                                        finished.right,
+                                        finished.bottom
                                     )
+                                    when {
+                                        kind == 0 && onHighlight != null -> onHighlight(page, rect)
+                                        kind == 1 && onUnderline != null -> onUnderline(page, rect)
+                                        else -> annot.add(finished)
+                                    }
                                 } else {
                                     annot.add(finished)
                                 }
