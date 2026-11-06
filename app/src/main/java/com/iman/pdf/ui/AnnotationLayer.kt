@@ -1,5 +1,7 @@
 package com.iman.pdf.ui
 
+import android.graphics.PointF
+import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -20,7 +22,9 @@ import com.iman.pdf.annot.StrokeMark
 fun AnnotationLayer(
     page: Int,
     annot: AnnotController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onHighlight: ((Int, RectF) -> Unit)? = null,
+    onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
 ) {
     val marks = annot.marks.filter { it.page == page }
     val live = annot.live?.takeIf { it.page == page }
@@ -59,7 +63,12 @@ fun AnnotationLayer(
                         onDragEnd = {
                             val finished = annot.live
                             if (finished != null) {
-                                annot.add(finished)
+                                if (onInk != null && finished is StrokeMark) {
+                                    val points = finished.points.map { PointF(it.first, it.second) }
+                                    onInk(page, listOf(points), finished.color, finished.width)
+                                } else {
+                                    annot.add(finished)
+                                }
                             }
                             annot.live = null
                         },
@@ -106,7 +115,14 @@ fun AnnotationLayer(
                         onDragEnd = {
                             val finished = annot.live
                             if (finished != null) {
-                                annot.add(finished)
+                                if (onHighlight != null && finished is HighlightMark && kind == 0) {
+                                    onHighlight(
+                                        page,
+                                        RectF(finished.left, finished.top, finished.right, finished.bottom)
+                                    )
+                                } else {
+                                    annot.add(finished)
+                                }
                             }
                             annot.live = null
                         },
