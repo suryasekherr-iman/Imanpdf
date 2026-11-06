@@ -1,6 +1,8 @@
 package com.iman.pdf.ui
 
 import android.graphics.Bitmap
+import android.graphics.PointF
+import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -70,7 +72,9 @@ fun PdfPageItem(
     searchHits: List<SearchHit> = emptyList(),
     activeSearchHit: SearchHit? = null,
     documentId: String = engine.file.absolutePath,
-    ocrRevision: Int = 0
+    ocrRevision: Int = 0,
+    onHighlight: ((Int, RectF) -> Unit)? = null,
+    onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
 ) {
     val context = LocalContext.current
     var ocrLines by remember(index, documentId) { mutableStateOf<List<OcrLine>>(emptyList()) }
@@ -165,7 +169,9 @@ fun PdfPageItem(
             AnnotationLayer(
                 page = index,
                 annot = annot,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onHighlight = onHighlight,
+                onInk = onInk
             )
         }
     }
