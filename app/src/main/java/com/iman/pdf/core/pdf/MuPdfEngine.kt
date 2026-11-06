@@ -241,9 +241,12 @@ class MuPdfEngine {
             }.toTypedArray()
             if (ink.isEmpty()) return false
             annotation.setInkList(ink)
-            val alphaColor = android.graphics.Color.valueOf(color)
-            annotation.setColor(floatArrayOf(alphaColor.red(), alphaColor.green(), alphaColor.blue()))
-            annotation.setOpacity(alphaColor.alpha())
+            val red = ((color shr 16) and 0xff) / 255f
+            val green = ((color shr 8) and 0xff) / 255f
+            val blue = (color and 0xff) / 255f
+            val alpha = ((color ushr 24) and 0xff) / 255f
+            annotation.setColor(floatArrayOf(red, green, blue))
+            annotation.setOpacity(alpha)
             annotation.setBorderWidth((thickness * width).coerceAtLeast(0.5f))
             val allPoints = ink.flatMap { it.toList() }
             val pad = (thickness * width).coerceAtLeast(0.5f)
