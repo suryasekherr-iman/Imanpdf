@@ -74,8 +74,8 @@ fun PdfPageItem(
     documentId: String = engine.file.absolutePath,
     ocrRevision: Int = 0,
     annotationRevision: Int = 0,
-    onHighlight: ((Int, RectF) -> Unit)? = null,
-    onUnderline: ((Int, RectF) -> Unit)? = null,
+    onHighlight: ((Int, RectF, Float, Float) -> Unit)? = null,
+    onUnderline: ((Int, RectF, Float, Float) -> Unit)? = null,
     onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
 ) {
     val context = LocalContext.current
