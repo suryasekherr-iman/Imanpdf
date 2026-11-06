@@ -2,6 +2,8 @@ package com.iman.pdf.pdf
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.PointF
+import android.graphics.RectF
 import android.net.Uri
 import com.iman.pdf.core.pdf.MuPdfEngine
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +26,16 @@ class PdfEngine private constructor(
     fun pageText(index: Int): String = mupdf.pageText(index)
     fun searchPage(index: Int, query: String): List<FloatArray> = mupdf.searchPage(index, query)
     fun save(output: File, options: String = "garbage=compact"): Boolean = mupdf.save(output, options)
+    fun addHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
+        mupdf.addHighlightAnnotation(pageNumber, rects)
+    fun addInkAnnotation(
+        pageNumber: Int,
+        paths: List<List<PointF>>,
+        color: Int,
+        thickness: Float
+    ): Boolean = mupdf.addInkAnnotation(pageNumber, paths, color, thickness)
+    fun saveDocument(savePath: String): Boolean = mupdf.saveDocument(savePath)
+    fun reloadDocument(filePath: String): Boolean = mupdf.reloadDocument(filePath)
     fun close() {
         mupdf.closeDocument()
         if (deleteFileOnClose) file.delete()
