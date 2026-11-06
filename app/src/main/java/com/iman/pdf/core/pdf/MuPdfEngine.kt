@@ -172,6 +172,77 @@ class MuPdfEngine {
     }
 
     /**
+     * Returns exact glyph rectangles intersecting a drag selection.
+     * Input and output coordinates are in MuPDF page-space points.
+     */
+    @Synchronized
+    fun getTextRectsForSelection(
+        pageNum: Int,
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float
+    ): List<RectF> {
+        val doc = document ?: return emptyList()
+        if (pageNum !in 0 until doc.countPages()) return emptyList()
+        var page: com.artifex.mupdf.fitz.Page? = null
+        var structuredText: com.artifex.mupdf.fitz.StructuredText? = null
+        return try {
+            page = doc.loadPage(pageNum)
+            structuredText = page.toStructuredText()
+            val selection = RectF(
+                minOf(startX, endX), minOf(startY, endY),
+                maxOf(startX, endX), maxOf(startY, endY)
+            )
+            buildList {
+                structuredText.blocks.forEach { block ->
+                    block.lines.forEach { line ->
+                        line.chars.forEach { character ->
+                            val glyph = character.quad.toRect()
+                            val glyphRect = RectF(glyph.x0, glyph.y0, glyph.x1, glyph.y1)
+                            if (glyphRect.width() > 0f && glyphRect.height() > 0f &&
+                                glyphRect.intersects(selection.left, selection.top, selection.right, selection.bottom)
+                            ) add(glyphRect)
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            emptyList()
+        } finally {
+            try { structuredText?.destroy() } catch (_: Exception) {}
+            try { page?.destroy() } catch (_: Exception) {}
+        }
+    }
+
+    /** Adds exact MuPDF page-space glyph rectangles as a native highlight. */
+    @Synchronized
+    fun addTextHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
+        val doc = document ?: return false
+        if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
+        var page: PDFPage? = null
+        return try {
+            page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            rects.forEach { input ->
+                if (input.width() > 0f && input.height() > 0f) {
+                    val rect = Rect(input.left, input.top, input.right, input.bottom)
+                    val annotation = page.createAnnotation(PDFAnnotation.TYPE_HIGHLIGHT)
+                    annotation.setQuadPoints(arrayOf(Quad(rect)))
+                    annotation.setRect(rect)
+                    annotation.setColor(floatArrayOf(1f, 0.92f, 0.20f))
+                    annotation.setOpacity(0.42f)
+                    check(annotation.update()) { "MuPDF could not update highlight annotation." }
+                }
+            }
+            page.update()
+        } catch (_: Exception) {
+            false
+        } finally {
+            try { page?.destroy() } catch (_: Exception) {}
+        }
+    }
+
+    /**
      * Adds normalized page-relative rectangles (0..1) as real PDF highlight annotations.
      */
     @Synchronized
@@ -309,29 +380,49 @@ class MuPdfEngine {
     }
 
     @Synchronized
-    fun saveDocument(savePath: String): Boolean {
-        val doc = pdf ?: return false
-        val current = source ?: return false
-        val destination = File(savePath)
+    fun saveDocument(originalPath: String): Boolean {
+        val activeDocument = pdf ?: return false
+        val originalFile = File(originalPath)
+        val tempFile = File(originalPath + ".tmp")
+        val backupFile = File(originalPath + ".bak")
         return try {
-            if (destination.absoluteFile == current.absoluteFile) {
-                val temporary = File(current.parentFile, current.nameWithoutExtension + ".annotating.tmp.pdf")
-                try {
-                    doc.save(temporary.absolutePath, "compress")
-                    closeDocument()
-                    if (!temporary.isFile || temporary.length() == 0L) return false
-                    if (!temporary.copyTo(current, overwrite = true).exists()) return false
-                    temporary.delete()
-                    openDocument(current.absolutePath)
-                } finally {
-                    temporary.delete()
-                }
+            require(originalFile.isFile) { "Original PDF does not exist." }
+            tempFile.delete()
+            backupFile.delete()
+
+            // MuPDF writes while it owns the document; release its file lock before replacement.
+            activeDocument.save(tempFile.absolutePath, "compress")
+            check(tempFile.isFile && tempFile.length() > 0L) { "Temporary PDF is empty." }
+            closeDocument()
+
+            // Keep a rollback copy until the new file has been installed successfully.
+            if (originalFile.exists()) {
+                check(originalFile.renameTo(backupFile)) { "Could not move original PDF aside." }
+            }
+            if (!tempFile.renameTo(originalFile)) {
+                if (backupFile.exists()) backupFile.renameTo(originalFile)
+                error("Could not replace original PDF with saved temporary file.")
+            }
+
+            val reopened = openDocument(originalFile.absolutePath)
+            if (reopened) {
+                backupFile.delete()
+                true
             } else {
-                doc.save(destination.absolutePath, "compress")
-                destination.isFile && destination.length() > 0L
+                originalFile.delete()
+                if (backupFile.exists()) backupFile.renameTo(originalFile)
+                openDocument(originalFile.absolutePath)
+                false
             }
         } catch (_: Exception) {
+            try {
+                if (!originalFile.exists() && backupFile.exists()) backupFile.renameTo(originalFile)
+                if (document == null && originalFile.isFile) openDocument(originalFile.absolutePath)
+            } catch (_: Exception) {}
             false
+        } finally {
+            try { tempFile.delete() } catch (_: Exception) {}
+            try { backupFile.delete() } catch (_: Exception) {}
         }
     }
 
