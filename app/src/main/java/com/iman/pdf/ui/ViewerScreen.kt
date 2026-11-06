@@ -173,11 +173,11 @@ fun ViewerScreen(
     ) { uri ->
         if (uri != null) {
             val ok = PdfActions.saveCopy(context, engine.file, uri)
-            Toast.makeText(
-                context,
-                if (ok) "Copy saved" else "Could not save the copy",
-                Toast.LENGTH_SHORT
-            ).show()
+            scope.launch {
+                annotationSnackbarHostState.showSnackbar(
+                    if (ok) "PDF Saved with Annotations" else "Could not save the annotated PDF"
+                )
+            }
         }
     }
 
@@ -354,9 +354,9 @@ fun ViewerScreen(
                 val reloaded = withContext(Dispatchers.IO) { engine.reloadDocument(filePath) }
                 if (reloaded) {
                     annotationRevision++
-                    annotationSnackbarHostState.showSnackbar("PDF Saved with Annotations")
+                    annotationSnackbarHostState.showSnackbar("Annotation applied. Tap Save to export the PDF.")
                 } else {
-                    annotationSnackbarHostState.showSnackbar("Annotations saved, but PDF refresh failed")
+                    annotationSnackbarHostState.showSnackbar("Annotation applied, but PDF refresh failed")
                 }
             } else {
                 annotationSnackbarHostState.showSnackbar("Could not save PDF annotations")
@@ -788,9 +788,9 @@ fun ViewerScreen(
                             }
                             if (saved) {
                                 annotationRevision++
-                                annotationSnackbarHostState.showSnackbar("PDF Saved with Annotations")
+                                saveLauncher.launch(fileName)
                             } else {
-                                annotationSnackbarHostState.showSnackbar("Could not save PDF annotations")
+                                annotationSnackbarHostState.showSnackbar("Could not prepare annotated PDF for saving")
                             }
                         }
                     },
