@@ -73,6 +73,7 @@ fun PdfPageItem(
     activeSearchHit: SearchHit? = null,
     documentId: String = engine.file.absolutePath,
     ocrRevision: Int = 0,
+    annotationRevision: Int = 0,
     onHighlight: ((Int, RectF) -> Unit)? = null,
     onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
 ) {
@@ -83,10 +84,10 @@ fun PdfPageItem(
             OcrStore.loadPage(context, documentId, index)?.lines.orEmpty()
         }
     }
-    var bitmap by remember(index) { mutableStateOf<Bitmap?>(null) }
+    var bitmap by remember(index, annotationRevision) { mutableStateOf<Bitmap?>(null) }
     var ratio by remember(index) { mutableFloatStateOf(1.414f) }
 
-    LaunchedEffect(index, renderWidth) {
+    LaunchedEffect(index, renderWidth, annotationRevision) {
         val rendered = withContext(Dispatchers.IO) {
             engine.pageAspectRatio(index) to engine.renderPage(index, renderWidth)
         }
