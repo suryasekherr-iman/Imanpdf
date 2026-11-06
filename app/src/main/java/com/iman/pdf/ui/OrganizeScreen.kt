@@ -485,7 +485,9 @@ private fun PageCell(
         bitmap = if (original == -1 || engine == null) {
             null
         } else {
-            engine.renderPage(index, 260)
+            withContext(Dispatchers.IO) {
+                try { engine.renderPage(index, 260) } catch (_: Exception) { null }
+            }
         }
     }
 
