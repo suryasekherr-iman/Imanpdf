@@ -371,6 +371,13 @@ fun ViewerScreen(
         }
     }
 
+    fun applyUnderline(pageNumber: Int, rects: List<RectF>) {
+        if (rects.isEmpty()) return
+        persistPdfAnnotations(pageNumber) {
+            engine.addUnderlineAnnotation(pageNumber, rects)
+        }
+    }
+
     fun applyInk(
         pageNumber: Int,
         paths: List<List<PointF>>,
@@ -675,6 +682,7 @@ fun ViewerScreen(
                                 ocrRevision = ocrRevision,
                                 annotationRevision = annotationRevision,
                                 onHighlight = { page, rect -> applyHighlight(page, listOf(rect)) },
+                                onUnderline = { page, rect -> applyUnderline(page, listOf(rect)) },
                                 onInk = { page, paths, color, thickness ->
                                     applyInk(page, paths, color, thickness)
                                 }
