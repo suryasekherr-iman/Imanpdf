@@ -1,10 +1,17 @@
 package com.iman.pdf.core.pdf
 
 import android.graphics.Bitmap
+import android.graphics.PointF
+import android.graphics.RectF
 import com.artifex.mupdf.fitz.ColorSpace
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.PDFDocument
+import com.artifex.mupdf.fitz.PDFPage
+import com.artifex.mupdf.fitz.PDFAnnotation
+import com.artifex.mupdf.fitz.Point
+import com.artifex.mupdf.fitz.Quad
+import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.Pixmap
 import java.io.File
 
@@ -162,6 +169,132 @@ class MuPdfEngine {
                 }
             } finally { page.destroy() }
         } catch (_: Exception) { emptyList() }
+    }
+
+    /**
+     * Adds normalized page-relative rectangles (0..1) as real PDF highlight annotations.
+     */
+    @Synchronized
+    fun addHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
+        val doc = document ?: return false
+        if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
+        var page: PDFPage? = null
+        return try {
+            page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            val bounds = page.bounds
+            val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
+            val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
+            rects.forEach { input ->
+                val left = input.left.coerceIn(0f, 1f)
+                val top = input.top.coerceIn(0f, 1f)
+                val right = input.right.coerceIn(0f, 1f)
+                val bottom = input.bottom.coerceIn(0f, 1f)
+                if (right - left > 0.001f && bottom - top > 0.001f) {
+                    val rect = Rect(
+                        bounds.x0 + left * width,
+                        bounds.y0 + top * height,
+                        bounds.x0 + right * width,
+                        bounds.y0 + bottom * height
+                    )
+                    val annotation = page.createAnnotation(PDFAnnotation.TYPE_HIGHLIGHT)
+                    annotation.setQuadPoints(arrayOf(Quad(rect)))
+                    annotation.setRect(rect)
+                    annotation.setColor(floatArrayOf(1f, 0.92f, 0.20f))
+                    annotation.setOpacity(0.42f)
+                    check(annotation.update()) { "MuPDF could not update highlight annotation." }
+                }
+            }
+            page.update()
+        } catch (_: Exception) {
+            false
+        } finally {
+            page?.destroy()
+        }
+    }
+
+    /**
+     * Adds normalized page-relative paths (0..1) as real PDF ink annotations.
+     */
+    @Synchronized
+    fun addInkAnnotation(
+        pageNumber: Int,
+        paths: List<List<PointF>>,
+        color: Int,
+        thickness: Float
+    ): Boolean {
+        val doc = document ?: return false
+        if (pageNumber !in 0 until doc.countPages() || paths.isEmpty()) return false
+        var page: PDFPage? = null
+        return try {
+            page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            val bounds = page.bounds
+            val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
+            val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
+            val annotation = page.createAnnotation(PDFAnnotation.TYPE_INK)
+            val ink = paths.mapNotNull { path ->
+                path.map { point ->
+                    Point(
+                        bounds.x0 + point.x.coerceIn(0f, 1f) * width,
+                        bounds.y0 + point.y.coerceIn(0f, 1f) * height
+                    )
+                }.takeIf { it.isNotEmpty() }?.toTypedArray()
+            }.toTypedArray()
+            if (ink.isEmpty()) return false
+            annotation.setInkList(ink)
+            val alphaColor = android.graphics.Color.valueOf(color)
+            annotation.setColor(floatArrayOf(alphaColor.red(), alphaColor.green(), alphaColor.blue()))
+            annotation.setOpacity(alphaColor.alpha())
+            annotation.setBorderWidth((thickness * width).coerceAtLeast(0.5f))
+            val allPoints = ink.flatMap { it.toList() }
+            val pad = (thickness * width).coerceAtLeast(0.5f)
+            annotation.setRect(
+                Rect(
+                    allPoints.minOf { it.x } - pad,
+                    allPoints.minOf { it.y } - pad,
+                    allPoints.maxOf { it.x } + pad,
+                    allPoints.maxOf { it.y } + pad
+                )
+            )
+            check(annotation.update()) { "MuPDF could not update ink annotation." }
+            page.update()
+        } catch (_: Exception) {
+            false
+        } finally {
+            page?.destroy()
+        }
+    }
+
+    @Synchronized
+    fun saveDocument(savePath: String): Boolean {
+        val doc = pdf ?: return false
+        val current = source ?: return false
+        val destination = File(savePath)
+        return try {
+            if (destination.absoluteFile == current.absoluteFile) {
+                val temporary = File(current.parentFile, current.nameWithoutExtension + ".annotating.tmp.pdf")
+                try {
+                    doc.save(temporary.absolutePath, "compress")
+                    closeDocument()
+                    if (!temporary.isFile || temporary.length() == 0L) return false
+                    if (!temporary.copyTo(current, overwrite = true).exists()) return false
+                    temporary.delete()
+                    openDocument(current.absolutePath)
+                } finally {
+                    temporary.delete()
+                }
+            } else {
+                doc.save(destination.absolutePath, "compress")
+                destination.isFile && destination.length() > 0L
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    @Synchronized
+    fun reloadDocument(filePath: String): Boolean {
+        closeDocument()
+        return openDocument(filePath)
     }
 
     @Synchronized
