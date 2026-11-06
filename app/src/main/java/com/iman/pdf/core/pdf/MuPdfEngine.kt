@@ -204,14 +204,16 @@ class MuPdfEngine {
         var page: com.artifex.mupdf.fitz.Page? = null
         var structuredText: com.artifex.mupdf.fitz.StructuredText? = null
         return try {
-            page = doc.loadPage(pageNum)
-            structuredText = page.toStructuredText()
+            val loadedPage = doc.loadPage(pageNum)
+            page = loadedPage
+            val loadedText = loadedPage.toStructuredText()
+            structuredText = loadedText
             val selection = RectF(
                 minOf(startX, endX), minOf(startY, endY),
                 maxOf(startX, endX), maxOf(startY, endY)
             )
             buildList {
-                structuredText.blocks.forEach { block ->
+                loadedText.blocks.forEach { block ->
                     block.lines.forEach { line ->
                         line.chars.forEach { character ->
                             val glyph = character.quad.toRect()
