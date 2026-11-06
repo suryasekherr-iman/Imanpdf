@@ -242,13 +242,14 @@ class MuPdfEngine {
     fun addTextHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
         val doc = document ?: return false
         if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
-        var page: PDFPage? = null
+        var pageToDestroy: PDFPage? = null
         return try {
-            page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            val loadedPage = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            pageToDestroy = loadedPage
             rects.forEach { input ->
                 if (input.width() > 0f && input.height() > 0f) {
                     val rect = Rect(input.left, input.top, input.right, input.bottom)
-                    val annotation = page.createAnnotation(PDFAnnotation.TYPE_HIGHLIGHT)
+                    val annotation = loadedPage.createAnnotation(PDFAnnotation.TYPE_HIGHLIGHT)
                     annotation.setQuadPoints(arrayOf(Quad(rect)))
                     annotation.setRect(rect)
                     annotation.setColor(floatArrayOf(1f, 0.92f, 0.20f))
@@ -256,11 +257,11 @@ class MuPdfEngine {
                     check(annotation.update()) { "MuPDF could not update highlight annotation." }
                 }
             }
-            page.update()
+            loadedPage.update()
         } catch (_: Exception) {
             false
         } finally {
-            try { page?.destroy() } catch (_: Exception) {}
+            try { pageToDestroy?.destroy() } catch (_: Exception) {}
         }
     }
 
