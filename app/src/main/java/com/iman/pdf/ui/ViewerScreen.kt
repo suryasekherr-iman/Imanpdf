@@ -1,5 +1,7 @@
 package com.iman.pdf.ui
 
+import android.graphics.PointF
+import android.graphics.RectF
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -19,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -108,6 +112,8 @@ fun ViewerScreen(
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initial)
     val horizontalState = rememberScrollState()
     val scope = rememberCoroutineScope()
+    val annotationSnackbarHostState = remember { SnackbarHostState() }
+    var annotationRevision by remember { mutableIntStateOf(0) }
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -336,6 +342,45 @@ fun ViewerScreen(
         if (engine.pageCount <= 0) return
         val page = listState.firstVisibleItemIndex.coerceIn(0, engine.pageCount - 1)
         runOcr(page..page)
+    }
+
+    fun persistPdfAnnotations(pageNumber: Int, apply: () -> Boolean) {
+        scope.launch {
+            val filePath = engine.file.absolutePath
+            val saved = withContext(Dispatchers.IO) {
+                apply() && engine.saveDocument(filePath)
+            }
+            if (saved) {
+                val reloaded = withContext(Dispatchers.IO) { engine.reloadDocument(filePath) }
+                if (reloaded) {
+                    annotationRevision++
+                    annotationSnackbarHostState.showSnackbar("PDF Saved with Annotations")
+                } else {
+                    annotationSnackbarHostState.showSnackbar("Annotations saved, but PDF refresh failed")
+                }
+            } else {
+                annotationSnackbarHostState.showSnackbar("Could not save PDF annotations")
+            }
+        }
+    }
+
+    fun applyHighlight(pageNumber: Int, rects: List<RectF>) {
+        if (rects.isEmpty()) return
+        persistPdfAnnotations(pageNumber) {
+            engine.addHighlightAnnotation(pageNumber, rects)
+        }
+    }
+
+    fun applyInk(
+        pageNumber: Int,
+        paths: List<List<PointF>>,
+        color: Int,
+        thickness: Float
+    ) {
+        if (paths.isEmpty()) return
+        persistPdfAnnotations(pageNumber) {
+            engine.addInkAnnotation(pageNumber, paths, color, thickness)
+        }
     }
 
     fun speakPage(page: Int) {
@@ -627,7 +672,12 @@ fun ViewerScreen(
                                 searchHits = hits.filter { it.page == index },
                                 activeSearchHit = hits.getOrNull(activeHit)?.takeIf { it.page == index },
                                 documentId = documentId,
-                                ocrRevision = ocrRevision
+                                ocrRevision = ocrRevision,
+                                annotationRevision = annotationRevision,
+                                onHighlight = { page, rect -> applyHighlight(page, listOf(rect)) },
+                                onInk = { page, paths, color, thickness ->
+                                    applyInk(page, paths, color, thickness)
+                                }
                             )
                         }
                     }
@@ -722,6 +772,20 @@ fun ViewerScreen(
                     annot = annot,
                     engine = engine,
                     title = title,
+                    onSaveAnnotations = {
+                        val filePath = engine.file.absolutePath
+                        scope.launch {
+                            val saved = withContext(Dispatchers.IO) {
+                                engine.saveDocument(filePath) && engine.reloadDocument(filePath)
+                            }
+                            if (saved) {
+                                annotationRevision++
+                                annotationSnackbarHostState.showSnackbar("PDF Saved with Annotations")
+                            } else {
+                                annotationSnackbarHostState.showSnackbar("Could not save PDF annotations")
+                            }
+                        }
+                    },
                     onClose = {
                         annot.select(AnnotTool.NONE)
                         annotOpen = false
@@ -907,6 +971,10 @@ fun ViewerScreen(
                 }
             }
         }
+        SnackbarHost(
+            hostState = annotationSnackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
