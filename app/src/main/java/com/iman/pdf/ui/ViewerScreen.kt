@@ -197,9 +197,11 @@ fun ViewerScreen(
     ) { uri ->
         if (uri != null) {
             scope.launch {
+                isSavingPdf = true
                 val ok = withContext(Dispatchers.IO) {
-                    PdfActions.saveCopy(context, engine.file, uri)
+                    try { PdfActions.saveCopy(context, engine.file, uri) } catch (_: Exception) { false }
                 }
+                isSavingPdf = false
                 Toast.makeText(
                     context,
                     if (ok) "Saved successfully." else "Could not save the annotated PDF.",
