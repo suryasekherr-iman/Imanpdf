@@ -23,8 +23,8 @@ fun AnnotationLayer(
     page: Int,
     annot: AnnotController,
     modifier: Modifier = Modifier,
-    onHighlight: ((Int, RectF) -> Unit)? = null,
-    onUnderline: ((Int, RectF) -> Unit)? = null,
+    onHighlight: ((Int, RectF, Float, Float) -> Unit)? = null,
+    onUnderline: ((Int, RectF, Float, Float) -> Unit)? = null,
     onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
 ) {
     val marks = annot.marks.filter { it.page == page }
@@ -124,8 +124,8 @@ fun AnnotationLayer(
                                         finished.bottom
                                     )
                                     when {
-                                        kind == 0 && onHighlight != null -> onHighlight(page, rect)
-                                        kind == 1 && onUnderline != null -> onUnderline(page, rect)
+                                        kind == 0 && onHighlight != null -> onHighlight(page, rect, w, h)
+                                        kind == 1 && onUnderline != null -> onUnderline(page, rect, w, h)
                                         else -> annot.add(finished)
                                     }
                                 } else {
