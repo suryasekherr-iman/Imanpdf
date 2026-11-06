@@ -60,7 +60,9 @@ object PdfExport {
         var saved = 0
         for (index in 0 until engine.pageCount) {
             val ok = try {
-                val bitmap = engine.renderPage(index, 1600)
+                val bitmap = withContext(Dispatchers.IO) {
+                    engine.renderPage(index, 1600)
+                }
                 try {
                     withContext(Dispatchers.IO) {
                         val name = clean + "_page_" + (index + 1).toString().padStart(3, '0') + ".jpg"
@@ -70,7 +72,9 @@ object PdfExport {
                             bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it)
                         }
                     }
-                } finally { bitmap.recycle() }
+                } finally {
+                    withContext(Dispatchers.IO) { if (!bitmap.isRecycled) bitmap.recycle() }
+                }
             } catch (_: Exception) { false }
             if (ok) saved++
         }
