@@ -188,13 +188,31 @@ fun AnnotToolbar(
                 Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
             }
             IconButton(
-                onClick = {
-                    busy = true
-                    onSaveAnnotations()
-                    busy = false
-                }
+                onClick = { onSaveAnnotations() }
             ) {
                 Icon(Icons.Outlined.Save, contentDescription = "Save PDF annotations")
+            }
+            if (busy) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            val result = AnnotBake.bake(context, engine.file, annot.marks.toList())
+                            busy = false
+                            if (result == null) {
+                                Toast.makeText(context, "Nothing to export yet", Toast.LENGTH_SHORT).show()
+                            } else {
+                                pending = result
+                                saver.launch(title.removeSuffix(".pdf") + "_annotated.pdf")
+                            }
+                        }
+                    },
+                    enabled = annot.marks.isNotEmpty()
+                ) {
+                    Icon(Icons.Outlined.Save, contentDescription = "Save a flattened annotated copy")
+                }
             }
             IconButton(
                 onClick = {
