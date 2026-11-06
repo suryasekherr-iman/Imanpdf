@@ -178,9 +178,10 @@ class MuPdfEngine {
     fun addHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
         val doc = document ?: return false
         if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
-        var page: PDFPage? = null
+        var pageToDestroy: PDFPage? = null
         return try {
-            page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            val page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            pageToDestroy = page
             val bounds = page.bounds
             val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
             val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
@@ -208,7 +209,7 @@ class MuPdfEngine {
         } catch (_: Exception) {
             false
         } finally {
-            page?.destroy()
+            pageToDestroy?.destroy()
         }
     }
 
@@ -224,9 +225,10 @@ class MuPdfEngine {
     ): Boolean {
         val doc = document ?: return false
         if (pageNumber !in 0 until doc.countPages() || paths.isEmpty()) return false
-        var page: PDFPage? = null
+        var pageToDestroy: PDFPage? = null
         return try {
-            page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            val page = doc.loadPage(pageNumber) as? PDFPage ?: return false
+            pageToDestroy = page
             val bounds = page.bounds
             val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
             val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
@@ -263,7 +265,7 @@ class MuPdfEngine {
         } catch (_: Exception) {
             false
         } finally {
-            page?.destroy()
+            pageToDestroy?.destroy()
         }
     }
 
