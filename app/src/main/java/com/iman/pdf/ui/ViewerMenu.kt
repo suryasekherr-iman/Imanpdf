@@ -23,6 +23,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,7 +56,7 @@ fun ViewerMenu(
 
     Box {
         IconButton(onClick = { open = true }) {
-            Icon(Icons.Outlined.MoreVert, contentDescription = "More")
+            Icon(Icons.Outlined.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurface)
         }
         DropdownMenu(
             expanded = open,
@@ -140,7 +141,7 @@ private fun MenuRow(
 ) {
     DropdownMenuItem(
         text = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface) },
         onClick = onClick
     )
 }
