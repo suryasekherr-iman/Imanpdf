@@ -736,7 +736,7 @@ fun ViewerScreen(
                             .fillMaxHeight()
                             .width((configuration.screenWidthDp * scale).dp)
                             .background(MaterialTheme.colorScheme.surfaceVariant),
-                        verticalArrangement = Arrangement.spacedBy(28.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(count = engine.pageCount, key = { it }) { index ->
                             PdfPageItem(
