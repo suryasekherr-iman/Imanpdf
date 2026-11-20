@@ -67,7 +67,7 @@ fun ViewerTopBar(
     ) {
         if (searchOpen) {
             IconButton(onClick = onCloseSearch) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search", tint = MaterialTheme.colorScheme.onSurface)
             }
             TextField(
                 value = query,
@@ -88,7 +88,7 @@ fun ViewerTopBar(
             )
             if (query.isNotEmpty()) {
                 IconButton(onClick = onClearQuery) {
-                    Icon(Icons.Filled.Close, contentDescription = "Clear")
+                    Icon(Icons.Filled.Close, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
         } else {
@@ -96,7 +96,7 @@ fun ViewerTopBar(
                 onClick = onBack,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
             }
             Text(
                 text = title,
@@ -112,25 +112,25 @@ fun ViewerTopBar(
                 onClick = onLiquid,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Outlined.WaterDrop, contentDescription = "Liquid mode")
+                Icon(Icons.Outlined.WaterDrop, contentDescription = "Liquid mode", tint = MaterialTheme.colorScheme.onSurface)
             }
             IconButton(
                 onClick = onReadAloud,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Outlined.Headphones, contentDescription = "Read aloud")
+                Icon(Icons.Outlined.Headphones, contentDescription = "Read aloud", tint = MaterialTheme.colorScheme.onSurface)
             }
             IconButton(
                 onClick = onOpenSearch,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Outlined.Search, contentDescription = "Search")
+                Icon(Icons.Outlined.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurface)
             }
             IconButton(
                 onClick = onShare,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Outlined.Share, contentDescription = "Share")
+                Icon(Icons.Outlined.Share, contentDescription = "Share", tint = MaterialTheme.colorScheme.onSurface)
             }
             ViewerMenu(
                 onReadAloud = onReadAloud,
