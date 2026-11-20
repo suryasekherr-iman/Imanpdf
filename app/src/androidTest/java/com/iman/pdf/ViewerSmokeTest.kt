@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.core.content.FileProvider
 import androidx.test.core.app.ActivityScenario
@@ -83,13 +84,16 @@ class ViewerSmokeTest {
     }
 
     private fun openMenu() {
-        rule.onNodeWithContentDescription("More").performClick()
-        waitForText("Print")
+    rule.onNodeWithContentDescription("More").performClick()
+    waitForText("More options")   // ye line add karo
+    waitForText("Print")
     }
 
     private fun menuItem(label: String) {
-        openMenu()
-        rule.onNodeWithText(label).performClick()
+    openMenu()
+    rule.onNodeWithText(label)
+        .performScrollTo()   // ye line add karo
+        .performClick()
     }
 
     @Test
