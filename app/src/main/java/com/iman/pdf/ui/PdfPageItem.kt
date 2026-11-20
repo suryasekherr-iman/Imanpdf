@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,6 +43,8 @@ import com.iman.pdf.pdf.OcrStore
 import com.iman.pdf.pdf.OcrLine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+private const val PAGE_DISPLAY_ASPECT_RATIO = 0.707f
 
 private val NIGHT_MATRIX = ColorMatrix(
     floatArrayOf(
@@ -88,20 +89,17 @@ fun PdfPageItem(
         }
     }
     var bitmap by remember(index, annotationRevision) { mutableStateOf<Bitmap?>(null) }
-    var ratio by remember(index) { mutableFloatStateOf(1.414f) }
 
     LaunchedEffect(index, renderWidth, annotationRevision) {
-        val rendered = withContext(Dispatchers.IO) {
-            engine.pageAspectRatio(index) to engine.renderPage(index, renderWidth)
+        bitmap = withContext(Dispatchers.IO) {
+            engine.renderPage(index, renderWidth)
         }
-        ratio = rendered.first
-        bitmap = rendered.second
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f / ratio)
+            .aspectRatio(PAGE_DISPLAY_ASPECT_RATIO)
             .shadow(1.dp)
             .background(Color.White)
     ) {
