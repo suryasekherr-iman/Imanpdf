@@ -111,6 +111,25 @@ object PdfTools {
         }
     }
 
+    /** Re-open the exact saved destination and confirm that its password unlocks a readable PDF. */
+    suspend fun verifyProtected(context: Context, source: Uri, password: String): Boolean =
+        withContext(Dispatchers.IO) {
+            var copy: File? = null
+            var doc: Document? = null
+            try {
+                copy = UriActions.copyToCache(context, source) ?: return@withContext false
+                doc = Document.openDocument(copy.absolutePath)
+                doc.needsPassword() &&
+                    doc.authenticatePassword(password) &&
+                    doc.countPages() > 0
+            } catch (_: Exception) {
+                false
+            } finally {
+                try { doc?.destroy() } catch (_: Exception) {}
+                copy?.delete()
+            }
+        }
+
     suspend fun unlock(context: Context, source: Uri, password: String): File? = withContext(Dispatchers.IO) {
         var copy: File? = null
         var doc: Document? = null
