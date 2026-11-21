@@ -116,6 +116,7 @@ object PdfTools {
         var doc: Document? = null
         var verification: Document? = null
         var out: File? = null
+        var keepOutput = false
         try {
             copy = UriActions.copyToCache(context, source) ?: return@withContext null
             doc = Document.openDocument(copy.absolutePath)
@@ -137,7 +138,7 @@ object PdfTools {
             try { verification?.destroy() } catch (_: Exception) {}
             try { doc?.destroy() } catch (_: Exception) {}
             copy?.delete()
-            if (out != null && (!out.isFile || out.length() == 0L)) out.delete()
+            if (!keepOutput) out?.delete()
         }
     }
 
