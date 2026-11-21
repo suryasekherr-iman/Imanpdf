@@ -61,6 +61,17 @@ object PdfActions {
         }
     }
 
+    fun saveCopyToUri(context: Context, source: File, destination: Uri): Boolean {
+        return try {
+            val result = context.contentResolver.openOutputStream(destination, "wt")?.use { out ->
+                FileInputStream(source).use { input -> input.copyTo(out) }
+            }
+            result != null
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     fun print(context: Context, source: File, name: String) {
         val manager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
         if (manager == null) {
