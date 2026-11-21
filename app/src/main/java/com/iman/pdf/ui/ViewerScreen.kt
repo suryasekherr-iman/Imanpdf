@@ -755,8 +755,6 @@ fun ViewerScreen(
                         .graphicsLayer {
                             scaleX = zoom.gesture
                             scaleY = zoom.gesture
-                            translationX = zoom.translationX
-                            translationY = zoom.translationY
                             transformOrigin = TransformOrigin(zoom.originX, zoom.originY)
                         }
                         .horizontalScroll(horizontalState, enabled = !drawing)
