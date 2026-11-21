@@ -124,6 +124,9 @@ class ZoomState {
 
     suspend fun settle(listState: LazyListState, horizontal: ScrollState) {
         if (focus.active) {
+            // One frame lets the scale state reach composition; the next lets
+            // LazyColumn publish its new item sizes and horizontal scroll range.
+            withFrameNanos { }
             withFrameNanos { }
             focus.apply(listState, horizontal, width)
         }
