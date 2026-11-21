@@ -114,9 +114,10 @@ fun ProtectScreen(
         val file = pending
         if (destination != null && file != null) {
             scope.launch {
-                val ok = withContext(Dispatchers.IO) {
+                val written = withContext(Dispatchers.IO) {
                     PdfActions.saveCopy(context, file, destination)
                 }
+                val ok = written && PdfTools.verifyProtected(context, destination, password)
                 if (ok) {
                     Toast.makeText(
                         context,
@@ -260,10 +261,12 @@ fun ProtectScreen(
                                 val backup = withContext(Dispatchers.IO) {
                                     UriActions.copyToCache(context, uri)
                                 }
-                                val saved = backup != null && withContext(Dispatchers.IO) {
+                                val written = backup != null && withContext(Dispatchers.IO) {
                                     PdfActions.saveCopyToUri(context, protectedFile, uri)
                                 }
+                                val saved = written && PdfTools.verifyProtected(context, uri, password)
                                 if (!saved && backup != null) {
+                                    // Keep the original intact if the destination cannot be re-opened.
                                     withContext(Dispatchers.IO) {
                                         PdfActions.saveCopyToUri(context, backup, uri)
                                     }
