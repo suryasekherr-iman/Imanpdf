@@ -30,6 +30,19 @@ class LastPageTest {
     }
 
     @Test
+    fun exactScrollPositionIsSavedPerDocument() {
+        LastPage.savePosition(context, "content://docs/one", 8, 5, 240, 120)
+        LastPage.savePosition(context, "content://docs/two", 8, 2, 80, 0)
+
+        assertEquals(5, LastPage.load(context, "content://docs/one", 8))
+        assertEquals(240, LastPage.loadOffset(context, "content://docs/one"))
+        assertEquals(120, LastPage.loadHorizontalOffset(context, "content://docs/one"))
+        assertEquals(2, LastPage.load(context, "content://docs/two", 8))
+        assertEquals(80, LastPage.loadOffset(context, "content://docs/two"))
+        assertEquals(0, LastPage.loadHorizontalOffset(context, "content://docs/two"))
+    }
+
+    @Test
     fun zoomIsSavedAndClampedPerDocument() {
         LastPage.saveZoom(context, "content://docs/one", 2.25f)
         LastPage.saveZoom(context, "content://docs/two", 1.5f)
