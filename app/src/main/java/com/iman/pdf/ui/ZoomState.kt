@@ -32,8 +32,6 @@ class ZoomFocus {
     private var xFraction = 0f
     private var fx = 0f
     private var fy = 0f
-    private var panX = 0f
-    private var panY = 0f
 
     fun capture(
         listState: LazyListState,
@@ -58,11 +56,6 @@ class ZoomFocus {
         active = true
     }
 
-    fun updatePan(dx: Float, dy: Float) {
-        panX = dx
-        panY = dy
-    }
-
     suspend fun apply(
         listState: LazyListState,
         horizontal: ScrollState,
@@ -70,11 +63,11 @@ class ZoomFocus {
     ) {
         val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
         if (item != null) {
-            val desiredTop = fy + panY - fraction * item.size
+            val desiredTop = fy - fraction * item.size
             listState.scrollToItem(index, (-desiredTop).roundToInt())
         }
         val total = horizontal.maxValue + containerWidth
-        horizontal.scrollTo((xFraction * total - (fx + panX)).roundToInt())
+        horizontal.scrollTo((xFraction * total - fx).roundToInt())
         active = false
     }
 }
@@ -86,39 +79,21 @@ class ZoomState {
     var originY by mutableFloatStateOf(0.5f)
     var width by mutableFloatStateOf(1f)
     var height by mutableFloatStateOf(0f)
-    var translationX by mutableFloatStateOf(0f)
-    var translationY by mutableFloatStateOf(0f)
     private val focus = ZoomFocus()
-    private var startX = 0f
-    private var startY = 0f
 
     fun begin(listState: LazyListState, horizontal: ScrollState, x: Float, y: Float) {
-        startX = x
-        startY = y
-        translationX = 0f
-        translationY = 0f
         originX = x / width.coerceAtLeast(1f)
         originY = y / height.coerceAtLeast(1f)
         focus.capture(listState, horizontal, width, x, y)
     }
 
-    fun updateCentroid(x: Float, y: Float) {
-        translationX = x - startX
-        translationY = y - startY
-        focus.updatePan(translationX, translationY)
-    }
-
     fun commit() {
         val finalScale = (scale * gesture).coerceIn(1f, MAX_ZOOM)
-        if (finalScale == scale) {
-            gesture = 1f
-            translationX = 0f
-            translationY = 0f
-            focus.active = false
-        } else {
-            // Keep the live transform until the scaled LazyColumn has remeasured.
-            // Removing it immediately causes the visible jump at finger release.
+        gesture = 1f
+        if (finalScale != scale) {
             scale = finalScale
+        } else {
+            focus.active = false
         }
     }
 
@@ -130,9 +105,6 @@ class ZoomState {
             withFrameNanos { }
             focus.apply(listState, horizontal, width)
         }
-        gesture = 1f
-        translationX = 0f
-        translationY = 0f
     }
 }
 
@@ -160,8 +132,6 @@ fun Modifier.zoomGestures(
                         val center = event.calculateCentroid(useCurrent = true)
                         zoom.begin(listState, horizontal, center.x, center.y)
                     }
-                    val center = event.calculateCentroid(useCurrent = true)
-                    zoom.updateCentroid(center.x, center.y)
                     val zoomChange = event.calculateZoom()
                     if (zoomChange != 1f) {
                         zoom.gesture = (zoom.gesture * zoomChange)
