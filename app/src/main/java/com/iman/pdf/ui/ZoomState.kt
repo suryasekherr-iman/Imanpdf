@@ -8,7 +8,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -65,7 +64,9 @@ class ZoomFocus {
         val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
         if (item != null) {
             val desiredTop = fy - fraction * item.size
-            listState.scrollBy(item.offset - desiredTop)
+            // Restore the exact pinch anchor in one layout operation instead of
+            // applying a second incremental scroll after the zoom remeasure.
+            listState.scrollToItem(index, (-desiredTop).roundToInt())
         }
         val total = horizontal.maxValue + containerWidth
         horizontal.scrollTo((xFraction * total - fx).roundToInt())
