@@ -107,6 +107,7 @@ fun OrganizeScreen(
     val scope = rememberCoroutineScope()
     var engine by remember { mutableStateOf<PdfEngine?>(null) }
     var sourceName by remember { mutableStateOf("") }
+    var sourceUri by remember { mutableStateOf<Uri?>(null) }
     var pages by remember { mutableStateOf<List<PageItem>>(emptyList()) }
     var selected by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var second by remember { mutableStateOf<PdfEngine?>(null) }
@@ -135,6 +136,7 @@ fun OrganizeScreen(
                 } else {
                     engine?.close()
                     engine = opened
+                    sourceUri = uri
                     sourceName = organizeNameOf(context, uri)
                     pages = (0 until opened.pageCount).map { PageItem(it, it, 0) }
                     selected = emptySet()
@@ -167,6 +169,46 @@ fun OrganizeScreen(
                 } else {
                     Toast.makeText(context, "Could not save the PDF", Toast.LENGTH_SHORT).show()
                 }
+            }
+        }
+    }
+
+    fun saveOrganized(overwriteOriginal: Boolean) {
+        val sourceUriToSave = sourceUri
+        val current = engine ?: return
+        if (overwriteOriginal && sourceUriToSave == null) {
+            Toast.makeText(context, "Original PDF location is unavailable", Toast.LENGTH_LONG).show()
+            return
+        }
+        scope.launch {
+            busy = true
+            val result = PdfOrganize.apply(
+                context,
+                current.file,
+                pages.map { it.original },
+                pages.map { it.rotation },
+                second?.file
+            )
+            busy = false
+            if (result == null) {
+                Toast.makeText(
+                    context,
+                    "Could not save these changes",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else if (overwriteOriginal) {
+                val ok = withContext(Dispatchers.IO) {
+                    PdfActions.saveCopyToUri(context, result, checkNotNull(sourceUriToSave))
+                }
+                if (ok) {
+                    Toast.makeText(context, "Changes saved to the same PDF", Toast.LENGTH_SHORT).show()
+                    onOpen(checkNotNull(sourceUriToSave))
+                } else {
+                    Toast.makeText(context, "Could not overwrite the original PDF", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                pending = result
+                saver.launch(sourceName.removeSuffix(".pdf") + "_edited.pdf")
             }
         }
     }
@@ -432,37 +474,27 @@ fun OrganizeScreen(
                     }
                 }
 
-                Button(
-                    onClick = {
-                        scope.launch {
-                            busy = true
-                            val result = PdfOrganize.apply(
-                                context,
-                                current.file,
-                                pages.map { it.original },
-                                pages.map { it.rotation },
-                                second?.file
-                            )
-                            busy = false
-                            if (result == null) {
-                                Toast.makeText(
-                                    context,
-                                    "Could not save these changes",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            } else {
-                                pending = result
-                                saver.launch(sourceName.removeSuffix(".pdf") + "_edited.pdf")
-                            }
-                        }
-                    },
-                    enabled = pages.isNotEmpty() && !busy,
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Save as new PDF")
+                    OutlinedButton(
+                        onClick = { saveOrganized(overwriteOriginal = true) },
+                        enabled = pages.isNotEmpty() && !busy && sourceUri != null,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Save in same PDF")
+                    }
+                    Button(
+                        onClick = { saveOrganized(overwriteOriginal = false) },
+                        enabled = pages.isNotEmpty() && !busy,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Save as new PDF")
+                    }
                 }
             }
         }
