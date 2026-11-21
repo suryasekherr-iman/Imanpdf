@@ -139,8 +139,13 @@ fun ViewerScreen(
     val context = LocalContext.current
     val initial = initialPage?.takeIf { it in 0 until engine.pageCount }
         ?: LastPage.load(context, documentId, engine.pageCount)
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initial)
-    val horizontalState = rememberScrollState()
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = initial,
+        initialFirstVisibleItemScrollOffset = LastPage.loadOffset(context, documentId)
+    )
+    val horizontalState = rememberScrollState(
+        initial = LastPage.loadHorizontalOffset(context, documentId)
+    )
     val scope = rememberCoroutineScope()
     val annotationSnackbarHostState = remember { SnackbarHostState() }
     var annotationRevision by remember { mutableIntStateOf(0) }
@@ -616,9 +621,34 @@ fun ViewerScreen(
         }
     }
 
-    LaunchedEffect(currentPage) {
-        delay(500)
-        LastPage.save(context, documentId, engine.pageCount, currentPage)
+    LaunchedEffect(
+        currentPage,
+        listState.firstVisibleItemScrollOffset,
+        horizontalState.value
+    ) {
+        delay(250)
+        LastPage.savePosition(
+            context,
+            documentId,
+            engine.pageCount,
+            currentPage,
+            listState.firstVisibleItemScrollOffset,
+            horizontalState.value
+        )
+    }
+
+    DisposableEffect(documentId) {
+        onDispose {
+            LastPage.savePosition(
+                context,
+                documentId,
+                engine.pageCount,
+                listState.firstVisibleItemIndex,
+                listState.firstVisibleItemScrollOffset,
+                horizontalState.value
+            )
+            LastPage.saveZoom(context, documentId, zoom.scale)
+        }
     }
 
     val scrolling = listState.isScrollInProgress
