@@ -75,35 +75,67 @@ object PdfTools {
     suspend fun protect(context: Context, source: Uri, password: String): File? = withContext(Dispatchers.IO) {
         var copy: File? = null
         var doc: PDFDocument? = null
+        var verification: Document? = null
+        var out: File? = null
         try {
             copy = UriActions.copyToCache(context, source) ?: return@withContext null
             doc = Document.openDocument(copy.absolutePath) as? PDFDocument ?: return@withContext null
+            if (doc.needsPassword()) return@withContext null
+
             val permissions = Document.PERMISSION_PRINT or Document.PERMISSION_COPY or
                 Document.PERMISSION_EDIT or Document.PERMISSION_ANNOTATE or
-                Document.PERMISSION_FORM or Document.PERMISSION_ACCESSBILITY or
+                Document.PERMISSION_FORM or Document.PERMISSION_ACCESSIBILITY or
                 Document.PERMISSION_ASSEMBLE or Document.PERMISSION_PRINT_HQ
-            val escaped = password.replace("\"", "\"\"")
+            val escaped = password.replace("\\", "\\\\").replace("\"", "\"\"")
             val options = "encrypt=aes-256,user-password=\"$escaped\",owner-password=\"$escaped\",permissions=$permissions,garbage=compact"
-            val out = File(context.cacheDir, "protected_${System.nanoTime()}.pdf")
+            out = File(context.cacheDir, "protected_${System.nanoTime()}.pdf")
             doc.save(out.absolutePath, options)
-            out.takeIf { it.isFile && it.length() > 0 }
+            if (!out.isFile || out.length() == 0L) return@withContext null
+
+            // Verify the saved PDF itself, not just the in-memory document.
+            doc.destroy()
+            doc = null
+            verification = Document.openDocument(out.absolutePath)
+            if (!verification.needsPassword()) return@withContext null
+            if (!verification.authenticatePassword(password)) return@withContext null
+            if (verification.countPages() <= 0) return@withContext null
+            out
         } catch (_: Exception) { null }
-        finally { try { doc?.destroy() } catch (_: Exception) {}; copy?.delete() }
+        finally {
+            try { verification?.destroy() } catch (_: Exception) {}
+            try { doc?.destroy() } catch (_: Exception) {}
+            copy?.delete()
+            if (out != null && (!out.isFile || out.length() == 0L)) out.delete()
+        }
     }
 
     suspend fun unlock(context: Context, source: Uri, password: String): File? = withContext(Dispatchers.IO) {
         var copy: File? = null
         var doc: Document? = null
+        var verification: Document? = null
+        var out: File? = null
         try {
             copy = UriActions.copyToCache(context, source) ?: return@withContext null
             doc = Document.openDocument(copy.absolutePath)
             if (doc.needsPassword() && !doc.authenticatePassword(password)) return@withContext null
             val pdf = doc as? PDFDocument ?: return@withContext null
-            val out = File(context.cacheDir, "unlocked_${System.nanoTime()}.pdf")
-            pdf.save(out.absolutePath, "decrypt,garbage=compact")
-            out.takeIf { it.isFile && it.length() > 0 }
+            out = File(context.cacheDir, "unlocked_${System.nanoTime()}.pdf")
+            pdf.save(out.absolutePath, "encrypt=none,garbage=compact")
+            if (!out.isFile || out.length() == 0L) return@withContext null
+
+            // Confirm the decrypted copy opens without a password before handing it to the viewer.
+            doc.destroy()
+            doc = null
+            verification = Document.openDocument(out.absolutePath)
+            if (verification.needsPassword() || verification.countPages() <= 0) return@withContext null
+            out
         } catch (_: Exception) { null }
-        finally { try { doc?.destroy() } catch (_: Exception) {}; copy?.delete() }
+        finally {
+            try { verification?.destroy() } catch (_: Exception) {}
+            try { doc?.destroy() } catch (_: Exception) {}
+            copy?.delete()
+            if (out != null && (!out.isFile || out.length() == 0L)) out.delete()
+        }
     }
 
     private fun decodeScaled(context: Context, uri: Uri, maxSide: Int): Bitmap? = try {
