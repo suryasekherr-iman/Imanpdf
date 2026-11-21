@@ -77,6 +77,7 @@ object PdfTools {
         var doc: PDFDocument? = null
         var verification: Document? = null
         var out: File? = null
+        var keepOutput = false
         try {
             copy = UriActions.copyToCache(context, source) ?: return@withContext null
             doc = Document.openDocument(copy.absolutePath) as? PDFDocument ?: return@withContext null
@@ -84,7 +85,7 @@ object PdfTools {
 
             val permissions = Document.PERMISSION_PRINT or Document.PERMISSION_COPY or
                 Document.PERMISSION_EDIT or Document.PERMISSION_ANNOTATE or
-                Document.PERMISSION_FORM or Document.PERMISSION_ACCESSIBILITY or
+                Document.PERMISSION_FORM or Document.PERMISSION_ACCESSIBLITY or
                 Document.PERMISSION_ASSEMBLE or Document.PERMISSION_PRINT_HQ
             val escaped = password.replace("\\", "\\\\").replace("\"", "\"\"")
             val options = "encrypt=aes-256,user-password=\"$escaped\",owner-password=\"$escaped\",permissions=$permissions,garbage=compact"
@@ -99,13 +100,14 @@ object PdfTools {
             if (!verification.needsPassword()) return@withContext null
             if (!verification.authenticatePassword(password)) return@withContext null
             if (verification.countPages() <= 0) return@withContext null
+            keepOutput = true
             out
         } catch (_: Exception) { null }
         finally {
             try { verification?.destroy() } catch (_: Exception) {}
             try { doc?.destroy() } catch (_: Exception) {}
             copy?.delete()
-            if (out != null && (!out.isFile || out.length() == 0L)) out.delete()
+            if (!keepOutput) out?.delete()
         }
     }
 
@@ -128,6 +130,7 @@ object PdfTools {
             doc = null
             verification = Document.openDocument(out.absolutePath)
             if (verification.needsPassword() || verification.countPages() <= 0) return@withContext null
+            keepOutput = true
             out
         } catch (_: Exception) { null }
         finally {
