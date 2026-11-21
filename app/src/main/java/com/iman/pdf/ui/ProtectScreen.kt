@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfTools
+import com.iman.pdf.pdf.UriActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -87,6 +89,7 @@ fun ProtectScreen(
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var saveMode by remember { mutableStateOf("new") }
     var pending by remember { mutableStateOf<File?>(null) }
 
     val onPicked: (Uri?) -> Unit = { uri ->
@@ -177,7 +180,22 @@ fun ProtectScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "Save protected PDF",
+                    modifier = Modifier.padding(top = 18.dp),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = saveMode == "same", onClick = { saveMode = "same" })
+                    Text("Replace same PDF")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = saveMode == "new", onClick = { saveMode = "new" })
+                    Text("Save as new PDF")
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = password,
@@ -231,14 +249,44 @@ fun ProtectScreen(
                         scope.launch {
                             busy = true
                             val protectedFile = PdfTools.protect(context, uri, password)
-                            busy = false
                             if (protectedFile == null) {
+                                busy = false
                                 Toast.makeText(
                                     context,
-                                    "Could not protect this PDF",
+                                    "Could not protect this PDF. Check that it is a valid, unlocked PDF.",
                                     Toast.LENGTH_LONG
                                 ).show()
+                            } else if (saveMode == "same") {
+                                val backup = withContext(Dispatchers.IO) {
+                                    UriActions.copyToCache(context, uri)
+                                }
+                                val saved = backup != null && withContext(Dispatchers.IO) {
+                                    PdfActions.saveCopyToUri(context, protectedFile, uri)
+                                }
+                                if (!saved && backup != null) {
+                                    withContext(Dispatchers.IO) {
+                                        PdfActions.saveCopyToUri(context, backup, uri)
+                                    }
+                                }
+                                backup?.delete()
+                                protectedFile.delete()
+                                busy = false
+                                if (saved) {
+                                    Toast.makeText(
+                                        context,
+                                        "Password set on the same PDF. Remember your password.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    onOpen(uri)
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Could not replace the original PDF. Choose Save as new PDF.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             } else {
+                                busy = false
                                 pending = protectedFile
                                 val base = sourceName.removeSuffix(".pdf")
                                 saver.launch(base + "_protected.pdf")
