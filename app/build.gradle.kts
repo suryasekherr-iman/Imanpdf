@@ -53,7 +53,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // MuPDF is the single PDF engine for rendering, text and document operations.
-    implementation("com.artifex.mupdf:fitz:1.23.0")
+    implementation("com.artifex.mupdf:fitz:1.23.4")
 
     // On-device OCR: Latin and Devanagari scripts; no cloud processing.
     implementation("com.google.mlkit:text-recognition:16.0.1")
