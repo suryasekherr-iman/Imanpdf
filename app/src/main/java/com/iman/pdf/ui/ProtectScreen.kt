@@ -112,21 +112,31 @@ fun ProtectScreen(
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { destination ->
         val file = pending
-        if (destination != null && file != null) {
+        if (destination == null || file == null) {
+            file?.delete()
+            pending = null
+            busy = false
+        } else {
             scope.launch {
-                val written = withContext(Dispatchers.IO) {
-                    PdfActions.saveCopy(context, file, destination)
-                }
-                val ok = written && PdfTools.verifyProtected(context, destination, password)
-                if (ok) {
-                    Toast.makeText(
-                        context,
-                        "Protected PDF saved. Remember your password.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    onOpen(destination)
-                } else {
-                    Toast.makeText(context, "Could not save the PDF", Toast.LENGTH_SHORT).show()
+                try {
+                    val written = withContext(Dispatchers.IO) {
+                        PdfActions.saveCopy(context, file, destination)
+                    }
+                    val ok = written && PdfTools.verifyProtected(context, destination, password)
+                    if (ok) {
+                        Toast.makeText(
+                            context,
+                            "Protected PDF saved. Remember your password.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        onOpen(destination)
+                    } else {
+                        Toast.makeText(context, "Could not save the PDF", Toast.LENGTH_SHORT).show()
+                    }
+                } finally {
+                    file.delete()
+                    pending = null
+                    busy = false
                 }
             }
         }
@@ -289,7 +299,6 @@ fun ProtectScreen(
                                     ).show()
                                 }
                             } else {
-                                busy = false
                                 pending = protectedFile
                                 val base = sourceName.removeSuffix(".pdf")
                                 saver.launch(base + "_protected.pdf")
