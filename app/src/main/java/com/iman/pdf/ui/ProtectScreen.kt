@@ -254,7 +254,7 @@ fun ProtectScreen(
                                 busy = false
                                 Toast.makeText(
                                     context,
-                                    "Could not protect PDF: ${PdfTools.lastProtectError ?: \"PDF validation or save failed\"}",
+                                    "Could not protect PDF: ${PdfTools.lastProtectError ?: "PDF validation or save failed"}",
                                     Toast.LENGTH_LONG
                                 ).show()
                             } else if (saveMode == "same") {
