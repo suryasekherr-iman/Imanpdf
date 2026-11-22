@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 object PdfTools {
+    @Volatile var lastProtectError: String? = null
     suspend fun merge(context: Context, sources: List<Uri>): File? = withContext(Dispatchers.IO) {
         val copies = ArrayList<File>()
         val output = PDFDocument()
@@ -73,6 +74,7 @@ object PdfTools {
     }
 
     suspend fun protect(context: Context, source: Uri, password: String): File? = withContext(Dispatchers.IO) {
+        lastProtectError = null
         var copy: File? = null
         var doc: PDFDocument? = null
         var verification: Document? = null
@@ -102,7 +104,10 @@ object PdfTools {
             if (verification.countPages() <= 0) return@withContext null
             keepOutput = true
             out
-        } catch (_: Exception) { null }
+        } catch (e: Exception) {
+            lastProtectError = e.message?.take(180) ?: e.javaClass.simpleName
+            null
+        }
         finally {
             try { verification?.destroy() } catch (_: Exception) {}
             try { doc?.destroy() } catch (_: Exception) {}
