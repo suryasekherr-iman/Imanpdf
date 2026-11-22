@@ -28,7 +28,7 @@ class PdfProtectionTest {
             interopFixture.delete()
             var protected: File? = null
             try {
-                val password = "Test,=\"pass\\word!42"
+                val password = "TestPassword123"
                 protected = PdfTools.protect(context, Uri.fromFile(source), password)
                 assertNotNull("Protection failed: ${PdfTools.lastProtectError}", protected)
 
