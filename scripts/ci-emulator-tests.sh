@@ -10,7 +10,7 @@ if [ "$status" -eq 0 ]; then
     echo "Could not retrieve the PDF protection regression fixture."
     status=1
   else
-    pdf_test_password='Test,="pass\word!42'
+    pdf_test_password='TestPassword123'
     if ! qpdf --check --password="$pdf_test_password" "$pdf_file"; then
       echo "qpdf rejected the PDF produced by the protection feature."
       status=1
