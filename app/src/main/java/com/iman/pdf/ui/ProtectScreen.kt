@@ -97,6 +97,8 @@ fun ProtectScreen(
         if (uri != null) {
             source = uri
             sourceName = pickedNameOf(context, uri)
+            password = ""
+            confirm = ""
         }
     }
 
@@ -196,8 +198,7 @@ fun ProtectScreen(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     if (mode == "set") {
                         Button(
-                            onClick = { },
-                            enabled = false,
+                            onClick = { mode = "set" },
                             modifier = Modifier.weight(1f)
                         ) { Text("Set password") }
                         OutlinedButton(
@@ -218,8 +219,7 @@ fun ProtectScreen(
                             modifier = Modifier.weight(1f)
                         ) { Text("Set password") }
                         Button(
-                            onClick = { },
-                            enabled = false,
+                            onClick = { mode = "remove" },
                             modifier = Modifier.weight(1f)
                         ) { Text("Remove password") }
                     }
