@@ -24,7 +24,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle
+      - name: Install qpdf for independent PDF validation\n        run: sudo apt-get update && sudo apt-get install -y qpdf\n\n      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.10.2

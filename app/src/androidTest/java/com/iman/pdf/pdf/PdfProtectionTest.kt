@@ -23,6 +23,8 @@ class PdfProtectionTest {
     fun protectedPdfRequiresPasswordAndOpensWithCorrectPassword() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val source = createSamplePdf(context)
+        val interopFixture = File(context.filesDir, "protection-regression-output.pdf")
+        interopFixture.delete()
         var protected: File? = null
         try {
             val password = "Test,=\"pass\\word!42"
@@ -51,6 +53,7 @@ class PdfProtectionTest {
                     correctPasswordDocument.authenticatePassword(password))
                 assertTrue("All pages must remain readable",
                     correctPasswordDocument.countPages() == 1)
+            output.copyTo(interopFixture, overwrite = true)
             } finally {
                 correctPasswordDocument?.destroy()
             }
