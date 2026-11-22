@@ -61,6 +61,7 @@ class PdfProtectionTest {
             protected?.delete()
             source.delete()
         }
+        Unit
     }
 
     @Test
