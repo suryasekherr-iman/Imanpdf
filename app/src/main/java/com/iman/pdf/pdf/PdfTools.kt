@@ -81,9 +81,9 @@ object PdfTools {
         var out: File? = null
         var keepOutput = false
         try {
-            copy = UriActions.copyToCache(context, source) ?: return@withContext null
-            doc = Document.openDocument(copy.absolutePath) as? PDFDocument ?: return@withContext null
-            if (doc.needsPassword()) return@withContext null
+            copy = UriActions.copyToCache(context, source) ?: run { lastProtectError = "Could not read selected PDF"; return@withContext null }
+            doc = Document.openDocument(copy.absolutePath) as? PDFDocument ?: run { lastProtectError = "Selected file is not a readable PDF"; return@withContext null }
+            if (doc.needsPassword()) { lastProtectError = "Selected PDF is already password-protected"; return@withContext null }
 
             val permissions = Document.PERMISSION_PRINT or Document.PERMISSION_COPY or
                 Document.PERMISSION_EDIT or Document.PERMISSION_ANNOTATE or
@@ -93,15 +93,15 @@ object PdfTools {
             val options = "encrypt=aes-256,user-password=\"$escaped\",owner-password=\"$escaped\",permissions=$permissions,garbage=compact"
             out = File(context.cacheDir, "protected_${System.nanoTime()}.pdf")
             doc.save(out.absolutePath, options)
-            if (!out.isFile || out.length() == 0L) return@withContext null
+            if (!out.isFile || out.length() == 0L) { lastProtectError = "MuPDF did not create an output file"; return@withContext null }
 
             // Verify the saved PDF itself, not just the in-memory document.
             doc.destroy()
             doc = null
             verification = Document.openDocument(out.absolutePath)
-            if (!verification.needsPassword()) return@withContext null
-            if (!verification.authenticatePassword(password)) return@withContext null
-            if (verification.countPages() <= 0) return@withContext null
+            if (!verification.needsPassword()) { lastProtectError = "Output PDF was not encrypted"; return@withContext null }
+            if (!verification.authenticatePassword(password)) { lastProtectError = "Output PDF rejected password in verification"; return@withContext null }
+            if (verification.countPages() <= 0) { lastProtectError = "Protected PDF has no readable pages"; return@withContext null }
             keepOutput = true
             out
         } catch (e: Exception) {
