@@ -77,6 +77,8 @@ class PdfProtectionTest {
             val source = createSamplePdf(context)
             var protected: File? = null
             var unprotected: File? = null
+            val plainFixture = File(context.filesDir, "protection-regression-unprotected.pdf")
+            plainFixture.delete()
             try {
                 protected = PdfTools.protect(context, Uri.fromFile(source), "remove-me-123")
                 assertNotNull("Could not create encrypted fixture: ${PdfProtectionService.lastError}", protected)
@@ -98,6 +100,7 @@ class PdfProtectionTest {
                     "Removed-password PDF must no longer be encrypted",
                     PdfTools.verifyProtected(context, Uri.fromFile(plain), "remove-me-123")
                 )
+                plain.copyTo(plainFixture, overwrite = true)
             } finally {
                 unprotected?.delete()
                 protected?.delete()
