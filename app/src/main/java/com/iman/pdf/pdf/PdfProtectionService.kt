@@ -27,6 +27,10 @@ object PdfProtectionService {
                 lastError = "Password must contain at least 4 characters"
                 return@withContext null
             }
+            if (password.contains(',')) {
+                lastError = "Password cannot contain a comma (,). Please use another character"
+                return@withContext null
+            }
             if (password.toByteArray(Charsets.UTF_8).size > 127) {
                 lastError = "Password is too long (maximum 127 UTF-8 bytes)"
                 return@withContext null
@@ -58,9 +62,9 @@ object PdfProtectionService {
                     Document.PERMISSION_FORM or Document.PERMISSION_ASSEMBLE or
                     Document.PERMISSION_PRINT_HQ
                 val ownerPassword = newOwnerPassword()
-                val safeUserPassword = password.replace("\"", "\"\"")
-                val options = "encrypt=aes-256,user-password=\"$safeUserPassword\"," +
-                    "owner-password=\"$ownerPassword\",permissions=$permissions,garbage=compact"
+                // MuPDF 1.23.4 option parser has no quoting: pass the raw password.
+                val options = "encrypt=aes-256,user-password=$password," +
+                    "owner-password=$ownerPassword,permissions=$permissions,garbage=compact"
 
                 output = File(context.cacheDir, "protected_${System.nanoTime()}.pdf")
                 sourceDocument.save(output.absolutePath, options)
@@ -121,7 +125,11 @@ object PdfProtectionService {
                     lastError = "This PDF does not have an opening password"
                     return@withContext null
                 }
-                if (!sourceDocument.authenticatePassword(password)) {
+                // Second form opens PDFs made by the earlier buggy build, which stored
+                // the password wrapped in literal quote characters.
+                val authenticated = sourceDocument.authenticatePassword(password) ||
+                    sourceDocument.authenticatePassword("\"" + password + "\"")
+                if (!authenticated) {
                     lastError = "The current password is incorrect"
                     return@withContext null
                 }
