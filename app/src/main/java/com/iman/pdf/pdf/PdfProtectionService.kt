@@ -202,6 +202,6 @@ object PdfProtectionService {
     private fun newOwnerPassword(): String {
         val bytes = ByteArray(32)
         SecureRandom().nextBytes(bytes)
-        return bytes.joinToString("") { "%02x".format(it) }
+        return bytes.joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }
 }
