@@ -88,8 +88,12 @@ fun PdfPageItem(
             OcrStore.loadPage(context, documentId, index)?.lines.orEmpty()
         }
     }
-    var bitmap by remember(index, annotationRevision) { mutableStateOf<Bitmap?>(null) }
+    var ratio by remember(index) { mutableStateOf(PAGE_DISPLAY_ASPECT_RATIO) }
+    LaunchedEffect(index) {
+        ratio = engine.pageAspectRatio(index).coerceAtLeast(0.1f)
+    }
 
+    var bitmap by remember(index, annotationRevision) { mutableStateOf<Bitmap?>(null) }
     LaunchedEffect(index, renderWidth, annotationRevision) {
         bitmap = withContext(Dispatchers.IO) {
             engine.renderPage(index, renderWidth)
@@ -99,7 +103,7 @@ fun PdfPageItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(PAGE_DISPLAY_ASPECT_RATIO)
+            .aspectRatio(ratio)
             .shadow(1.dp)
             .background(Color.White)
     ) {
