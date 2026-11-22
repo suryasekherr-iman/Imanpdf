@@ -118,6 +118,10 @@ class PdfProtectionTest {
                     "Removed-password PDF must open without a password",
                     PdfTools.verifyUnprotected(context, Uri.fromFile(plain))
                 )
+                assertTrue(
+                    "Removing a password into a new file must leave the source protected",
+                    PdfTools.verifyProtected(context, Uri.fromFile(encrypted), "remove-me-123")
+                )
                 assertFalse(
                     "Removed-password PDF must no longer be encrypted",
                     PdfTools.verifyProtected(context, Uri.fromFile(plain), "remove-me-123")
