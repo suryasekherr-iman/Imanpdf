@@ -43,10 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.iman.pdf.R
 import com.iman.pdf.data.FileStore
 import com.iman.pdf.pdf.PdfEngine
+import com.iman.pdf.pdf.PdfProtectionService
 import com.iman.pdf.pdf.PdfTools
 import com.iman.pdf.pdf.Thumbnails
 import kotlinx.coroutines.launch
@@ -113,6 +116,7 @@ fun MainScreen(incomingUri: Uri? = null) {
     var loading by remember { mutableStateOf(false) }
     var passwordUri by remember { mutableStateOf<Uri?>(null) }
     var passwordWrong by remember { mutableStateOf(false) }
+    var passwordError by remember { mutableStateOf("") }
     var pendingMode by remember { mutableStateOf("") }
     var viewerMode by remember { mutableStateOf("") }
     var currentUri by remember { mutableStateOf<Uri?>(null) }
@@ -136,6 +140,7 @@ fun MainScreen(incomingUri: Uri? = null) {
                 loading = false
                 if (unlocked == null && PdfTools.needsPassword(context, uri)) {
                     passwordWrong = false
+                    passwordError = ""
                     passwordUri = uri
                 } else {
                     Toast.makeText(
@@ -342,9 +347,10 @@ fun MainScreen(incomingUri: Uri? = null) {
                         isError = passwordWrong,
                         supportingText = {
                             if (passwordWrong) {
-                                Text("Wrong password")
+                                Text(passwordError.ifEmpty { "Wrong password" })
                             }
                         },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         visualTransformation = PasswordVisualTransformation()
                     )
                 }
@@ -355,6 +361,12 @@ fun MainScreen(incomingUri: Uri? = null) {
                         scope.launch {
                             val file = PdfTools.unlock(context, askFor, typed)
                             if (file == null) {
+                                val reason = PdfProtectionService.lastError.orEmpty()
+                                passwordError = if (reason.contains("incorrect", ignoreCase = true) || reason.isEmpty()) {
+                                    "Wrong password"
+                                } else {
+                                    "Could not unlock: $reason"
+                                }
                                 passwordWrong = true
                             } else {
                                 passwordUri = null
