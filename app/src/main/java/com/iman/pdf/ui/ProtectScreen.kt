@@ -1,6 +1,5 @@
 package com.iman.pdf.ui
 
-import androidx.compose.runtime.LaunchedEffect
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -32,6 +31,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +46,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.pdf.PdfActions
+import com.iman.pdf.pdf.PdfProtectionService
 import com.iman.pdf.pdf.PdfTools
 import com.iman.pdf.pdf.UriActions
 import kotlinx.coroutines.Dispatchers
@@ -65,9 +66,7 @@ private fun pickedNameOf(context: Context, uri: Uri): String {
         )?.use { cursor ->
             if (cursor.moveToFirst()) {
                 val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (column >= 0) {
-                    name = cursor.getString(column)
-                }
+                if (column >= 0) name = cursor.getString(column)
             }
         }
     } catch (_: Exception) {
@@ -86,11 +85,13 @@ fun ProtectScreen(
     val scope = rememberCoroutineScope()
     var source by remember { mutableStateOf<Uri?>(null) }
     var sourceName by remember { mutableStateOf("") }
+    var mode by remember { mutableStateOf("set") }
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var saveMode by remember { mutableStateOf("new") }
     var pending by remember { mutableStateOf<File?>(null) }
+    var pendingIsProtected by remember { mutableStateOf(true) }
 
     val onPicked: (Uri?) -> Unit = { uri ->
         if (uri != null) {
@@ -122,16 +123,28 @@ fun ProtectScreen(
                     val written = withContext(Dispatchers.IO) {
                         PdfActions.saveCopy(context, file, destination)
                     }
-                    val ok = written && PdfTools.verifyProtected(context, destination, password)
-                    if (ok) {
-                        Toast.makeText(
-                            context,
-                            "Protected PDF saved. Remember your password.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                    val verified = if (written) {
+                        if (pendingIsProtected) {
+                            PdfTools.verifyProtected(context, destination, password)
+                        } else {
+                            PdfTools.verifyUnprotected(context, destination)
+                        }
+                    } else false
+
+                    if (verified) {
+                        val message = if (pendingIsProtected) {
+                            "Password set. Remember your password."
+                        } else {
+                            "Password removed. The new PDF is unprotected."
+                        }
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                         onOpen(destination)
                     } else {
-                        Toast.makeText(context, "Could not save the PDF", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "The saved PDF failed verification. The original was not changed.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 } finally {
                     file.delete()
@@ -142,8 +155,13 @@ fun ProtectScreen(
         }
     }
 
-    val mismatch = confirm.isNotEmpty() && confirm != password
-    val ready = source != null && password.length >= 4 && password == confirm && !busy
+    val mismatch = mode == "set" && confirm.isNotEmpty() && confirm != password
+    val passwordReady = if (mode == "set") {
+        password.length >= 4 && password == confirm
+    } else {
+        password.isNotEmpty()
+    }
+    val ready = source != null && passwordReady && !busy
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -164,7 +182,7 @@ fun ProtectScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
                 Text(
-                    text = "Set password",
+                    text = "PDF password",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -175,9 +193,43 @@ fun ProtectScreen(
                     .weight(1f)
                     .padding(horizontal = 16.dp)
             ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    if (mode == "set") {
+                        Button(
+                            onClick = { },
+                            enabled = false,
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Set password") }
+                        OutlinedButton(
+                            onClick = {
+                                mode = "remove"
+                                password = ""
+                                confirm = ""
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Remove password") }
+                    } else {
+                        OutlinedButton(
+                            onClick = {
+                                mode = "set"
+                                password = ""
+                                confirm = ""
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Set password") }
+                        Button(
+                            onClick = { },
+                            enabled = false,
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Remove password") }
+                    }
+                }
+
                 OutlinedButton(
                     onClick = { picker.launch(arrayOf("application/pdf")) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp)
                 ) {
                     Text("Choose a PDF")
                 }
@@ -192,7 +244,7 @@ fun ProtectScreen(
                 }
 
                 Text(
-                    text = "Save protected PDF",
+                    text = "Save result",
                     modifier = Modifier.padding(top = 18.dp),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
@@ -211,35 +263,44 @@ fun ProtectScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Password (at least 4 characters)") },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = confirm,
-                    onValueChange = { confirm = it },
-                    label = { Text("Confirm password") },
-                    singleLine = true,
-                    isError = mismatch,
-                    supportingText = {
-                        if (mismatch) {
-                            Text("Passwords do not match")
-                        }
+                    label = {
+                        Text(if (mode == "set") "New password (at least 4 characters)" else "Current PDF password")
                     },
+                    singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text(
-                    text = "If you forget this password, the PDF cannot be opened again.",
-                    modifier = Modifier.padding(top = 16.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (mode == "set") {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = confirm,
+                        onValueChange = { confirm = it },
+                        label = { Text("Confirm new password") },
+                        singleLine = true,
+                        isError = mismatch,
+                        supportingText = {
+                            if (mismatch) Text("Passwords do not match")
+                        },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "If you forget this password, the PDF cannot be opened again.",
+                        modifier = Modifier.padding(top = 16.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = "Enter the current opening password. The source PDF will remain unchanged when you save as a new file.",
+                        modifier = Modifier.padding(top = 16.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 if (busy) {
                     Box(
@@ -259,12 +320,19 @@ fun ProtectScreen(
                     if (uri != null) {
                         scope.launch {
                             busy = true
-                            val protectedFile = PdfTools.protect(context, uri, password)
-                            if (protectedFile == null) {
+                            val isSettingPassword = mode == "set"
+                            val result = if (isSettingPassword) {
+                                PdfTools.protect(context, uri, password)
+                            } else {
+                                PdfTools.removePassword(context, uri, password)
+                            }
+
+                            if (result == null) {
                                 busy = false
+                                val error = PdfProtectionService.lastError ?: "PDF validation or save failed"
                                 Toast.makeText(
                                     context,
-                                    "Could not protect PDF: ${PdfTools.lastProtectError ?: "PDF validation or save failed"}",
+                                    "Could not ${if (isSettingPassword) "set" else "remove"} password: $error",
                                     Toast.LENGTH_LONG
                                 ).show()
                             } else if (saveMode == "same") {
@@ -272,36 +340,46 @@ fun ProtectScreen(
                                     UriActions.copyToCache(context, uri)
                                 }
                                 val written = backup != null && withContext(Dispatchers.IO) {
-                                    PdfActions.saveCopyToUri(context, protectedFile, uri)
+                                    PdfActions.saveCopyToUri(context, result, uri)
                                 }
-                                val saved = written && PdfTools.verifyProtected(context, uri, password)
-                                if (!saved && backup != null) {
-                                    // Keep the original intact if the destination cannot be re-opened.
+                                val verified = if (written) {
+                                    if (isSettingPassword) {
+                                        PdfTools.verifyProtected(context, uri, password)
+                                    } else {
+                                        PdfTools.verifyUnprotected(context, uri)
+                                    }
+                                } else false
+
+                                if (!verified && backup != null) {
                                     withContext(Dispatchers.IO) {
                                         PdfActions.saveCopyToUri(context, backup, uri)
                                     }
                                 }
                                 backup?.delete()
-                                protectedFile.delete()
+                                result.delete()
                                 busy = false
-                                if (saved) {
-                                    Toast.makeText(
-                                        context,
-                                        "Password set on the same PDF. Remember your password.",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+
+                                if (verified) {
+                                    val message = if (isSettingPassword) {
+                                        "Password set on the same PDF."
+                                    } else {
+                                        "Password removed from the same PDF."
+                                    }
+                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                     onOpen(uri)
                                 } else {
                                     Toast.makeText(
                                         context,
-                                        "Could not replace the original PDF. Choose Save as new PDF.",
+                                        "Could not safely replace the original PDF. The backup was restored when possible.",
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
                             } else {
-                                pending = protectedFile
+                                pending = result
+                                pendingIsProtected = isSettingPassword
                                 val base = sourceName.removeSuffix(".pdf")
-                                saver.launch(base + "_protected.pdf")
+                                val suffix = if (isSettingPassword) "_protected.pdf" else "_unprotected.pdf"
+                                saver.launch(base + suffix)
                             }
                         }
                     }
@@ -312,7 +390,7 @@ fun ProtectScreen(
                     .navigationBarsPadding()
                     .padding(16.dp)
             ) {
-                Text("Protect PDF")
+                Text(if (mode == "set") "Protect PDF" else "Remove password")
             }
         }
     }
