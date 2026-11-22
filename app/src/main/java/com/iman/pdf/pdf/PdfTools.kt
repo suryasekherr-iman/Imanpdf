@@ -75,6 +75,14 @@ object PdfTools {
 
     suspend fun protect(context: Context, source: Uri, password: String): File? = withContext(Dispatchers.IO) {
         lastProtectError = null
+        if (password.isEmpty()) {
+            lastProtectError = "Password cannot be empty"
+            return@withContext null
+        }
+        if (password.toByteArray(Charsets.UTF_8).size > 127) {
+            lastProtectError = "Password is too long (maximum 127 UTF-8 bytes)"
+            return@withContext null
+        }
         var copy: File? = null
         var doc: PDFDocument? = null
         var verification: Document? = null

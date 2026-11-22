@@ -1,7 +1,6 @@
 package com.iman.pdf.pdf
 
 import android.content.Context
-import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
@@ -12,6 +11,7 @@ import com.artifex.mupdf.fitz.Document
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -65,7 +65,7 @@ class PdfProtectionTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val source = createSamplePdf(context)
         try {
-            assertTrue(PdfTools.protect(context, Uri.fromFile(source), "").let { it == null })
+            assertNull(PdfTools.protect(context, Uri.fromFile(source), ""))
         } finally {
             source.delete()
         }
