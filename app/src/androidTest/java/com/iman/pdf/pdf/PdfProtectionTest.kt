@@ -6,12 +6,12 @@ import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import kotlinx.coroutines.runBlocking
 import com.artifex.mupdf.fitz.Document
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -20,58 +20,66 @@ import java.io.File
 class PdfProtectionTest {
 
     @Test
-    fun protectedPdfRequiresPasswordAndOpensWithCorrectPassword() {\n        runBlocking<Unit> {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val source = createSamplePdf(context)
-        val interopFixture = File(context.filesDir, "protection-regression-output.pdf")
-        interopFixture.delete()
-        var protected: File? = null
-        try {
-            val password = "Test,=\"pass\\word!42"
-            protected = PdfTools.protect(context, Uri.fromFile(source), password)
-            assertNotNull("Protection failed: ${PdfTools.lastProtectError}", protected)
-
-            val output = requireNotNull(protected)
-            assertTrue("Protected output must be non-empty", output.isFile && output.length() > 0L)
-            assertTrue("Protected output must be encrypted",
-                PdfTools.verifyProtected(context, Uri.fromFile(output), password))
-
-            var wrongPasswordDocument: Document? = null
+    fun protectedPdfRequiresPasswordAndOpensWithCorrectPassword() {
+        runBlocking<Unit> {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            val source = createSamplePdf(context)
+            val interopFixture = File(context.filesDir, "protection-regression-output.pdf")
+            interopFixture.delete()
+            var protected: File? = null
             try {
-                wrongPasswordDocument = Document.openDocument(output.absolutePath)
-                assertTrue("PDF must require a password", wrongPasswordDocument.needsPassword())
-                assertFalse("Incorrect password must be rejected",
-                    wrongPasswordDocument.authenticatePassword("definitely-wrong"))
-            } finally {
-                wrongPasswordDocument?.destroy()
-            }
+                val password = "Test,=\"pass\\word!42"
+                protected = PdfTools.protect(context, Uri.fromFile(source), password)
+                assertNotNull("Protection failed: ${PdfTools.lastProtectError}", protected)
 
-            var correctPasswordDocument: Document? = null
-            try {
-                correctPasswordDocument = Document.openDocument(output.absolutePath)
-                assertTrue("Correct password must be accepted",
-                    correctPasswordDocument.authenticatePassword(password))
-                assertTrue("All pages must remain readable",
-                    correctPasswordDocument.countPages() == 1)
-            output.copyTo(interopFixture, overwrite = true)
+                val output = requireNotNull(protected)
+                assertTrue("Protected output must be non-empty", output.isFile && output.length() > 0L)
+                assertTrue(
+                    "Protected output must be encrypted",
+                    PdfTools.verifyProtected(context, Uri.fromFile(output), password)
+                )
+
+                var wrongPasswordDocument: Document? = null
+                try {
+                    wrongPasswordDocument = Document.openDocument(output.absolutePath)
+                    assertTrue("PDF must require a password", wrongPasswordDocument.needsPassword())
+                    assertFalse(
+                        "Incorrect password must be rejected",
+                        wrongPasswordDocument.authenticatePassword("definitely-wrong")
+                    )
+                } finally {
+                    wrongPasswordDocument?.destroy()
+                }
+
+                var correctPasswordDocument: Document? = null
+                try {
+                    correctPasswordDocument = Document.openDocument(output.absolutePath)
+                    assertTrue(
+                        "Correct password must be accepted",
+                        correctPasswordDocument.authenticatePassword(password)
+                    )
+                    assertTrue("All pages must remain readable", correctPasswordDocument.countPages() == 1)
+                    output.copyTo(interopFixture, overwrite = true)
+                } finally {
+                    correctPasswordDocument?.destroy()
+                }
             } finally {
-                correctPasswordDocument?.destroy()
+                protected?.delete()
+                source.delete()
             }
-        } finally {
-            protected?.delete()
-            source.delete()
         }
-        Unit
     }
 
     @Test
-    fun invalidPasswordInputDoesNotCreateProtectedOutput() = runBlocking {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val source = createSamplePdf(context)
-        try {
-            assertNull(PdfTools.protect(context, Uri.fromFile(source), ""))
-        } finally {
-            source.delete()
+    fun invalidPasswordInputDoesNotCreateProtectedOutput() {
+        runBlocking<Unit> {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            val source = createSamplePdf(context)
+            try {
+                assertNull(PdfTools.protect(context, Uri.fromFile(source), ""))
+            } finally {
+                source.delete()
+            }
         }
     }
 
