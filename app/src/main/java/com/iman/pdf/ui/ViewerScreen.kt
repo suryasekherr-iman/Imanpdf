@@ -97,7 +97,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
-private const val MAX_RENDER_WIDTH = 2200
+private const val MAX_RENDER_WIDTH = 2000
 
 private fun screenToPdfCoordinates(
     touchX: Float,
@@ -568,10 +568,10 @@ fun ViewerScreen(
         }
     )
 
-    LaunchedEffect(scale) {
-        delay(350)
-        renderScale = scale
-    }
+LaunchedEffect(scale) {
+    delay(600)
+    renderScale = if (scale > 1.3f) 2f else 1f
+}
 
     LaunchedEffect(scale) {
         zoom.settle(listState, horizontalState)
