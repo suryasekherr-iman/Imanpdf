@@ -59,6 +59,28 @@ class PdfProtectionTest {
                         correctPasswordDocument.authenticatePassword(password)
                     )
                     assertTrue("All pages must remain readable", correctPasswordDocument.countPages() == 1)
+                    val page = correctPasswordDocument.loadPage(0)
+                    try {
+                        val structured = page.toStructuredText()
+                        try {
+                            val extracted = buildString {
+                                structured.blocks.forEach { block ->
+                                    block.lines.forEach { line ->
+                                        line.chars.forEach { appendCodePoint(it.c) }
+                                    }
+                                }
+                            }
+                            assertTrue("Original page text must survive protection", extracted.contains("PDF protection regression test"))
+                        } finally {
+                            structured.destroy()
+                        }
+                    } finally {
+                        page.destroy()
+                    }
+                    assertNull(
+                        "An already-protected PDF must not be encrypted a second time",
+                        PdfTools.protect(context, Uri.fromFile(output), "second-password")
+                    )
                     output.copyTo(interopFixture, overwrite = true)
                 } finally {
                     correctPasswordDocument?.destroy()
