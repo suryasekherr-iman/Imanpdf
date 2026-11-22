@@ -71,6 +71,42 @@ class PdfProtectionTest {
     }
 
     @Test
+    fun removingPasswordProducesReadableUnencryptedPdf() {
+        runBlocking<Unit> {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            val source = createSamplePdf(context)
+            var protected: File? = null
+            var unprotected: File? = null
+            try {
+                protected = PdfTools.protect(context, Uri.fromFile(source), "remove-me-123")
+                assertNotNull("Could not create encrypted fixture: ${PdfProtectionService.lastError}", protected)
+
+                val encrypted = requireNotNull(protected)
+                assertNull(
+                    "Wrong current password must not remove encryption",
+                    PdfTools.removePassword(context, Uri.fromFile(encrypted), "wrong-password")
+                )
+
+                unprotected = PdfTools.removePassword(context, Uri.fromFile(encrypted), "remove-me-123")
+                assertNotNull("Password removal failed: ${PdfProtectionService.lastError}", unprotected)
+                val plain = requireNotNull(unprotected)
+                assertTrue(
+                    "Removed-password PDF must open without a password",
+                    PdfTools.verifyUnprotected(context, Uri.fromFile(plain))
+                )
+                assertFalse(
+                    "Removed-password PDF must no longer be encrypted",
+                    PdfTools.verifyProtected(context, Uri.fromFile(plain), "remove-me-123")
+                )
+            } finally {
+                unprotected?.delete()
+                protected?.delete()
+                source.delete()
+            }
+        }
+    }
+
+    @Test
     fun invalidPasswordInputDoesNotCreateProtectedOutput() {
         runBlocking<Unit> {
             val context = InstrumentationRegistry.getInstrumentation().targetContext
