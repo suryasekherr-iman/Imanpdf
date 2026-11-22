@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs instrumented tests and independently validates the produced encrypted PDF with qpdf.
 adb logcat -c || true
-adb shell run-as com.iman.pdf rm -f files/protection-regression-output.pdf 2>/dev/null || true
+adb shell run-as com.iman.pdf rm -f files/protection-regression-output.pdf files/protection-regression-unprotected.pdf 2>/dev/null || true
 gradle connectedDebugAndroidTest --stacktrace
 status=$?
 if [ "$status" -eq 0 ]; then
@@ -22,7 +22,19 @@ if [ "$status" -eq 0 ]; then
     fi
   fi
   rm -f "$pdf_file"
-  adb shell run-as com.iman.pdf rm -f files/protection-regression-output.pdf 2>/dev/null || true
+
+  plain_pdf="$(mktemp --suffix=.pdf)"
+  if ! adb exec-out run-as com.iman.pdf cat files/protection-regression-unprotected.pdf > "$plain_pdf"; then
+    echo "Could not retrieve the password-removal regression fixture."
+    status=1
+  elif ! qpdf --check "$plain_pdf"; then
+    echo "qpdf rejected the unprotected PDF produced by password removal."
+    status=1
+  else
+    echo "Independent qpdf validation of the unprotected PDF passed."
+  fi
+  rm -f "$plain_pdf"
+  adb shell run-as com.iman.pdf rm -f files/protection-regression-output.pdf files/protection-regression-unprotected.pdf 2>/dev/null || true
 fi
 if [ "$status" -ne 0 ]; then
   echo "===== CRASH BUFFER ====="
