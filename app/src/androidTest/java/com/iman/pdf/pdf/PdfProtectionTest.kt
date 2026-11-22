@@ -20,7 +20,7 @@ import java.io.File
 class PdfProtectionTest {
 
     @Test
-    fun protectedPdfRequiresPasswordAndOpensWithCorrectPassword() = runBlocking {
+    fun protectedPdfRequiresPasswordAndOpensWithCorrectPassword() {\n        runBlocking<Unit> {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val source = createSamplePdf(context)
         val interopFixture = File(context.filesDir, "protection-regression-output.pdf")
