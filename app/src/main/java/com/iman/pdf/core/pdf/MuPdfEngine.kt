@@ -8,6 +8,7 @@ import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.PDFDocument
 import com.artifex.mupdf.fitz.PDFPage
+import com.artifex.mupdf.fitz.PDFWidget
 import com.artifex.mupdf.fitz.PDFAnnotation
 import com.artifex.mupdf.fitz.Point
 import com.artifex.mupdf.fitz.Quad
