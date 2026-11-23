@@ -26,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +54,7 @@ fun SignaturePadDialog(
     var strokes by remember { mutableStateOf<List<List<Pair<Float, Float>>>>(emptyList()) }
     var current by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     var typedName by remember { mutableStateOf("") }
+    var signatureAspect by remember { mutableFloatStateOf(2f) }
     var importError by remember { mutableStateOf<String?>(null) }
     val shape = RoundedCornerShape(8.dp)
     val ink = Color(0xFF1A237E)
@@ -78,6 +80,7 @@ fun SignaturePadDialog(
                 importError = "No signature found. Choose a darker signature on a plain background."
             } else {
                 strokes = converted.strokes
+                signatureAspect = converted.aspect
                 mode = SignatureMode.IMPORT
                 importError = null
             }
@@ -151,6 +154,7 @@ fun SignaturePadDialog(
                                     importError = "Enter your name to create a signature."
                                 } else {
                                     strokes = converted.strokes
+                                    signatureAspect = converted.aspect
                                     importError = null
                                 }
                             },
@@ -177,7 +181,7 @@ fun SignaturePadDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(SignatureData(strokes, 2f)) },
+                onClick = { onSave(SignatureData(strokes, signatureAspect)) },
                 enabled = strokes.isNotEmpty()
             ) {
                 Text("Save")
@@ -189,6 +193,7 @@ fun SignaturePadDialog(
                     onClick = {
                         strokes = emptyList()
                         current = emptyList()
+                        signatureAspect = 2f
                         importError = null
                     }
                 ) { Text("Clear") }
@@ -217,14 +222,19 @@ private fun SignatureCanvas(
             .pointerInput(Unit) {
                 val w = size.width.toFloat().coerceAtLeast(1f)
                 val h = size.height.toFloat().coerceAtLeast(1f)
+                var points = emptyList<Pair<Float, Float>>()
                 detectDragGestures(
-                    onDragStart = { start -> onCurrent(listOf(start.x / w to start.y / h)) },
+                    onDragStart = { start ->
+                        points = listOf(start.x / w to start.y / h)
+                        onCurrent(points)
+                    },
                     onDrag = { change, _ ->
                         change.consume()
-                        onCurrent(current + (change.position.x / w to change.position.y / h))
+                        points = points + (change.position.x / w to change.position.y / h)
+                        onCurrent(points)
                     },
-                    onDragEnd = { onStroke(current) },
-                    onDragCancel = { onCurrent(emptyList()) }
+                    onDragEnd = { onStroke(points); points = emptyList() },
+                    onDragCancel = { points = emptyList(); onCurrent(emptyList()) }
                 )
             }
     ) {
