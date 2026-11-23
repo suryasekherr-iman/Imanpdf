@@ -38,6 +38,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -127,12 +128,14 @@ fun AnnotToolbar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .navigationBarsPadding()
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
@@ -177,18 +180,30 @@ fun AnnotToolbar(
             }
             IconButton(
                 onClick = { annot.redo() },
-                enabled = annot.redoMarks.isNotEmpty()
+                enabled = annot.redoMarks.isNotEmpty(),
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             ) {
                 Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo")
             }
             IconButton(
                 onClick = { annot.undo() },
-                enabled = annot.marks.isNotEmpty()
+                enabled = annot.marks.isNotEmpty(),
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             ) {
                 Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
             }
             IconButton(
-                onClick = { onSaveAnnotations() }
+                onClick = { onSaveAnnotations() },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             ) {
                 Icon(Icons.Outlined.Save, contentDescription = "Save PDF annotations")
             }
