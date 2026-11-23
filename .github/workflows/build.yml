@@ -30,7 +30,7 @@ jobs:
           gradle-version: 8.10.2
 
       - name: Run lint, unit tests and build APK
-        run: gradle lintDebug testDebugUnitTest assembleDebug --stacktrace
+        run: gradle lintDebug testDebugUnitTest assembleDebug assembleDebugAndroidTest --stacktrace
 
       - name: Upload APK
         if: always()
