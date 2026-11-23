@@ -15,7 +15,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,9 +22,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -319,10 +315,7 @@ fun OrganizeScreen(
         if (from < 0 || to < 0 || to >= pages.size) {
             return
         }
-        val list = pages.toMutableList()
-        val item = list.removeAt(from)
-        list.add(to, item)
-        pages = list
+        pages = moveItem(pages, from, to)
     }
 
     val current = engine
@@ -365,7 +358,7 @@ fun OrganizeScreen(
                     } else {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "Choose a PDF to rotate, delete or rearrange its pages.",
+                                text = "Choose a PDF to rotate, delete, extract or rearrange its pages.",
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -381,36 +374,37 @@ fun OrganizeScreen(
             } else {
                 Text(
                     text = pages.size.toString() + " pages  •  " +
-                        selected.size + " selected. Tap pages to select them.",
+                        selected.size + " selected. Tap to select; long-press and drag to reorder, or use the arrow buttons.",
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Box(modifier = Modifier.weight(1f)) {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(pages, key = { it.id }) { page ->
-                            PageCell(
-                                engine = if (page.original <= -2) second else current,
-                                original = page.original,
-                                rotation = page.rotation,
-                                position = pages.indexOf(page) + 1,
-                                selected = selected.contains(page.id),
-                                onClick = {
-                                    selected = if (selected.contains(page.id)) {
-                                        selected - page.id
-                                    } else {
-                                        selected + page.id
-                                    }
+                    DraggablePageGrid(
+                        items = pages,
+                        key = { it.id },
+                        onMove = { dragged, target ->
+                            val from = pages.indexOfFirst { it.id == dragged.id }
+                            val to = pages.indexOfFirst { it.id == target.id }
+                            pages = moveItem(pages, from, to)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) { page, index ->
+                        PageCell(
+                            engine = if (page.original <= -2) second else current,
+                            original = page.original,
+                            rotation = page.rotation,
+                            position = index + 1,
+                            selected = selected.contains(page.id),
+                            onClick = {
+                                selected = if (selected.contains(page.id)) {
+                                    selected - page.id
+                                } else {
+                                    selected + page.id
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
                     if (busy) {
                         Box(
