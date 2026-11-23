@@ -411,6 +411,60 @@ class MuPdfEngine {
         }
     }
 
+    /** Applies supported AcroForm values without saving or replacing the source file. */
+    @Synchronized
+    fun updateFormFields(updates: List<com.iman.pdf.pdf.PdfFormFieldUpdate>): Boolean {
+        val doc = document ?: return false
+        if (updates.isEmpty()) return false
+        val byPage = updates.groupBy { it.pageIndex }
+        var allApplied = true
+        byPage.forEach { (pageIndex, pageUpdates) ->
+            if (pageIndex !in 0 until cachedPageCount) {
+                allApplied = false
+                return@forEach
+            }
+            var page: PDFPage? = null
+            try {
+                page = doc.loadPage(pageIndex) as? PDFPage
+                val loaded = page ?: run {
+                    allApplied = false
+                    return@forEach
+                }
+                val widgets = loaded.widgets.orEmpty()
+                pageUpdates.forEach { update ->
+                    val widget = widgets.getOrNull(update.fieldIndex)
+                    if (widget == null || widget.isReadOnly) {
+                        allApplied = false
+                    } else {
+                        try {
+                            when (widget.fieldType) {
+                                PDFWidget.TYPE_TEXT -> widget.setTextValue(update.value)
+                                PDFWidget.TYPE_COMBOBOX, PDFWidget.TYPE_LISTBOX ->
+                                    widget.setChoiceValue(update.value)
+                                PDFWidget.TYPE_CHECKBOX -> {
+                                    val wantsChecked = update.value == "true"
+                                    val isChecked = !widget.value.equals("Off", ignoreCase = true) &&
+                                        widget.value.isNotBlank()
+                                    if (wantsChecked != isChecked) widget.toggle()
+                                }
+                                else -> allApplied = false
+                            }
+                            widget.update()
+                        } catch (_: Exception) {
+                            allApplied = false
+                        }
+                    }
+                }
+                loaded.update()
+            } catch (_: Exception) {
+                allApplied = false
+            } finally {
+                try { page?.destroy() } catch (_: Exception) {}
+            }
+        }
+        return allApplied
+    }
+
     @Synchronized
     fun saveDocument(originalPath: String): Boolean {
         val activeDocument = pdf ?: return false
