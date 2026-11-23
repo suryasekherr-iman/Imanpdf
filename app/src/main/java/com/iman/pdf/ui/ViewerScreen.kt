@@ -75,6 +75,7 @@ import com.iman.pdf.pdf.Comments
 import com.iman.pdf.pdf.LastPage
 import com.iman.pdf.pdf.PdfActions
 import com.iman.pdf.pdf.PdfEngine
+import com.iman.pdf.pdf.PdfFormField
 import com.iman.pdf.pdf.PdfExport
 import com.iman.pdf.pdf.PdfText
 import com.iman.pdf.pdf.OcrLine
@@ -150,6 +151,10 @@ fun ViewerScreen(
     val annotationSnackbarHostState = remember { SnackbarHostState() }
     var annotationRevision by remember { mutableIntStateOf(0) }
     var isSavingPdf by remember { mutableStateOf(false) }
+    var formDialogOpen by remember { mutableStateOf(false) }
+    var formLoading by remember { mutableStateOf(false) }
+    var formSaving by remember { mutableStateOf(false) }
+    var formFields by remember { mutableStateOf<List<PdfFormField>>(emptyList()) }
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -219,6 +224,22 @@ fun ViewerScreen(
                     if (ok) "Saved successfully." else "Could not save the annotated PDF.",
                     Toast.LENGTH_SHORT
                 ).show()
+            }
+        }
+    }
+
+    fun openFormFill() {
+        if (formLoading || formSaving) return
+        formLoading = true
+        scope.launch {
+            val loaded = withContext(Dispatchers.IO) {
+                (0 until engine.pageCount).flatMap { page -> engine.formFields(page) }
+            }
+            formFields = loaded
+            formLoading = false
+            formDialogOpen = true
+            if (loaded.isEmpty()) {
+                Toast.makeText(context, "No interactive PDF form fields found.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -876,7 +897,8 @@ fun ViewerScreen(
                     onPrint = { PdfActions.print(context, engine.file, title) },
                     onSave = { saveAnnotatedPdf() },
                     onOcrPage = { runOcrOnCurrentPage() },
-                    onOcrDocument = { runOcr(0 until engine.pageCount) }
+                    onOcrDocument = { runOcr(0 until engine.pageCount) },
+                    onFillForm = { openFormFill() }
                 )
                         }
             if (annotOpen) {
@@ -981,6 +1003,36 @@ fun ViewerScreen(
             )
         }
 
+        if (formDialogOpen) {
+            PdfFormFillDialog(
+                fields = formFields,
+                saving = formSaving,
+                onDismiss = { formDialogOpen = false },
+                onSave = { updates ->
+                    if (updates.isNotEmpty() && !formSaving) {
+                        scope.launch {
+                            formSaving = true
+                            val saved = withContext(Dispatchers.IO) {
+                                try {
+                                    engine.updateFormFields(updates) &&
+                                        engine.saveDocument(engine.file.absolutePath)
+                                } catch (_: Exception) {
+                                    false
+                                }
+                            }
+                            formSaving = false
+                            if (saved) {
+                                annotationRevision++
+                                formDialogOpen = false
+                                Toast.makeText(context, "PDF form saved.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Could not save form values. Check that the PDF allows editing.", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
+            )
+        }
         if (exportOpen) {
             ExportDialog(
                 onText = {
