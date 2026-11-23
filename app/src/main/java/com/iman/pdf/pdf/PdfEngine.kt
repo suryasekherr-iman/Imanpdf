@@ -32,6 +32,11 @@ class PdfEngine private constructor(
     fun pageBounds(index: Int): RectF? = mupdf.pageBounds(index)
     fun pageText(index: Int): String = mupdf.pageText(index)
     fun searchPage(index: Int, query: String): List<FloatArray> = mupdf.searchPage(index, query)
+
+    /** Detects interactive AcroForm fields on one page without modifying the PDF. */
+    fun formFields(pageIndex: Int): List<PdfFormField> =
+        PdfFormFields.read(mupdf, pageIndex)
+
     fun save(output: File, options: String = "garbage=compact"): Boolean = mupdf.save(output, options)
     fun addHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
         mupdf.addHighlightAnnotation(pageNumber, rects)
