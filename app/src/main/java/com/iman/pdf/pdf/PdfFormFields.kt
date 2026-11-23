@@ -19,20 +19,21 @@ internal object PdfFormFields {
                 val pageWidth = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
                 val pageHeight = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
 
-                page.widgets.orEmpty().mapNotNull { widget ->
+                page.widgets.orEmpty().mapIndexedNotNull { fieldIndex, widget ->
                     val rect = widget.bounds
                     val left = ((rect.x0 - bounds.x0) / pageWidth).coerceIn(0f, 1f)
                     val top = ((rect.y0 - bounds.y0) / pageHeight).coerceIn(0f, 1f)
                     val right = ((rect.x1 - bounds.x0) / pageWidth).coerceIn(0f, 1f)
                     val bottom = ((rect.y1 - bounds.y0) / pageHeight).coerceIn(0f, 1f)
-                    if (right <= left || bottom <= top) return@mapNotNull null
+                    if (right <= left || bottom <= top) return@mapIndexedNotNull null
 
                     PdfFormField(
                         pageIndex = pageIndex,
-                        label = widget.label?.takeIf { it.isNotBlank() }
-                            ?: "Form field",
+                        fieldIndex = fieldIndex,
+                        label = widget.label?.takeIf { it.isNotBlank() } ?: "Form field",
                         type = widget.fieldType.asDisplayName(),
                         value = widget.value.orEmpty(),
+                        options = widget.options?.toList().orEmpty(),
                         left = left,
                         top = top,
                         right = right,
