@@ -86,7 +86,8 @@ fun ViewerBottomBar(
     onPrint: () -> Unit,
     onSave: () -> Unit,
     onOcrPage: () -> Unit = {},
-    onOcrDocument: () -> Unit = {}
+    onOcrDocument: () -> Unit = {},
+    onFillForm: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("viewer_prefs", Context.MODE_PRIVATE) }
@@ -105,6 +106,7 @@ fun ViewerBottomBar(
         ViewerToolItem("ocr_page", Icons.Outlined.Article, "Scan/OCR") { onOcrPage() },
         ViewerToolItem("ocr_document", Icons.Outlined.Article, "OCR document") { onOcrDocument() },
         ViewerToolItem("sign", Icons.Outlined.Create, "Fill & Sign") { onTool(AnnotTool.SIGN) },
+        ViewerToolItem("fill_form", Icons.Outlined.Article, "Fill PDF form") { onFillForm() },
         ViewerToolItem("text", Icons.Outlined.TextFields, "Text") { onTool(AnnotTool.TEXT) },
         ViewerToolItem("highlight", Icons.Outlined.Highlight, "Highlight") { onTool(AnnotTool.HIGHLIGHT) },
         ViewerToolItem("underline", Icons.Outlined.FormatUnderlined, "Underline") { onTool(AnnotTool.UNDERLINE) },
