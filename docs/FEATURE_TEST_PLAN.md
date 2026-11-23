@@ -96,6 +96,23 @@ Use a test PDF with at least 5 pages.
 
 **Pass:** valid files reach the relevant tool, invalid files show a clear error, cancellation returns safely to the previous screen.
 
+### 10. Page organization and editing
+
+Use a PDF with at least 5 pages and a second PDF with at least 2 pages.
+
+1. Open Viewer > More > Pages.
+2. Select page 2 and delete it; confirm the page count and remaining page order.
+3. Select a page and rotate it; save, reopen, and verify orientation in another PDF reader.
+4. Reorder pages using both methods: select a thumbnail and use the arrow buttons, then long-press a thumbnail and drag it to another position.
+5. Extract two non-adjacent pages to a new PDF and verify their order and content.
+6. Insert pages from a second PDF and add a blank page.
+7. Duplicate a selected page and verify the duplicate appears immediately after it.
+8. Test both save choices: Save in same PDF and Save as new PDF. Reopen each saved result in another reader.
+
+**Pass:** all operations preserve the expected page content and order; the saved PDF opens outside ImAn; cancelling a picker or save dialog does not lose the current working list.
+
+**Known PRD gap:** FR-50 (replace page content) is not implemented by the current Edit PDF overlay tool. That tool adds text/images and does not erase or replace existing printed content; replacement behavior must be defined before claiming FR-50 complete.
+
 ## Automatic test coverage
 
 - GitHub Actions: APK assemble, lint and emulator instrumentation tests.
