@@ -90,7 +90,7 @@ fun PdfPageItem(
     }
     var ratio by remember(index) { mutableStateOf(PAGE_DISPLAY_ASPECT_RATIO) }
     LaunchedEffect(index) {
-        ratio = engine.pageAspectRatio(index).coerceAtLeast(0.1f)
+        ratio = withContext(Dispatchers.IO) { engine.pageAspectRatio(index) }.coerceAtLeast(0.1f)
     }
 
     var bitmap by remember(index, annotationRevision) { mutableStateOf<Bitmap?>(null) }
@@ -110,7 +110,7 @@ fun PdfPageItem(
         val current = bitmap
         if (current != null) {
             Image(
-                bitmap = current.asImageBitmap(),
+                bitmap = remember(current) { current.asImageBitmap() },
                 contentDescription = "Page ${index + 1}",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds,

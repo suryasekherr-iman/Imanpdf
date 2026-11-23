@@ -25,7 +25,10 @@ class PdfEngine private constructor(
     fun renderPageToBitmap(index: Int, scale: Float = 2f): Bitmap? =
         mupdf.renderPageToBitmap(index, scale)
 
-    fun pageAspectRatio(index: Int): Float = mupdf.pageAspectRatio(index)
+    private val ratios = java.util.concurrent.ConcurrentHashMap<Int, Float>()
+
+    fun pageAspectRatio(index: Int): Float =
+        ratios[index] ?: mupdf.pageAspectRatio(index).also { ratios[index] = it }
     fun pageBounds(index: Int): RectF? = mupdf.pageBounds(index)
     fun pageText(index: Int): String = mupdf.pageText(index)
     fun searchPage(index: Int, query: String): List<FloatArray> = mupdf.searchPage(index, query)

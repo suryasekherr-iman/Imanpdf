@@ -96,8 +96,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
+import kotlin.math.roundToInt
 
-private const val MAX_RENDER_WIDTH = 2000
+private const val MAX_RENDER_WIDTH = 2400
 
 private fun screenToPdfCoordinates(
     touchX: Float,
@@ -142,9 +145,6 @@ fun ViewerScreen(
     val listState = rememberLazyListState(
         initialFirstVisibleItemIndex = initial,
         initialFirstVisibleItemScrollOffset = LastPage.loadOffset(context, documentId)
-    )
-    val horizontalState = rememberScrollState(
-        initial = LastPage.loadHorizontalOffset(context, documentId)
     )
     val scope = rememberCoroutineScope()
     val annotationSnackbarHostState = remember { SnackbarHostState() }
@@ -568,13 +568,16 @@ fun ViewerScreen(
         }
     )
 
-LaunchedEffect(scale) {
-    delay(600)
-    renderScale = if (scale > 1.3f) 2f else 1f
-}
+    LaunchedEffect(scale) {
+        delay(300)
+        renderScale = when {
+            scale > 2f -> 3f
+            scale > 1.05f -> 2f
+            else -> 1f
+        }
+    }
 
     LaunchedEffect(scale) {
-        zoom.settle(listState, horizontalState)
         LastPage.saveZoom(context, documentId, scale)
     }
 
@@ -587,7 +590,7 @@ LaunchedEffect(scale) {
         }
     }
 
-    val renderWidth = minOf((screenWidthPx * 1.5f * renderScale).toInt(), MAX_RENDER_WIDTH)
+    val renderWidth = minOf((screenWidthPx * 1.2f * renderScale).toInt(), MAX_RENDER_WIDTH)
 
     val containerHeightPx = zoom.height
     var dragging by remember { mutableStateOf(false) }
@@ -623,8 +626,7 @@ LaunchedEffect(scale) {
 
     LaunchedEffect(
         currentPage,
-        listState.firstVisibleItemScrollOffset,
-        horizontalState.value
+        listState.firstVisibleItemScrollOffset
     ) {
         delay(250)
         LastPage.savePosition(
@@ -633,7 +635,7 @@ LaunchedEffect(scale) {
             engine.pageCount,
             currentPage,
             listState.firstVisibleItemScrollOffset,
-            horizontalState.value
+            0
         )
     }
 
@@ -645,7 +647,7 @@ LaunchedEffect(scale) {
                 engine.pageCount,
                 listState.firstVisibleItemIndex,
                 listState.firstVisibleItemScrollOffset,
-                horizontalState.value
+                0
             )
             LastPage.saveZoom(context, documentId, zoom.scale)
         }
@@ -745,26 +747,28 @@ LaunchedEffect(scale) {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .zoomGestures(zoom, listState, horizontalState, scope) {
-                        annot.tool == AnnotTool.NONE
-                    }
+                    .zoomGestures(
+                        zoom, listState, scope,
+                        panEnabled = { annot.tool == AnnotTool.NONE },
+                        doubleTapEnabled = { annot.tool == AnnotTool.NONE }
+                    )
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = zoom.gesture
-                            scaleY = zoom.gesture
-                            transformOrigin = TransformOrigin(zoom.originX, zoom.originY)
-                        }
-                        .horizontalScroll(horizontalState, enabled = !drawing)
-                ) {
+                run {
                     LazyColumn(
                         state = listState,
                         userScrollEnabled = !drawing,
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .width((configuration.screenWidthDp * scale).dp)
+                            .layout { measurable, constraints ->
+                                val h = (constraints.maxHeight / zoom.scale).roundToInt().coerceAtLeast(1)
+                                val p = measurable.measure(Constraints.fixed(constraints.maxWidth, h))
+                                layout(constraints.maxWidth, constraints.maxHeight) { p.place(0, 0) }
+                            }
+                            .graphicsLayer {
+                                scaleX = zoom.scale
+                                scaleY = zoom.scale
+                                translationX = zoom.offsetX
+                                transformOrigin = TransformOrigin(0f, 0f)
+                            }
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
