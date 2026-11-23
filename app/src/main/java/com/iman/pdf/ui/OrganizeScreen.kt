@@ -1,6 +1,7 @@
 package com.iman.pdf.ui
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -92,6 +93,25 @@ private fun organizeNameOf(context: Context, uri: Uri): String {
     return name ?: "Document.pdf"
 }
 
+private fun keepOrganizeUriPermission(context: Context, uri: Uri, allowWrite: Boolean) {
+    try {
+        context.contentResolver.takePersistableUriPermission(
+            uri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+    } catch (_: Exception) {
+    }
+    if (allowWrite) {
+        try {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        } catch (_: Exception) {
+        }
+    }
+}
+
 @Composable
 fun OrganizeScreen(
     onBack: () -> Unit,
@@ -119,6 +139,7 @@ fun OrganizeScreen(
 
     val onPicked: (Uri?) -> Unit = { uri ->
         if (uri != null) {
+            keepOrganizeUriPermission(context, uri, allowWrite = true)
             scope.launch {
                 busy = true
                 val opened = PdfEngine.open(context, uri)
@@ -242,6 +263,7 @@ fun OrganizeScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
+            keepOrganizeUriPermission(context, uri, allowWrite = false)
             if (pages.any { it.original <= -2 }) {
                 Toast.makeText(
                     context,
