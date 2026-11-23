@@ -439,18 +439,17 @@ class MuPdfEngine {
                     } else {
                         try {
                             when (widget.fieldType) {
-                                PDFWidget.TYPE_TEXT -> widget.setTextValue(update.value)
+                                PDFWidget.TYPE_TEXT -> check(widget.setTextValue(update.value))
                                 PDFWidget.TYPE_COMBOBOX, PDFWidget.TYPE_LISTBOX ->
-                                    widget.setChoiceValue(update.value)
+                                    check(widget.setChoiceValue(update.value))
                                 PDFWidget.TYPE_CHECKBOX -> {
                                     val wantsChecked = update.value == "true"
                                     val isChecked = !widget.value.equals("Off", ignoreCase = true) &&
                                         widget.value.isNotBlank()
-                                    if (wantsChecked != isChecked) widget.toggle()
+                                    if (wantsChecked != isChecked) check(widget.toggle())
                                 }
                                 else -> allApplied = false
                             }
-                            widget.update()
                         } catch (_: Exception) {
                             allApplied = false
                         }
