@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +49,7 @@ fun LockScreen(onUnlocked: () -> Unit) {
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
     var blocked by remember { mutableStateOf(AppLock.lockRemainingMs(context) > 0L) }
+    val patternMode = remember { AppLock.mode(context) == AppLock.MODE_PATTERN }
     val useBio = remember {
         AppLock.biometricEnabled(context) && AppLock.canUseBiometric(context)
     }
@@ -65,10 +67,36 @@ fun LockScreen(onUnlocked: () -> Unit) {
         )
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Unlock Iman")
-            .setNegativeButtonText("Use PIN")
+            .setNegativeButtonText(if (patternMode) "Use pattern" else "Use PIN")
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .build()
         prompt.authenticate(info)
+    }
+
+    fun verify(code: String) {
+        if (AppLock.checkPin(context, code)) {
+            AppLock.clearFails(context)
+            onUnlocked()
+        } else {
+            error = true
+            pin = ""
+            AppLock.registerFail(context)
+            if (AppLock.lockRemainingMs(context) > 0L) {
+                blocked = true
+            }
+        }
+    }
+
+    fun patternDrawn(code: String) {
+        if (blocked) {
+            return
+        }
+        if (code.length < PATTERN_MIN_DOTS) {
+            error = true
+            return
+        }
+        error = false
+        verify(code)
     }
 
     fun press(digit: String) {
@@ -78,17 +106,7 @@ fun LockScreen(onUnlocked: () -> Unit) {
         error = false
         pin += digit
         if (pin.length == PIN_LENGTH) {
-            if (AppLock.checkPin(context, pin)) {
-                AppLock.clearFails(context)
-                onUnlocked()
-            } else {
-                error = true
-                pin = ""
-                AppLock.registerFail(context)
-                if (AppLock.lockRemainingMs(context) > 0L) {
-                    blocked = true
-                }
-            }
+            verify(pin)
         }
     }
 
@@ -127,7 +145,9 @@ fun LockScreen(onUnlocked: () -> Unit) {
             Text(
                 text = when {
                     blocked -> "Too many wrong tries. Wait 30 seconds."
+                    error && patternMode -> "Wrong pattern. Try again."
                     error -> "Wrong PIN. Try again."
+                    patternMode -> "Draw your pattern"
                     else -> "Enter your PIN"
                 },
                 color = if (error || blocked) {
@@ -137,6 +157,20 @@ fun LockScreen(onUnlocked: () -> Unit) {
                 }
             )
             Spacer(modifier = Modifier.height(24.dp))
+            if (patternMode) {
+                PatternPad(
+                    modifier = Modifier.size(280.dp),
+                    error = error || blocked,
+                    enabled = !blocked
+                ) { code -> patternDrawn(code) }
+                if (useBio) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = { showBiometric() }) {
+                        Text("Use fingerprint")
+                    }
+                }
+                return@Column
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 for (index in 0 until PIN_LENGTH) {
                     Box(

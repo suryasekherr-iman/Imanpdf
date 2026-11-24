@@ -33,7 +33,10 @@ fun AppLockSection() {
     val context = LocalContext.current
     var enabled by remember { mutableStateOf(AppLock.isEnabled(context)) }
     var bio by remember { mutableStateOf(AppLock.biometricEnabled(context)) }
+    var mode by remember { mutableStateOf(AppLock.mode(context)) }
     var setupOpen by remember { mutableStateOf(false) }
+    var patternSetupOpen by remember { mutableStateOf(false) }
+    val isPattern = enabled && mode == AppLock.MODE_PATTERN
     val canBio = remember { AppLock.canUseBiometric(context) }
 
     Text(
@@ -44,8 +47,12 @@ fun AppLockSection() {
         fontWeight = FontWeight.Bold
     )
     LockToggleRow(
-        title = "Lock with PIN",
-        subtitle = "Ask for a 4-digit PIN when the app opens",
+        title = if (isPattern) "Lock with pattern" else "Lock with PIN",
+        subtitle = if (isPattern) {
+            "Ask for your pattern when the app opens"
+        } else {
+            "Ask for a 4-digit PIN when the app opens"
+        },
         checked = enabled
     ) { on ->
         if (on) {
@@ -55,19 +62,30 @@ fun AppLockSection() {
             (context as? android.app.Activity)?.let { AppLock.applySecure(it) }
             enabled = false
             bio = false
+            mode = AppLock.MODE_PIN
         }
     }
     if (enabled) {
         TextButton(
-            onClick = { setupOpen = true },
+            onClick = { if (isPattern) patternSetupOpen = true else setupOpen = true },
             modifier = Modifier.padding(horizontal = 8.dp)
         ) {
-            Text("Change PIN")
+            Text(if (isPattern) "Change pattern" else "Change PIN")
+        }
+        TextButton(
+            onClick = { if (isPattern) setupOpen = true else patternSetupOpen = true },
+            modifier = Modifier.padding(horizontal = 8.dp)
+        ) {
+            Text(if (isPattern) "Use PIN instead" else "Lock with pattern instead")
         }
         if (canBio) {
             LockToggleRow(
                 title = "Use fingerprint / face",
-                subtitle = "Unlock faster; PIN still works",
+                subtitle = if (isPattern) {
+                    "Unlock faster; pattern still works"
+                } else {
+                    "Unlock faster; PIN still works"
+                },
                 checked = bio
             ) { on ->
                 AppLock.setBiometric(context, on)
@@ -82,9 +100,22 @@ fun AppLockSection() {
                 AppLock.setPin(context, pin)
                 (context as? android.app.Activity)?.let { AppLock.applySecure(it) }
                 enabled = true
+                mode = AppLock.MODE_PIN
                 setupOpen = false
             },
             onDismiss = { setupOpen = false }
+        )
+    }
+    if (patternSetupOpen) {
+        PatternSetupDialog(
+            onSave = { code ->
+                AppLock.setPin(context, code, AppLock.MODE_PATTERN)
+                (context as? android.app.Activity)?.let { AppLock.applySecure(it) }
+                enabled = true
+                mode = AppLock.MODE_PATTERN
+                patternSetupOpen = false
+            },
+            onDismiss = { patternSetupOpen = false }
         )
     }
 }

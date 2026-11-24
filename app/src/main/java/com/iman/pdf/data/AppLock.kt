@@ -15,6 +15,9 @@ object AppLock {
     private const val KEY_HASH = "pin_hash"
     private const val KEY_SALT = "pin_salt"
     private const val KEY_BIO = "biometric"
+    private const val KEY_MODE = "mode"
+    const val MODE_PIN = "pin"
+    const val MODE_PATTERN = "pattern"
     private const val KEY_FAILS = "fails"
     private const val KEY_LOCKED_UNTIL = "locked_until"
     private const val MAX_FAILS = 5
@@ -33,10 +36,16 @@ object AppLock {
     fun isEnabled(context: Context): Boolean =
         prefs(context).getString(KEY_HASH, null) != null
 
-    fun setPin(context: Context, pin: String) {
+    /** Which lock screen to show: "pin" (default) or "pattern". */
+    fun mode(context: Context): String =
+        prefs(context).getString(KEY_MODE, MODE_PIN) ?: MODE_PIN
+
+    /** Saves the code (PIN digits, or pattern dots like "1245") as a salted hash, with its mode. */
+    fun setPin(context: Context, pin: String, mode: String = MODE_PIN) {
         val salt = ByteArray(16)
         SecureRandom().nextBytes(salt)
         prefs(context).edit()
+            .putString(KEY_MODE, mode)
             .putString(KEY_SALT, Base64.encodeToString(salt, Base64.NO_WRAP))
             .putString(KEY_HASH, hash(salt, pin))
             .apply()
