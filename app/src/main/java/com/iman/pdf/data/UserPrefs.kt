@@ -17,6 +17,7 @@ class UserPrefs(private val context: Context) {
     private val languageKey = stringPreferencesKey("language")
     private val photoKey = stringPreferencesKey("photo_path")
     private val hideRecentKey = booleanPreferencesKey("hide_recent_documents")
+    private val readingModeKey = stringPreferencesKey("reading_mode")
     private val ttsSpeedKey = androidx.datastore.preferences.core.intPreferencesKey("tts_speed_index")
     private val ttsVoiceKey = androidx.datastore.preferences.core.intPreferencesKey("tts_voice_index")
 
@@ -34,6 +35,10 @@ class UserPrefs(private val context: Context) {
 
     val hideRecentDocuments: Flow<Boolean> =
         context.dataStore.data.map { it[hideRecentKey] ?: false }
+
+    /** Default reading mode for the viewer: "normal", "night" or "sepia". */
+    val readingMode: Flow<String> =
+        context.dataStore.data.map { it[readingModeKey] ?: "normal" }
 
     val ttsSpeedIndex: Flow<Int> =
         context.dataStore.data.map { it[ttsSpeedKey] ?: 1 }
@@ -59,6 +64,10 @@ class UserPrefs(private val context: Context) {
 
     suspend fun setHideRecentDocuments(value: Boolean) {
         context.dataStore.edit { it[hideRecentKey] = value }
+    }
+
+    suspend fun setReadingMode(value: String) {
+        context.dataStore.edit { it[readingModeKey] = value }
     }
 
     suspend fun setTtsSpeedIndex(value: Int) {

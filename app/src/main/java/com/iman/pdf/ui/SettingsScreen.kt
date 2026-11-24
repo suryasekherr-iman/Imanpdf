@@ -70,6 +70,10 @@ fun SettingsScreen(onBack: () -> Unit) {
     val language by prefs.language.collectAsState(initial = "system")
     val photo by prefs.photoPath.collectAsState(initial = "")
     val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
+    val readingMode by prefs.readingMode.collectAsState(initial = "normal")
+    val ttsSpeed by prefs.ttsSpeedIndex.collectAsState(initial = 1)
+    val ttsVoice by prefs.ttsVoiceIndex.collectAsState(initial = 0)
+    var cacheBytes by remember { mutableStateOf(cacheSize(context.cacheDir)) }
     var nameField by remember { mutableStateOf("") }
     var showLicenses by remember { mutableStateOf(false) }
     var licenseText by remember { mutableStateOf("") }
@@ -213,6 +217,58 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle("Default reading mode")
+            listOf("normal" to "Normal", "night" to "Night", "sepia" to "Sepia").forEach { option ->
+                OptionRow(
+                    label = option.second,
+                    selected = readingMode == option.first,
+                    onClick = { scope.launch { prefs.setReadingMode(option.first) } }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle("Read aloud: default speed")
+            listOf("0.75x", "1x", "1.25x", "1.5x", "2x").forEachIndexed { index, label ->
+                OptionRow(
+                    label = label,
+                    selected = ttsSpeed.coerceIn(0, 4) == index,
+                    onClick = { scope.launch { prefs.setTtsSpeedIndex(index) } }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle("Read aloud: default voice")
+            listOf("System", "English", "Hindi", "Bengali").forEachIndexed { index, label ->
+                OptionRow(
+                    label = label,
+                    selected = ttsVoice.coerceIn(0, 3) == index,
+                    onClick = { scope.launch { prefs.setTtsVoiceIndex(index) } }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle("Storage")
+            Text(
+                text = "Temporary files: " + android.text.format.Formatter.formatShortFileSize(context, cacheBytes),
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            context.cacheDir.listFiles()?.forEach { it.deleteRecursively() }
+                        }
+                        cacheBytes = cacheSize(context.cacheDir)
+                        Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                Text("Clear cache")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
             SectionTitle(stringResource(R.string.settings_privacy))
             Row(
                 modifier = Modifier.fillMaxWidth().clickable {
@@ -284,6 +340,9 @@ fun SettingsScreen(onBack: () -> Unit) {
         )
     }
 }
+
+private fun cacheSize(dir: java.io.File): Long =
+    dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
 
 @Composable
 private fun SectionTitle(text: String) {

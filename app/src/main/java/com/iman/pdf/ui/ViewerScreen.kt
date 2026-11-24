@@ -86,6 +86,7 @@ import com.iman.pdf.pdf.ReadAloud
 import com.iman.pdf.pdf.TtsHighlight
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.TocEntry
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -198,6 +199,29 @@ fun ViewerScreen(
     var nightMode by remember { mutableStateOf(false) }
     var sepiaMode by remember { mutableStateOf(false) }
     val hostView = LocalView.current
+
+    // Defaults chosen in Settings: reading mode, Read aloud speed and voice.
+    LaunchedEffect(Unit) {
+        val userPrefs = com.iman.pdf.data.UserPrefs(context)
+        when (userPrefs.readingMode.first()) {
+            "night" -> nightMode = true
+            "sepia" -> sepiaMode = true
+        }
+        val speed = userPrefs.ttsSpeedIndex.first().coerceIn(0, speedValues.lastIndex)
+        speedIndex = speed
+        reader.setSpeed(speedValues[speed])
+        val voice = userPrefs.ttsVoiceIndex.first().coerceIn(0, voiceTags.lastIndex)
+        if (voice > 0) {
+            var tries = 0
+            while (tries < 20 && !reader.isReady()) {
+                kotlinx.coroutines.delay(150)
+                tries++
+            }
+            if (reader.setLanguage(voiceTags[voice])) {
+                voiceIndex = voice
+            }
+        }
+    }
     DisposableEffect(keepScreenOn) {
         hostView.keepScreenOn = keepScreenOn
         onDispose { hostView.keepScreenOn = false }
