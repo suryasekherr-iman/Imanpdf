@@ -149,6 +149,7 @@ fun ViewerScreen(
         initialFirstVisibleItemScrollOffset = LastPage.loadOffset(context, documentId)
     )
     val scope = rememberCoroutineScope()
+    var barsVisible by remember { mutableStateOf(true) }
     val annotationSnackbarHostState = remember { SnackbarHostState() }
     var annotationRevision by remember { mutableIntStateOf(0) }
     var isSavingPdf by remember { mutableStateOf(false) }
