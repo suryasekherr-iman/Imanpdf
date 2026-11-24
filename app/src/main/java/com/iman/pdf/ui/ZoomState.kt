@@ -59,6 +59,25 @@ fun Modifier.zoomGestures(
         zoom.height = it.height.toFloat()
         zoom.width = it.width.toFloat()
     }
+    fun Modifier.zoomGestures(
+    zoom: ZoomState,
+    listState: LazyListState,
+    scope: CoroutineScope,
+    panEnabled: () -> Boolean,
+    doubleTapEnabled: () -> Boolean,
+    onTap: () -> Unit = {}          // ← naya parameter
+): Modifier = this
+    // ... existing code ...
+    .pointerInput(Unit) {
+        detectTapGestures(
+            onTap = { onTap() },     // ← single tap
+            onDoubleTap = { p ->
+                if (doubleTapEnabled()) {
+                    // existing double-tap zoom code
+                }
+            }
+        )
+    }
     .pointerInput(Unit) {
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
