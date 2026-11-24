@@ -199,13 +199,13 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
                             Canvas(Modifier.fillMaxSize().pointerInput(bitmap, pageBounds) {
                                 detectDragGestures(
                                     onDragStart = { point ->
-                                        dragStart = Offset(point.x.coerceIn(0f, size.width), point.y.coerceIn(0f, size.height))
+                                        dragStart = Offset(point.x.coerceIn(0f, size.width.toFloat()), point.y.coerceIn(0f, size.height.toFloat()))
                                         dragEnd = dragStart
                                         selection = null
                                     },
                                     onDrag = { change, _ ->
                                         change.consume()
-                                        dragEnd = Offset(change.position.x.coerceIn(0f, size.width), change.position.y.coerceIn(0f, size.height))
+                                        dragEnd = Offset(change.position.x.coerceIn(0f, size.width.toFloat()), change.position.y.coerceIn(0f, size.height.toFloat()))
                                     },
                                     onDragEnd = {
                                         val start = dragStart
