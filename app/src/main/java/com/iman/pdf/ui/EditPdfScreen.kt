@@ -51,7 +51,7 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
     var name by remember { mutableStateOf("Document") }
     var text by remember { mutableStateOf("") }
     var page by remember { mutableStateOf("1") }
-    var size by remember { mutableFloatStateOf(18f) }
+    var fontSize by remember { mutableFloatStateOf(18f) }
     var busy by remember { mutableStateOf(false) }
     var resultFile by remember { mutableStateOf<File?>(null) }
     var preview by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
@@ -192,8 +192,8 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
             }
             OutlinedTextField(value = text, onValueChange = { text = it },
                 label = { Text("Replacement text (optional)") }, minLines = 2, modifier = Modifier.fillMaxWidth())
-            Text(stringResource(R.string.edit_pdf_text_size, size.toInt()))
-            Slider(value = size, onValueChange = { size = it }, valueRange = 8f..36f)
+            Text(stringResource(R.string.edit_pdf_text_size, fontSize.toInt()))
+            Slider(value = fontSize, onValueChange = { fontSize = it }, valueRange = 8f..36f)
             OutlinedButton(onClick = { imagePicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (picture == null) "Choose replacement image (optional)" else "Change replacement image")
             }
@@ -206,7 +206,7 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
                 if (selectedPdf != null && selectedArea != null) scope.launch {
                     busy = true
                     val output = PdfContentReplacement.replace(context, selectedPdf,
-                        (page.toIntOrNull() ?: 1) - 1, selectedArea, text, size, picture)
+                        (page.toIntOrNull() ?: 1) - 1, selectedArea, text, fontSize, picture)
                     busy = false
                     if (output == null) Toast.makeText(context, R.string.edit_pdf_edit_failed, Toast.LENGTH_LONG).show()
                     else { resultFile = output; savePicker.launch(name + "_replaced.pdf") }
