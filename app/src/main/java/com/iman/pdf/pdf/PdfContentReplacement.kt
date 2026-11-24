@@ -58,7 +58,7 @@ object PdfContentReplacement {
                 redaction.setRect(rect)
                 redaction.setColor(floatArrayOf(1f, 1f, 1f))
                 redaction.setInteriorColor(floatArrayOf(1f, 1f, 1f))
-                check(redaction.update()) { "Could not mark selected content for replacement." }
+                redaction.update()
                 check(redaction.applyRedaction(false, PDFPage.REDACT_IMAGE_PIXELS)) {
                     "Could not remove selected PDF content."
                 }
