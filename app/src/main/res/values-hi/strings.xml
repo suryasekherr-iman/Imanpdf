@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="files_add_folder">फ़ोल्डर जोड़ें</string>
+    <string name="files_folder_access_message">जिस फ़ोल्डर की PDF शामिल करनी हैं, उसे चुनें। आप एक से अधिक फ़ोल्डर जोड़ सकते हैं।</string>
     <string name="files_refresh">रीफ़्रेश</string>
     <string name="files_title">फ़ाइलें</string>
     <string name="files_browse_locations">अन्य स्थानों से ब्राउज़ करें</string>

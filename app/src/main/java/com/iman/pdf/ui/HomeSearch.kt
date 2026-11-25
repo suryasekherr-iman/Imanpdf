@@ -105,13 +105,11 @@ fun HomeSearch(
             focus.requestFocus()
         } catch (e: Exception) {
         }
-        if (DeviceFiles.hasAllFilesAccess(context)) {
-            try {
-                device = DeviceFiles.scan(context)
-            } catch (_: Exception) {
-                device = emptyList()
-                scanError = true
-            }
+        try {
+            device = DeviceFiles.scan(context)
+        } catch (_: Exception) {
+            device = emptyList()
+            scanError = true
         }
     }
 
