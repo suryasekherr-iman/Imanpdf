@@ -6,7 +6,13 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -720,6 +726,11 @@ fun ViewerScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            AnimatedVisibility(
+                visible = barsVisible || searchOpen,
+                enter = slideInVertically { -it } + fadeIn(),
+                exit = slideOutVertically { -it } + fadeOut()
+            ) {
             ViewerTopBar(
                 title = title,
                 searchOpen = searchOpen,
@@ -788,15 +799,29 @@ fun ViewerScreen(
                 onPrint = { PdfActions.print(context, engine.file, title) },
                 onSave = { saveAnnotatedPdf() }
             )
+            }
 
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .then(if (!barsVisible && !searchOpen) Modifier.statusBarsPadding() else Modifier)
+                    .then(
+                        if (!barsVisible && !annotOpen && !readerOpen && !searchOpen) {
+                            Modifier.navigationBarsPadding()
+                        } else {
+                            Modifier
+                        }
+                    )
                     .zoomGestures(
                         zoom, listState, scope,
                         panEnabled = { annot.tool == AnnotTool.NONE },
-                        doubleTapEnabled = { annot.tool == AnnotTool.NONE }
+                        doubleTapEnabled = { annot.tool == AnnotTool.NONE },
+                        onTap = {
+                            if (annot.tool == AnnotTool.NONE && !searchOpen) {
+                                barsVisible = !barsVisible
+                            }
+                        }
                     )
             ) {
                 run {
@@ -903,28 +928,34 @@ fun ViewerScreen(
                 }
             }
                         if (!annotOpen && !readerOpen && !searchOpen) {
-                ViewerBottomBar(
-                    onReadAloud = { readerOpen = true },
-                    onTool = { tool ->
-                        stopReading()
-                        if (tool == AnnotTool.SIGN) {
-                            annot.signature = SignatureStore.load(context)
-                        }
-                        annotOpen = true
-                        annot.select(tool)
-                    },
-                    onLiquid = {
-                        stopReading()
-                        liquidOpen = true
-                    },
-                    onSearch = { searchOpen = true },
-                    onShare = { PdfActions.share(context, engine.file, title) },
-                    onPrint = { PdfActions.print(context, engine.file, title) },
-                    onSave = { saveAnnotatedPdf() },
-                    onOcrPage = { runOcrOnCurrentPage() },
-                    onOcrDocument = { runOcr(0 until engine.pageCount) },
-                    onFillForm = { openFormFill() }
-                )
+                AnimatedVisibility(
+                    visible = barsVisible,
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut()
+                ) {
+                    ViewerBottomBar(
+                        onReadAloud = { readerOpen = true },
+                        onTool = { tool ->
+                            stopReading()
+                            if (tool == AnnotTool.SIGN) {
+                                annot.signature = SignatureStore.load(context)
+                            }
+                            annotOpen = true
+                            annot.select(tool)
+                        },
+                        onLiquid = {
+                            stopReading()
+                            liquidOpen = true
+                        },
+                        onSearch = { searchOpen = true },
+                        onShare = { PdfActions.share(context, engine.file, title) },
+                        onPrint = { PdfActions.print(context, engine.file, title) },
+                        onSave = { saveAnnotatedPdf() },
+                        onOcrPage = { runOcrOnCurrentPage() },
+                        onOcrDocument = { runOcr(0 until engine.pageCount) },
+                        onFillForm = { openFormFill() }
+                    )
+                }
                         }
             if (annotOpen) {
                 AnnotToolbar(
