@@ -101,26 +101,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import kotlin.math.roundToInt
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 
-AnimatedVisibility(
-    visible = barsVisible || searchOpen,
-    enter = slideInVertically { -it } + fadeIn(),
-    exit = slideOutVertically { -it } + fadeOut()
-) {
-    ViewerTopBar( /* existing parameters same rahenge */ )
-}
-AnimatedVisibility(
-    visible = barsVisible && !annotOpen && !readerOpen && !searchOpen,
-    enter = slideInVertically { it } + fadeIn(),
-    exit = slideOutVertically { it } + fadeOut()
-) {
-    ViewerBottomBar( /* existing parameters */ )
-}
 private const val MAX_RENDER_WIDTH = 2400
 
 private fun screenToPdfCoordinates(
@@ -305,16 +286,6 @@ fun ViewerScreen(
             }
         }
     }
-    .zoomGestures(
-    zoom, listState, scope,
-    panEnabled = { annot.tool == AnnotTool.NONE },
-    doubleTapEnabled = { annot.tool == AnnotTool.NONE },
-    onTap = {
-        if (annot.tool == AnnotTool.NONE && !searchOpen && !readerOpen && !annotOpen) {
-            barsVisible = !barsVisible
-        }
-    }
-)
 
     var exportOpen by remember { mutableStateOf(false) }
     var exportText by remember { mutableStateOf("") }
