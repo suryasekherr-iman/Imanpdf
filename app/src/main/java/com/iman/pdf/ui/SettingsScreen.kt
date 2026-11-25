@@ -190,33 +190,6 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            SectionTitle(stringResource(R.string.settings_theme))
-            themeOptions.forEach { option ->
-                OptionRow(
-                    label = option.second,
-                    selected = theme == option.first,
-                    onClick = {
-                        scope.launch { prefs.setThemeMode(option.first) }
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionTitle(stringResource(R.string.settings_language))
-            languageOptions.forEach { option ->
-                OptionRow(
-                    label = option.second,
-                    selected = language == option.first,
-                    onClick = {
-                        scope.launch {
-                            prefs.setLanguage(option.first)
-                            applyLocale(option.first)
-                        }
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
             SectionTitle("Default reading mode")
             listOf("normal" to "Normal", "night" to "Night", "sepia" to "Sepia").forEach { option ->
                 OptionRow(
@@ -266,6 +239,33 @@ fun SettingsScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 Text("Clear cache")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle(stringResource(R.string.settings_theme))
+            themeOptions.forEach { option ->
+                OptionRow(
+                    label = option.second,
+                    selected = theme == option.first,
+                    onClick = {
+                        scope.launch { prefs.setThemeMode(option.first) }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle(stringResource(R.string.settings_language))
+            languageOptions.forEach { option ->
+                OptionRow(
+                    label = option.second,
+                    selected = language == option.first,
+                    onClick = {
+                        scope.launch {
+                            prefs.setLanguage(option.first)
+                            applyLocale(option.first)
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
