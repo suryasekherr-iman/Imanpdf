@@ -39,7 +39,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Article
+import androidx.compose.material.icons.outlined.Compress
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Gesture
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Style
+import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.MergeType
 import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.ViewModule
@@ -95,9 +101,16 @@ private data class HomeQuickAction(val id: String, val titleRes: Int, val icon: 
 
 private val homeQuickActions = listOf(
     HomeQuickAction("create_pdf", R.string.tool_create_pdf, Icons.Outlined.NoteAdd, Color(0xFFFF6B6B)),
-    HomeQuickAction("scan", R.string.tool_scan, Icons.Outlined.CameraAlt, Color(0xFF4CD1A0)),
-    HomeQuickAction("combine", R.string.tool_combine, Icons.Outlined.MergeType, Color(0xFF5AA9FF)),
-    HomeQuickAction("organize", R.string.tool_organize, Icons.Outlined.ViewModule, Color(0xFFFFA24C))
+    HomeQuickAction("edit_pdf", R.string.tool_edit_pdf, Icons.Outlined.Edit, Color(0xFF5AA9FF)),
+    HomeQuickAction("flashcards", R.string.tool_flashcards, Icons.Outlined.Style, Color(0xFFB388FF)),
+    HomeQuickAction("fill_sign", R.string.tool_fill_sign, Icons.Outlined.Gesture, Color(0xFFFFA24C)),
+    HomeQuickAction("export", R.string.tool_export_pdf, Icons.Outlined.Article, Color(0xFF4CD1A0)),
+    HomeQuickAction("organize", R.string.tool_organize, Icons.Outlined.ViewModule, Color(0xFF5AA9FF)),
+    HomeQuickAction("combine", R.string.tool_combine, Icons.Outlined.MergeType, Color(0xFFFF6B6B)),
+    HomeQuickAction("compress", R.string.tool_compress, Icons.Outlined.Compress, Color(0xFF4CD1A0)),
+    HomeQuickAction("read_aloud", R.string.tool_read_aloud, Icons.Outlined.VolumeUp, Color(0xFF5AA9FF)),
+    HomeQuickAction("password", R.string.tool_password, Icons.Outlined.Lock, Color(0xFFFFA24C)),
+    HomeQuickAction("view_all_tools", R.string.tools_view_all, Icons.Outlined.GridView, Color(0xFFB388FF))
 )
 
 @Composable
@@ -326,6 +339,13 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.create_quick_actions),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             rowItems(homeQuickActions, key = { it.id }) { action ->
                                 Column(
