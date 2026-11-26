@@ -299,10 +299,6 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .onSizeChanged { size ->
-                        homeHeaderHeightPx = size.height.toFloat()
-                        homeHeaderOffsetPx = homeHeaderOffsetPx.coerceIn(-homeHeaderHeightPx, 0f)
-                    }
                     .clipToBounds()
                     .layout { measurable, constraints ->
                         val placeable = measurable.measure(constraints)
@@ -313,6 +309,14 @@ fun HomeScreen(
                         }
                     }
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { size ->
+                            homeHeaderHeightPx = size.height.toFloat()
+                            homeHeaderOffsetPx = homeHeaderOffsetPx.coerceIn(-homeHeaderHeightPx, 0f)
+                        }
+                ) {
                     if (!selectMode) {
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
@@ -418,6 +422,7 @@ fun HomeScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
+                }
             }
 
             HorizontalPager(
