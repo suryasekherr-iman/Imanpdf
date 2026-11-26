@@ -46,6 +46,7 @@ object PdfActions {
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfActions:48", e)
             Toast.makeText(context, "Could not share this PDF.", Toast.LENGTH_SHORT).show()
         }
     }
@@ -57,6 +58,7 @@ object PdfActions {
             }
             result != null
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfActions:60", e)
             false
         }
     }
@@ -68,6 +70,7 @@ object PdfActions {
             }
             result != null
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfActions:72", e)
             false
         }
     }

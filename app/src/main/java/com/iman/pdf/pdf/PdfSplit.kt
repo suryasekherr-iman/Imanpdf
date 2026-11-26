@@ -76,6 +76,7 @@ object PdfSplit {
                     saved++
                 }
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("PdfSplit:78", e)
             }
         }
         saved

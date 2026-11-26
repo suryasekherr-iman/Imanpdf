@@ -88,7 +88,8 @@ private fun organizeNameOf(context: Context, uri: Uri): String {
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("OrganizeScreen:91", e)
     }
     return name ?: "Document.pdf"
 }
@@ -99,7 +100,8 @@ private fun keepOrganizeUriPermission(context: Context, uri: Uri, allowWrite: Bo
             uri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION
         )
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("OrganizeScreen:103", e)
     }
     if (allowWrite) {
         try {
@@ -107,7 +109,8 @@ private fun keepOrganizeUriPermission(context: Context, uri: Uri, allowWrite: Bo
                 uri,
                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("OrganizeScreen:112", e)
         }
     }
 }
@@ -534,7 +537,7 @@ private fun PageCell(
             null
         } else {
             withContext(Dispatchers.IO) {
-                try { engine.renderPage(index, 260) } catch (_: Exception) { null }
+                try { engine.renderPage(index, 260) } catch (e: Exception) { com.iman.pdf.logSwallowed("OrganizeScreen:540", e); null }
             }
         }
     }

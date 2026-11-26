@@ -24,6 +24,7 @@ object Thumbnails {
                 bitmap.recycle()
                 file.absolutePath
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("Thumbnails:26", e)
                 null
             }
         }

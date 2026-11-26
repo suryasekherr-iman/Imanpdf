@@ -39,11 +39,13 @@ object Comments {
                         result.add(CommentItem(index, label, annotation.contents.orEmpty().trim(), true))
                         annotation.destroy()
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    com.iman.pdf.logSwallowed("Comments:42", e)
                 } finally { page.destroy() }
             }
-        } catch (_: Exception) {
-        } finally { try { document?.destroy() } catch (_: Exception) {} }
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("Comments:46", e)
+        } finally { try { document?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("Comments:48", e) } }
         result
     }
 

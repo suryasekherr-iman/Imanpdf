@@ -91,7 +91,8 @@ class ReadAloudService : Service() {
                     context,
                     Intent(context, ReadAloudService::class.java).putExtra(EXTRA_TITLE, title)
                 )
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("ReadAloudService:94", e)
                 // Reading still works in the foreground if the service cannot start.
             }
         }
@@ -99,7 +100,8 @@ class ReadAloudService : Service() {
         fun stop(context: Context) {
             try {
                 context.stopService(Intent(context, ReadAloudService::class.java))
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("ReadAloudService:103", e)
             }
         }
     }

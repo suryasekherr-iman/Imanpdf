@@ -72,7 +72,8 @@ private fun displayNameOf(context: Context, uri: Uri): String {
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("CombineScreen:75", e)
     }
     return name ?: "Document.pdf"
 }

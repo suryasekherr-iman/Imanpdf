@@ -249,7 +249,7 @@ fun ViewerScreen(
             scope.launch {
                 isSavingPdf = true
                 val ok = withContext(Dispatchers.IO) {
-                    try { PdfActions.saveCopy(context, engine.file, uri) } catch (_: Exception) { false }
+                    try { PdfActions.saveCopy(context, engine.file, uri) } catch (e: Exception) { com.iman.pdf.logSwallowed("ViewerScreen:252", e); false }
                 }
                 isSavingPdf = false
                 Toast.makeText(
@@ -283,7 +283,7 @@ fun ViewerScreen(
             isSavingPdf = true
             val filePath = engine.file.absolutePath
             val saved = withContext(Dispatchers.IO) {
-                try { engine.saveDocument(filePath) } catch (_: Exception) { false }
+                try { engine.saveDocument(filePath) } catch (e: Exception) { com.iman.pdf.logSwallowed("ViewerScreen:286", e); false }
             }
             isSavingPdf = false
             if (saved) {
@@ -321,6 +321,7 @@ fun ViewerScreen(
                 val saved = try {
                     PdfExport.writeImages(context, engine, uri, baseName)
                 } catch (e: Exception) {
+                    com.iman.pdf.logSwallowed("ViewerScreen:323", e)
                     0
                 }
                 Toast.makeText(
@@ -426,7 +427,8 @@ fun ViewerScreen(
                         } else {
                             completed++
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        com.iman.pdf.logSwallowed("ViewerScreen:430", e)
                         failed++
                     }
                 }
@@ -464,7 +466,8 @@ fun ViewerScreen(
             val saved = withContext(Dispatchers.IO) {
                 try {
                     apply() && engine.saveDocument(filePath)
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    com.iman.pdf.logSwallowed("ViewerScreen:469", e)
                     false
                 }
             }
@@ -639,7 +642,8 @@ fun ViewerScreen(
         if (searchOpen) {
             try {
                 focusRequester.requestFocus()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("ViewerScreen:645", e)
             }
         }
     }
@@ -1078,7 +1082,8 @@ fun ViewerScreen(
                                 try {
                                     engine.updateFormFields(updates) &&
                                         engine.saveDocument(engine.file.absolutePath)
-                                } catch (_: Exception) {
+                                } catch (e: Exception) {
+                                    com.iman.pdf.logSwallowed("ViewerScreen:1085", e)
                                     false
                                 }
                             }

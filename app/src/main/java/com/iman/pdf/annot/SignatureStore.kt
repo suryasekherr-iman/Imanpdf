@@ -62,6 +62,7 @@ object SignatureStore {
                 }
             }
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("SignatureStore:64", e)
             null
         }
     }

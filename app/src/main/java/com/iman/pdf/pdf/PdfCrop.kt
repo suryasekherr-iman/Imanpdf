@@ -43,7 +43,7 @@ object PdfCrop {
             val output = File(context.cacheDir, "cropped_${System.nanoTime()}.pdf")
             doc.save(output.absolutePath, "garbage=compact")
             output.takeIf { it.isFile && it.length() > 0 }
-        } catch (_: Exception) { null }
-        finally { try { doc?.destroy() } catch (_: Exception) {} }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfCrop:46", e); null }
+        finally { try { doc?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfCrop:47", e) } }
     }
 }

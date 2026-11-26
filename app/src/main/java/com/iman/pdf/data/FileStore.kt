@@ -95,6 +95,7 @@ class FileStore(private val context: Context) {
             }
             result
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("FileStore:97", e)
             emptyList()
         }
     }

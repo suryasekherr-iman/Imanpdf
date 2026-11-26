@@ -45,7 +45,8 @@ class MuPdfEngine {
             cachedPageCount = opened.countPages()
             source = file
             pdf != null
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:48", e)
             closeDocument()
             false
         }
@@ -58,11 +59,11 @@ class MuPdfEngine {
             val accepted = opened.authenticatePassword(password)
             if (accepted) pdf = opened as? PDFDocument
             accepted && pdf != null
-        } catch (_: Exception) { false }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:62", e); false }
     }
 
     @Synchronized
-    fun needsPassword(): Boolean = try { document?.needsPassword() ?: false } catch (_: Exception) { false }
+    fun needsPassword(): Boolean = try { document?.needsPassword() ?: false } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:66", e); false }
 
     @Synchronized
     fun renderPageToBitmap(index: Int, scale: Float = 1f): Bitmap? {
@@ -94,7 +95,8 @@ class MuPdfEngine {
             Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also {
                 it.setPixels(pixels, 0, w, 0, 0, w, h)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:98", e)
             null
         } finally {
             pixmap?.destroy()
@@ -111,7 +113,7 @@ class MuPdfEngine {
             val width = try { (page.bounds.x1 - page.bounds.x0).coerceAtLeast(1f) }
                 finally { page.destroy() }
             renderPageToBitmap(index, targetWidth.coerceAtLeast(1) / width)
-        } catch (_: Exception) { null }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:116", e); null }
     }
 
     @Synchronized
@@ -123,10 +125,11 @@ class MuPdfEngine {
             page = doc.loadPage(index)
             val bounds = page.bounds
             RectF(bounds.x0, bounds.y0, bounds.x1, bounds.y1)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:128", e)
             null
         } finally {
-            try { page?.destroy() } catch (_: Exception) {}
+            try { page?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:132", e) }
         }
     }
 
@@ -140,7 +143,7 @@ class MuPdfEngine {
                 val b = page.bounds
                 (b.x1 - b.x0).coerceAtLeast(1f) / (b.y1 - b.y0).coerceAtLeast(1f)
             } finally { page.destroy() }
-        } catch (_: Exception) { 1f / 1.414f }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:146", e); 1f / 1.414f }
     }
 
     @Synchronized
@@ -163,7 +166,7 @@ class MuPdfEngine {
                     }.trim()
                 } finally { text.destroy() }
             } finally { page.destroy() }
-        } catch (_: Exception) { "" }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:169", e); "" }
     }
 
     @Synchronized
@@ -188,7 +191,7 @@ class MuPdfEngine {
                     }
                 }
             } finally { page.destroy() }
-        } catch (_: Exception) { emptyList() }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:194", e); emptyList() }
     }
 
     /**
@@ -239,11 +242,12 @@ class MuPdfEngine {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:245", e)
             emptyList()
         } finally {
-            try { structuredText?.destroy() } catch (_: Exception) {}
-            try { page?.destroy() } catch (_: Exception) {}
+            try { structuredText?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:249", e) }
+            try { page?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:250", e) }
         }
     }
 
@@ -268,10 +272,11 @@ class MuPdfEngine {
                 }
             }
             loadedPage.update()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:275", e)
             false
         } finally {
-            try { pageToDestroy?.destroy() } catch (_: Exception) {}
+            try { pageToDestroy?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:279", e) }
         }
     }
 
@@ -310,7 +315,8 @@ class MuPdfEngine {
                 }
             }
             page.update()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:318", e)
             false
         } finally {
             pageToDestroy?.destroy()
@@ -349,7 +355,8 @@ class MuPdfEngine {
                 }
             }
             page.update()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:358", e)
             false
         } finally {
             pageToDestroy?.destroy()
@@ -405,7 +412,8 @@ class MuPdfEngine {
             )
             check(annotation.update()) { "MuPDF could not update ink annotation." }
             page.update()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:415", e)
             false
         } finally {
             pageToDestroy?.destroy()
@@ -450,16 +458,18 @@ class MuPdfEngine {
                                 }
                                 else -> allApplied = false
                             }
-                        } catch (_: Exception) {
+                        } catch (e: Exception) {
+                            com.iman.pdf.logSwallowed("MuPdfEngine:461", e)
                             allApplied = false
                         }
                     }
                 }
                 loaded.update()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("MuPdfEngine:468", e)
                 allApplied = false
             } finally {
-                try { page?.destroy() } catch (_: Exception) {}
+                try { page?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:472", e) }
             }
         }
         return allApplied
@@ -500,20 +510,21 @@ class MuPdfEngine {
                 openDocument(originalFile.absolutePath)
                 false
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MuPdfEngine:513", e)
             try {
                 if (!originalFile.exists() && backupFile.exists()) backupFile.renameTo(originalFile)
                 if (document == null && originalFile.isFile) openDocument(originalFile.absolutePath)
-            } catch (_: Exception) {}
+            } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:518", e) }
             false
         } finally {
-            try { tempFile.delete() } catch (_: Exception) {}
+            try { tempFile.delete() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:521", e) }
             // Never delete the only recoverable copy if replacement/reopen failed.
             try {
                 if (!backupFile.exists() || (originalFile.isFile && document != null)) {
                     backupFile.delete()
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:527", e) }
         }
     }
 
@@ -529,7 +540,7 @@ class MuPdfEngine {
         return try {
             doc.save(output.absolutePath, options)
             output.isFile && output.length() > 0
-        } catch (_: Exception) { false }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:543", e); false }
     }
 
     @Synchronized
@@ -539,7 +550,7 @@ class MuPdfEngine {
 
     @Synchronized
     fun closeDocument() {
-        try { document?.destroy() } catch (_: Exception) {}
+        try { document?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:553", e) }
         document = null
         pdf = null
         source = null

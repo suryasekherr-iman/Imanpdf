@@ -23,7 +23,8 @@ object PdfText {
             engine.pageText(pageIndex).ifBlank {
                 OcrStore.loadPage(context, documentId, pageIndex)?.text.orEmpty()
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfText:26", e)
             OcrStore.loadPage(context, documentId, pageIndex)?.text.orEmpty()
         } finally {
             engine.closeDocument()
@@ -63,7 +64,8 @@ object PdfText {
                 }
                 if (hits.size >= 500) break
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfText:67", e)
         } finally {
             engine.closeDocument()
         }

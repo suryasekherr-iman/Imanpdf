@@ -34,6 +34,7 @@ object FileOps {
                     if (changed > 0) uri else null
                 }
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("FileOps:36", e)
                 null
             }
         }
@@ -49,6 +50,7 @@ object FileOps {
                     context.contentResolver.delete(uri, null, null) > 0
                 }
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("FileOps:52", e)
                 false
             }
         }

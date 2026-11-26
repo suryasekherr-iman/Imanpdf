@@ -96,7 +96,8 @@ fun SplitScreen(
                                 if (column >= 0) name = cursor.getString(column)
                             }
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        com.iman.pdf.logSwallowed("SplitScreen:99", e)
                     }
                     sourceName = name ?: "Document.pdf"
                 }

@@ -61,6 +61,7 @@ object ProfilePhoto {
             clearOld(context, file.name)
             file.absolutePath
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("ProfilePhoto:63", e)
             null
         }
     }
@@ -87,6 +88,7 @@ fun Avatar(path: String, size: Dp, modifier: Modifier = Modifier) {
             try {
                 BitmapFactory.decodeFile(path)?.asImageBitmap()
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("ProfilePhoto:90", e)
                 null
             }
         }

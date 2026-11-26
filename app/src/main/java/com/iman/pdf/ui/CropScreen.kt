@@ -81,7 +81,8 @@ private fun cropNameOf(context: Context, uri: Uri): String {
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("CropScreen:84", e)
     }
     return name ?: "Document.pdf"
 }
@@ -124,7 +125,7 @@ fun CropScreen(
                     ).show()
                 } else {
                     val first = withContext(Dispatchers.IO) {
-                        try { opened.renderPage(0, 900) } catch (_: Exception) { null }
+                        try { opened.renderPage(0, 900) } catch (e: Exception) { com.iman.pdf.logSwallowed("CropScreen:128", e); null }
                     }
                     if (first == null) {
                         opened.close()

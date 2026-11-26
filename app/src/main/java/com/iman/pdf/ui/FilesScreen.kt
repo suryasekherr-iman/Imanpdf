@@ -110,7 +110,8 @@ fun FilesScreen(
             scanError = false
             try {
                 files = DeviceFiles.scan(context)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("FilesScreen:113", e)
                 files = emptyList()
                 scanError = true
             } finally {
@@ -126,7 +127,8 @@ fun FilesScreen(
             try {
                 DeviceFiles.addFolder(context, uri)
                 refreshToken++
-            } catch (_: SecurityException) {
+            } catch (e: SecurityException) {
+                com.iman.pdf.logSwallowed("FilesScreen:130", e)
                 scanError = true
             }
         }

@@ -90,6 +90,7 @@ fun HomeSearch(
             intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a file name")
             speech.launch(intent)
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("HomeSearch:92", e)
             Toast.makeText(
                 context,
                 "Voice search is not available on this phone",
@@ -104,10 +105,12 @@ fun HomeSearch(
         try {
             focus.requestFocus()
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("HomeSearch:107", e)
         }
         try {
             device = DeviceFiles.scan(context)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("HomeSearch:112", e)
             device = emptyList()
             scanError = true
         }

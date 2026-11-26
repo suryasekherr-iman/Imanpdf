@@ -84,7 +84,8 @@ fun SignaturePadDialog(
                 mode = SignatureMode.IMPORT
                 importError = null
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("SignaturePad:87", e)
             importError = "Could not open this image. Try a PNG or JPG file."
         }
     }

@@ -27,7 +27,7 @@ class LiquidLoader(private val context: Context, private val file: File) {
     }
 
     fun close() {
-        try { engine?.closeDocument() } catch (_: Exception) {}
+        try { engine?.closeDocument() } catch (e: Exception) { com.iman.pdf.logSwallowed("LiquidText:30", e) }
         engine = null
     }
 

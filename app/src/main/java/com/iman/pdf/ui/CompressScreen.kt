@@ -78,7 +78,8 @@ private fun compressNameOf(context: Context, uri: Uri): String {
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("CompressScreen:81", e)
     }
     return name ?: "Document.pdf"
 }

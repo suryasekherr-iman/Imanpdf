@@ -23,6 +23,7 @@ object UriActions {
                 }
                 target
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("UriActions:25", e)
                 null
             }
         }
@@ -43,6 +44,7 @@ object UriActions {
                 }
                 target
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("UriActions:46", e)
                 null
             }
         }
@@ -64,6 +66,7 @@ object UriActions {
                 }
                 true
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("UriActions:68", e)
                 false
             }
         }

@@ -49,7 +49,7 @@ object PdfCompress {
             val file = File(context.cacheDir, "compressed_${System.nanoTime()}.pdf")
             file.outputStream().use { output.writeTo(it) }
             file.takeIf { it.isFile && it.length() > 0 }
-        } catch (_: Exception) { null }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfCompress:52", e); null }
         finally {
             output.close()
             engine.closeDocument()

@@ -63,6 +63,7 @@ object ScanTools {
                 }
             }
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("ScanTools:65", e)
             null
         }
     }
@@ -124,6 +125,7 @@ object ScanTools {
                     out
                 }
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("ScanTools:127", e)
                 null
             } finally {
                 document.close()

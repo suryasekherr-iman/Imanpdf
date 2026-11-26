@@ -28,7 +28,8 @@ object PdfExport {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfExport:31", e)
             ""
         } finally {
             engine.closeDocument()
@@ -41,7 +42,7 @@ object PdfExport {
                 val stream = context.contentResolver.openOutputStream(uri) ?: return@withContext false
                 stream.use { it.write(text.toByteArray(Charsets.UTF_8)) }
                 true
-            } catch (_: Exception) { false }
+            } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfExport:45", e); false }
         }
 
     suspend fun writeImages(
@@ -75,7 +76,7 @@ object PdfExport {
                 } finally {
                     withContext(Dispatchers.IO) { if (!bitmap.isRecycled) bitmap.recycle() }
                 }
-            } catch (_: Exception) { false }
+            } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfExport:79", e); false }
             if (ok) saved++
         }
         return saved

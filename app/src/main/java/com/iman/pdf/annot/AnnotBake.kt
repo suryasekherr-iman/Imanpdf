@@ -101,8 +101,8 @@ object AnnotBake {
                 val output = File(context.cacheDir, "annotated_${System.nanoTime()}.pdf")
                 pdf.save(output.absolutePath, "garbage=compact,appearance=yes")
                 output.takeIf { it.isFile && it.length() > 0 }
-            } catch (_: Exception) { null }
-            finally { try { document?.destroy() } catch (_: Exception) {} }
+            } catch (e: Exception) { com.iman.pdf.logSwallowed("AnnotBake:104", e); null }
+            finally { try { document?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("AnnotBake:105", e) } }
         }
 
     private fun color(value: Int): FloatArray = floatArrayOf(

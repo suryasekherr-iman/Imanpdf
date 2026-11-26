@@ -20,7 +20,8 @@ object DeviceFiles {
         val readWrite = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         try {
             context.contentResolver.takePersistableUriPermission(treeUri, readWrite)
-        } catch (_: SecurityException) {
+        } catch (e: SecurityException) {
+            com.iman.pdf.logSwallowed("DeviceFiles:23", e)
             context.contentResolver.takePersistableUriPermission(treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -67,7 +68,8 @@ object DeviceFiles {
                         )
                     }
                 }
-            } catch (_: SecurityException) {
+            } catch (e: SecurityException) {
+                com.iman.pdf.logSwallowed("DeviceFiles:71", e)
                 // Other documents are available through explicit SAF folder grants.
             }
         }
@@ -80,7 +82,7 @@ object DeviceFiles {
 
     private fun collectTree(directory: DocumentFile, output: MutableMap<String, DevicePdf>, depth: Int) {
         if (depth > 32 || !directory.isDirectory) return
-        val children = try { directory.listFiles() } catch (_: SecurityException) { return }
+        val children = try { directory.listFiles() } catch (e: SecurityException) { com.iman.pdf.logSwallowed("DeviceFiles:85", e); return }
         children.forEach { child ->
             if (child.isDirectory) collectTree(child, output, depth + 1)
             else if (child.isFile && (

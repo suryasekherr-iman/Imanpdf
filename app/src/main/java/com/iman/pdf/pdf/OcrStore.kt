@@ -54,7 +54,8 @@ object OcrStore {
                 }
             }
             OcrPage(page, lines).takeIf { lines.isNotEmpty() }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("OcrStore:57", e)
             null
         }
     }
@@ -82,7 +83,8 @@ object OcrStore {
                 temporary.delete()
             }
             true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("OcrStore:86", e)
             false
         }
     }

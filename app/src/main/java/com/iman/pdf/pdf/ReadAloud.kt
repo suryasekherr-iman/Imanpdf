@@ -143,7 +143,8 @@ class ReadAloud(context: Context) {
         try {
             tts?.stop()
             tts?.shutdown()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("ReadAloud:146", e)
         }
         tts = null
     }

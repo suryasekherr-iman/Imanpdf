@@ -46,7 +46,8 @@ class MainActivity : FragmentActivity() {
                         f.delete()
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("MainActivity:49", e)
             }
         }.start()
     }
@@ -69,6 +70,7 @@ class MainActivity : FragmentActivity() {
             val mode = try {
                 ThemeMode.valueOf(themeName)
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("MainActivity:72", e)
                 ThemeMode.SYSTEM
             }
             ImanTheme(mode = mode) {

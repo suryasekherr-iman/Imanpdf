@@ -95,8 +95,8 @@ object PdfProtectionService {
                 lastError = error.message?.take(180) ?: error.javaClass.simpleName
                 null
             } finally {
-                try { verification?.destroy() } catch (_: Exception) {}
-                try { sourceDocument?.destroy() } catch (_: Exception) {}
+                try { verification?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfProtectionService:98", e) }
+                try { sourceDocument?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfProtectionService:99", e) }
                 inputCopy?.delete()
                 if (!keepOutput) output?.delete()
             }
@@ -165,8 +165,8 @@ object PdfProtectionService {
                 lastError = error.message?.take(180) ?: error.javaClass.simpleName
                 null
             } finally {
-                try { verification?.destroy() } catch (_: Exception) {}
-                try { sourceDocument?.destroy() } catch (_: Exception) {}
+                try { verification?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfProtectionService:168", e) }
+                try { sourceDocument?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfProtectionService:169", e) }
                 inputCopy?.delete()
                 if (!keepOutput) output?.delete()
             }
@@ -199,10 +199,11 @@ object PdfProtectionService {
             copy = UriActions.copyToCache(context, source) ?: return false
             document = Document.openDocument(copy.absolutePath)
             check(document)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfProtectionService:202", e)
             false
         } finally {
-            try { document?.destroy() } catch (_: Exception) {}
+            try { document?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfProtectionService:206", e) }
             copy?.delete()
         }
     }

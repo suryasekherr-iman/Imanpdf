@@ -32,10 +32,10 @@ object PdfTools {
             val result = File(context.cacheDir, "merged_${System.nanoTime()}.pdf")
             output.save(result.absolutePath, "garbage=compact")
             result.takeIf { it.isFile && it.length() > 0 }
-        } catch (_: Exception) { null }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfTools:35", e); null }
         finally {
             output.destroy()
-            opened.forEach { try { it.destroy() } catch (_: Exception) {} }
+            opened.forEach { try { it.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfTools:38", e) } }
             copies.forEach { it.delete() }
         }
     }
@@ -58,7 +58,7 @@ object PdfTools {
                 out.outputStream().use { document.writeTo(it) }
                 out
             }
-        } catch (_: Exception) { null }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfTools:61", e); null }
         finally { document.close() }
     }
 
@@ -69,8 +69,8 @@ object PdfTools {
             copy = UriActions.copyToCache(context, source) ?: return@withContext false
             doc = Document.openDocument(copy.absolutePath)
             doc.needsPassword()
-        } catch (_: Exception) { false }
-        finally { try { doc?.destroy() } catch (_: Exception) {}; copy?.delete() }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfTools:72", e); false }
+        finally { try { doc?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfTools:73", e) }; copy?.delete() }
     }
 
     suspend fun protect(context: Context, source: Uri, password: String): File? =
@@ -98,5 +98,5 @@ object PdfTools {
         while (bounds.outWidth / sample > maxSide || bounds.outHeight / sample > maxSide) sample *= 2
         val options = BitmapFactory.Options().apply { inSampleSize = sample }
         context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
-    } catch (_: Exception) { null }
+    } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfTools:101", e); null }
 }

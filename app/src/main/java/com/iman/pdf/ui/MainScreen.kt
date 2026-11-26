@@ -98,7 +98,8 @@ private fun fileNameOf(context: Context, uri: Uri): String {
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("MainScreen:101", e)
     }
     return name ?: "Document.pdf"
 }
@@ -132,7 +133,8 @@ fun MainScreen(incomingUri: Uri? = null) {
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("MainScreen:136", e)
             }
             val source = if (unlocked != null) Uri.fromFile(unlocked) else uri
             val opened = PdfEngine.open(context, source)

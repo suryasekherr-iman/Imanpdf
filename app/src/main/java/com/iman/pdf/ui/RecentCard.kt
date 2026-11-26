@@ -88,6 +88,7 @@ fun RecentCard(
             try {
                 BitmapFactory.decodeFile(path)?.asImageBitmap()
             } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("RecentCard:90", e)
                 null
             }
         }

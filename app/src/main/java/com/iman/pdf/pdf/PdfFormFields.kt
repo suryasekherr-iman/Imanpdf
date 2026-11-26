@@ -42,10 +42,11 @@ internal object PdfFormFields {
                         required = (widget.fieldFlags and PDFWidget.PDF_FIELD_IS_REQUIRED) != 0
                     )
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("PdfFormFields:45", e)
                 emptyList()
             } finally {
-                try { page?.destroy() } catch (_: Exception) {}
+                try { page?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfFormFields:49", e) }
             }
         }
 

@@ -90,7 +90,8 @@ class PdfEngine private constructor(
                     context.cacheDir.absolutePath + File.separator
                 )
                 PdfEngine(source, engine, deleteOnClose)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("PdfEngine:93", e)
                 temp?.delete()
                 null
             }

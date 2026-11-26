@@ -71,7 +71,8 @@ object OcrEngine {
                                 // Keep usable Latin output if the secondary recognizer fails.
                                 onSuccess(latinLines)
                             }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        com.iman.pdf.logSwallowed("OcrEngine:74", e)
                         onSuccess(latinLines)
                     }
                 }
@@ -82,7 +83,8 @@ object OcrEngine {
                                 onSuccess(toLines(devanagariResult, bitmap.width, bitmap.height))
                             }
                             .addOnFailureListener { onFailure(latinError) }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        com.iman.pdf.logSwallowed("OcrEngine:86", e)
                         onFailure(latinError)
                     }
                 }

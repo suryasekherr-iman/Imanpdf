@@ -20,6 +20,7 @@ object SearchHistory {
             }
             result
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("SearchHistory:22", e)
             emptyList()
         }
     }

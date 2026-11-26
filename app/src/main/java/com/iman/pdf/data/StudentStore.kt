@@ -89,7 +89,7 @@ class StudentStore(context: Context) {
         (0 until array.length()).mapNotNull { index ->
             array.optJSONObject(index)?.let { runCatching { decode(it) }.getOrNull() }
         }
-    } catch (_: Exception) { emptyList() }
+    } catch (e: Exception) { com.iman.pdf.logSwallowed("StudentStore:92", e); emptyList() }
 
     private fun writeArray(key: String, values: List<JSONObject>) {
         val array = JSONArray()

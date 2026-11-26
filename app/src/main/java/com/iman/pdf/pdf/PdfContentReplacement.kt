@@ -101,13 +101,14 @@ object PdfContentReplacement {
             val output = File(context.cacheDir, "content_replaced_${System.nanoTime()}.pdf")
             document.save(output.absolutePath, "garbage=compact,appearance=yes")
             output.takeIf { it.isFile && it.length() > 0L }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("PdfContentReplacement:104", e)
             null
         } finally {
-            try { image?.destroy() } catch (_: Exception) {}
-            try { page?.destroy() } catch (_: Exception) {}
-            try { document?.destroy() } catch (_: Exception) {}
-            try { source?.delete() } catch (_: Exception) {}
+            try { image?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfContentReplacement:108", e) }
+            try { page?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfContentReplacement:109", e) }
+            try { document?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfContentReplacement:110", e) }
+            try { source?.delete() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfContentReplacement:111", e) }
         }
     }
 }

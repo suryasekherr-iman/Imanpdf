@@ -54,8 +54,9 @@ object Bookmarks {
         try {
             document = Document.openDocument(file.absolutePath)
             walk(document, document.loadOutline() ?: emptyArray(), 0, result)
-        } catch (_: Exception) {
-        } finally { try { document?.destroy() } catch (_: Exception) {} }
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("Bookmarks:57", e)
+        } finally { try { document?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("Bookmarks:59", e) } }
         result
     }
 
@@ -63,8 +64,8 @@ object Bookmarks {
         if (level > 6 || out.size >= 2000) return
         nodes.forEach { node ->
             if (out.size >= 2000) return
-            val location = try { document.resolveLink(node) } catch (_: Exception) { null }
-            val page = try { document.pageNumberFromLocation(location) } catch (_: Exception) { -1 }
+            val location = try { document.resolveLink(node) } catch (e: Exception) { com.iman.pdf.logSwallowed("Bookmarks:67", e); null }
+            val page = try { document.pageNumberFromLocation(location) } catch (e: Exception) { com.iman.pdf.logSwallowed("Bookmarks:68", e); -1 }
             val title = node.title.orEmpty().trim()
             if (title.isNotEmpty()) out.add(TocEntry(title, page, level))
             node.down?.let { walk(document, it, level + 1, out) }

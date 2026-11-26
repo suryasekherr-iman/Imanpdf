@@ -31,7 +31,8 @@ object PdfOcr {
                     )
                 }
                 OcrPage(pageIndex, lines).takeIf { it.lines.isNotEmpty() }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("PdfOcr:34", e)
                 null
             } finally {
                 bitmap?.takeIf { !it.isRecycled }?.recycle()

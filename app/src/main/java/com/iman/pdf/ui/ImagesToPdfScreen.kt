@@ -71,7 +71,8 @@ private fun imageNameOf(context: Context, uri: Uri): String {
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("ImagesToPdfScreen:74", e)
     }
     return name ?: "Image"
 }

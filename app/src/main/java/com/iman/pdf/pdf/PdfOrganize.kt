@@ -72,11 +72,11 @@ object PdfOrganize {
             val file = File(context.cacheDir, "organized_${System.nanoTime()}.pdf")
             output.save(file.absolutePath, "garbage=compact")
             file.takeIf { it.isFile && it.length() > 0 }
-        } catch (_: Exception) { null }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfOrganize:75", e); null }
         finally {
-            try { output.destroy() } catch (_: Exception) {}
-            try { input?.destroy() } catch (_: Exception) {}
-            try { other?.destroy() } catch (_: Exception) {}
+            try { output.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfOrganize:77", e) }
+            try { input?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfOrganize:78", e) }
+            try { other?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("PdfOrganize:79", e) }
         }
     }
 }

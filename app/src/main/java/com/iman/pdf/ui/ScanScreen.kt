@@ -124,6 +124,7 @@ fun ScanScreen(
             pendingPhoto = file
             camera.launch(uri)
         } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("ScanScreen:126", e)
             Toast.makeText(context, "Could not open the camera", Toast.LENGTH_SHORT).show()
         }
     }

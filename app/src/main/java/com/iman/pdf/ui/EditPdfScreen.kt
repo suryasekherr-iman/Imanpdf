@@ -131,7 +131,7 @@ fun EditPdfScreen(onBack: () -> Unit, onOpen: (Uri) -> Unit) {
             if (engine == null) null else try {
                 if (index !in 0 until engine.pageCount) null
                 else Triple(engine.renderPage(index, 1200), engine.pageBounds(index), engine.pageCount)
-            } catch (_: Exception) { null } finally { engine.close() }
+            } catch (e: Exception) { com.iman.pdf.logSwallowed("EditPdfScreen:134", e); null } finally { engine.close() }
         }
         val bounds = loaded?.second
         if (loaded == null || bounds == null || bounds.width() <= 0f || bounds.height() <= 0f) {

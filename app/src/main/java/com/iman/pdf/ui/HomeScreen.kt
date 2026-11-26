@@ -152,7 +152,8 @@ fun HomeScreen(
             scanError = false
             try {
                 deviceFiles = DeviceFiles.scan(context)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                com.iman.pdf.logSwallowed("HomeScreen:155", e)
                 deviceFiles = emptyList()
                 scanError = true
             } finally {
@@ -168,7 +169,8 @@ fun HomeScreen(
             try {
                 DeviceFiles.addFolder(context, uri)
                 refreshToken++
-            } catch (_: SecurityException) {
+            } catch (e: SecurityException) {
+                com.iman.pdf.logSwallowed("HomeScreen:172", e)
                 scanError = true
             }
         }

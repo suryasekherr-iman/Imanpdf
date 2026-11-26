@@ -69,7 +69,8 @@ private fun pickedNameOf(context: Context, uri: Uri): String {
                 if (column >= 0) name = cursor.getString(column)
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.iman.pdf.logSwallowed("ProtectScreen:72", e)
     }
     return name ?: "Document.pdf"
 }
