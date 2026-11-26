@@ -2,14 +2,14 @@ package com.iman.pdf.ui
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Offset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -130,16 +130,16 @@ fun HomeScreen(
     var deviceFiles by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
     var scanError by remember { mutableStateOf(false) }
     var refreshToken by remember { mutableStateOf(0) }
-    var homeHeaderCollapsed by rememberSaveable { mutableStateOf(false) }
+    var homeHeaderHeightPx by remember { mutableStateOf(0f) }
+    var homeHeaderOffsetPx by remember { mutableStateOf(0f) }
     val homeScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (available.y < -1f) {
-                    homeHeaderCollapsed = true
-                } else if (available.y > 1f) {
-                    homeHeaderCollapsed = false
-                }
-                return Offset.Zero
+                val previousOffset = homeHeaderOffsetPx
+                val nextOffset = (previousOffset + available.y)
+                    .coerceIn(-homeHeaderHeightPx, 0f)
+                homeHeaderOffsetPx = nextOffset
+                return Offset(x = 0f, y = nextOffset - previousOffset)
             }
         }
     }
@@ -296,12 +296,23 @@ fun HomeScreen(
                 }
             }
 
-            AnimatedVisibility(
-                visible = !homeHeaderCollapsed,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onSizeChanged { size ->
+                        homeHeaderHeightPx = size.height.toFloat()
+                        homeHeaderOffsetPx = homeHeaderOffsetPx.coerceIn(-homeHeaderHeightPx, 0f)
+                    }
+                    .clipToBounds()
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val offsetY = homeHeaderOffsetPx.roundToInt()
+                        val visibleHeight = (placeable.height + offsetY).coerceIn(0, placeable.height)
+                        layout(placeable.width, visibleHeight) {
+                            placeable.placeRelative(0, offsetY)
+                        }
+                    }
             ) {
-                Column {
                     if (!selectMode) {
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
@@ -407,7 +418,6 @@ fun HomeScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                }
             }
 
             HorizontalPager(
