@@ -314,7 +314,9 @@ fun MainScreen(incomingUri: Uri? = null) {
                 } else {
                     ToolsScreen(
                         onToolClick = { item ->
-                            if (viewerTools.contains(item.id)) {
+                            if (item.id == "flashcards") {
+                                selected = 2
+                            } else if (viewerTools.contains(item.id)) {
                                 pendingMode = item.id
                                 picker.launch(arrayOf("application/pdf"))
                             } else if (implementedTools.contains(item.id)) {
