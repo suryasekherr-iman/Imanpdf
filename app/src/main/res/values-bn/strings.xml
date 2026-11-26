@@ -42,6 +42,11 @@
     <string name="settings_version">ImAn PDF Reader • সংস্করণ 1.0</string>
 
     <string name="tools_title">টুলস</string><string name="tools_filter_all">সব</string><string name="tools_filter_read">পড়ুন</string><string name="tools_filter_create">তৈরি</string><string name="tools_filter_edit">সম্পাদনা</string>
+    <string name="tool_flashcards">ফ্ল্যাশকার্ড তৈরি করুন</string>
+    <string name="tool_flashcards_desc">অফলাইনে অনুশীলনের জন্য প্রশ্ন ও উত্তরের কার্ড তৈরি করুন</string>
+    <string name="tool_export_pdf">PDF এক্সপোর্ট করুন</string>
+    <string name="tool_export_pdf_desc">PDF-এর পৃষ্ঠা বা বের করা লেখা এক্সপোর্ট করুন</string>
+    <string name="tools_view_all">সব টুল দেখুন</string>
     <string name="tool_fill_sign">ফর্ম পূরণ ও স্বাক্ষর</string><string name="tool_fill_sign_desc">ফর্ম পূরণ করুন এবং স্বাক্ষর যোগ করুন</string>
     <string name="tool_comment">মন্তব্য যোগ করুন</string><string name="tool_comment_desc">টেক্সট হাইলাইট, আঁকুন এবং নোট যোগ করুন</string>
     <string name="tool_liquid">রিফ্লো মোড</string><string name="tool_liquid_desc">স্ক্রিন অনুযায়ী সহজে PDF পড়ুন</string>
