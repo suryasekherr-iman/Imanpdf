@@ -62,6 +62,8 @@ private fun toolTitleResource(id: String): Int = when (id) {
     "comment" -> R.string.tool_comment
     "liquid" -> R.string.tool_liquid
     "read_aloud" -> R.string.tool_read_aloud
+    "export" -> R.string.tool_export_pdf
+    "flashcards" -> R.string.tool_flashcards
     "edit_pdf" -> R.string.tool_edit_pdf
     "organize" -> R.string.tool_organize
     "crop" -> R.string.tool_crop
@@ -272,8 +274,17 @@ fun MainScreen(incomingUri: Uri? = null) {
                             }
                         },
                         onQuickAction = { id ->
-                            if (implementedTools.contains(id)) {
-                                tool = id
+                            when {
+                                id == "view_all_tools" -> selected = 4
+                                id == "flashcards" -> selected = 2
+                                viewerTools.contains(id) -> {
+                                    pendingMode = id
+                                    picker.launch(arrayOf("application/pdf"))
+                                }
+                                implementedTools.contains(id) -> {
+                                    ToolSeed.uri = null
+                                    tool = id
+                                }
                             }
                         }
                     )
