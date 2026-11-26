@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Comment
 import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.Crop
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Style
 import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.MergeType
@@ -60,6 +61,8 @@ data class ToolItem(
 
 private val allTools = listOf(
     ToolItem("fill_sign", R.string.tool_fill_sign, R.string.tool_fill_sign_desc, "Edit", Icons.Outlined.Gesture),
+    ToolItem("export", R.string.tool_export_pdf, R.string.tool_export_pdf_desc, "Create", Icons.Outlined.Article),
+    ToolItem("flashcards", R.string.tool_flashcards, R.string.tool_flashcards_desc, "Create", Icons.Outlined.Style),
     ToolItem("comment", R.string.tool_comment, R.string.tool_comment_desc, "Read", Icons.Outlined.Comment),
     ToolItem("liquid", R.string.tool_liquid, R.string.tool_liquid_desc, "Read", Icons.Outlined.Article),
     ToolItem("read_aloud", R.string.tool_read_aloud, R.string.tool_read_aloud_desc, "Read", Icons.Outlined.VolumeUp),
