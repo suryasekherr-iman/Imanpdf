@@ -40,12 +40,14 @@ object LastPage {
         offset: Int,
         horizontalOffset: Int
     ) {
+        // Reading position must be durable before the viewer is closed or the app is stopped.
+        // commit() is safe here because the caller debounces scroll updates and also saves on dispose.
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putInt(pageKey(documentId), page.coerceIn(0, (pageCount - 1).coerceAtLeast(0)))
             .putInt(offsetKey(documentId), offset.coerceAtLeast(0))
             .putInt(horizontalOffsetKey(documentId), horizontalOffset.coerceAtLeast(0))
-            .apply()
+            .commit()
     }
 
     fun loadZoom(context: Context, documentId: String): Float {
