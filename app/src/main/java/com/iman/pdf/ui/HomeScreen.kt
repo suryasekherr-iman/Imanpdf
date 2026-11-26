@@ -2,6 +2,15 @@ package com.iman.pdf.ui
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.Offset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -121,6 +130,19 @@ fun HomeScreen(
     var deviceFiles by remember { mutableStateOf<List<DevicePdf>>(emptyList()) }
     var scanError by remember { mutableStateOf(false) }
     var refreshToken by remember { mutableStateOf(0) }
+    var homeHeaderCollapsed by rememberSaveable { mutableStateOf(false) }
+    val homeScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (available.y < -1f) {
+                    homeHeaderCollapsed = true
+                } else if (available.y > 1f) {
+                    homeHeaderCollapsed = false
+                }
+                return Offset.Zero
+            }
+        }
+    }
 
     fun exitSelect() {
         selectMode = false
@@ -187,6 +209,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
+                .nestedScroll(homeScrollConnection)
         ) {
             if (selectMode) {
                 Row(
@@ -271,115 +294,121 @@ fun HomeScreen(
                         modifier = Modifier.clickable { onOpenSettings() }
                     )
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Welcome back, $name",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    rowItems(homeQuickActions, key = { it.id }) { action ->
-                        Column(
-                            modifier = Modifier
-                                .width(112.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.surface)
-                                .clickable { onQuickAction(action.id) }
-                                .padding(12.dp),
-                            horizontalAlignment = Alignment.Start
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(action.tint.copy(alpha = 0.16f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(action.icon, contentDescription = null, tint = action.tint)
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = stringResource(action.titleRes),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 2
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = Color.Transparent,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        TabItem(
-                            selected = selectedTab == index,
-                            onClick = {
-                                scope.launch { pagerState.animateScrollToPage(index) }
-                            },
-                            text = { Text(title) }
+            AnimatedVisibility(
+                visible = !homeHeaderCollapsed,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column {
+                    if (!selectMode) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = "Welcome back, $name",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
-                    }
-                }
-                if (selectedTab != 2) {
-                    Box {
-                        IconButton(onClick = { menuOpen = true }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
-                        }
-                        DropdownMenu(
-                            expanded = menuOpen,
-                            onDismissRequest = { menuOpen = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Select") },
-                                onClick = {
-                                    menuOpen = false
-                                    selectMode = true
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Select all") },
-                                onClick = {
-                                    menuOpen = false
-                                    selected.clear()
-                                    selected.addAll(currentList.map { it.uri })
-                                    selectMode = selected.isNotEmpty()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(if (listView) "Grid view" else "List view") },
-                                onClick = {
-                                    menuOpen = false
-                                    listView = !listView
-                                }
-                            )
-                            if (selectedTab == 0) {
-                                DropdownMenuItem(
-                                    text = { Text("Clear recent") },
-                                    onClick = {
-                                        menuOpen = false
-                                        clearOpen = true
+                        Spacer(modifier = Modifier.height(16.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            rowItems(homeQuickActions, key = { it.id }) { action ->
+                                Column(
+                                    modifier = Modifier
+                                        .width(112.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .clickable { onQuickAction(action.id) }
+                                        .padding(12.dp),
+                                    horizontalAlignment = Alignment.Start
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(action.tint.copy(alpha = 0.16f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(action.icon, contentDescription = null, tint = action.tint)
                                     }
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = stringResource(action.titleRes),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 2
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TabRow(
+                            selectedTabIndex = selectedTab,
+                            containerColor = Color.Transparent,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            tabs.forEachIndexed { index, title ->
+                                TabItem(
+                                    selected = selectedTab == index,
+                                    onClick = {
+                                        scope.launch { pagerState.animateScrollToPage(index) }
+                                    },
+                                    text = { Text(title) }
                                 )
                             }
                         }
+                        if (selectedTab != 2) {
+                            Box {
+                                IconButton(onClick = { menuOpen = true }) {
+                                    Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
+                                }
+                                DropdownMenu(
+                                    expanded = menuOpen,
+                                    onDismissRequest = { menuOpen = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Select") },
+                                        onClick = {
+                                            menuOpen = false
+                                            selectMode = true
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Select all") },
+                                        onClick = {
+                                            menuOpen = false
+                                            selected.clear()
+                                            selected.addAll(currentList.map { it.uri })
+                                            selectMode = selected.isNotEmpty()
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(if (listView) "Grid view" else "List view") },
+                                        onClick = {
+                                            menuOpen = false
+                                            listView = !listView
+                                        }
+                                    )
+                                    if (selectedTab == 0) {
+                                        DropdownMenuItem(
+                                            text = { Text("Clear recent") },
+                                            onClick = {
+                                                menuOpen = false
+                                                clearOpen = true
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             HorizontalPager(
                 state = pagerState,
