@@ -205,11 +205,13 @@ fun ViewerScreen(
     var keepScreenOn by remember { mutableStateOf(false) }
     var nightMode by remember { mutableStateOf(false) }
     var sepiaMode by remember { mutableStateOf(false) }
+    var pageSnap by remember { mutableStateOf(false) }
     val hostView = LocalView.current
 
     // Defaults chosen in Settings: reading mode, Read aloud speed and voice.
     LaunchedEffect(Unit) {
         val userPrefs = com.iman.pdf.data.UserPrefs(context)
+        pageSnap = userPrefs.pageTransition.first() == "snap"
         when (userPrefs.readingMode.first()) {
             "night" -> nightMode = true
             "sepia" -> sepiaMode = true
@@ -825,8 +827,12 @@ fun ViewerScreen(
                     )
             ) {
                 run {
+                    val snapFling = androidx.compose.foundation.gestures.snapping
+                        .rememberSnapFlingBehavior(listState)
                     LazyColumn(
                         state = listState,
+                        flingBehavior = if (pageSnap) snapFling
+                        else androidx.compose.foundation.gestures.ScrollableDefaults.flingBehavior(),
                         userScrollEnabled = !drawing,
                         modifier = Modifier
                             .layout { measurable, constraints ->

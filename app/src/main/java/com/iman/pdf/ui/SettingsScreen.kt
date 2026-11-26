@@ -71,6 +71,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val photo by prefs.photoPath.collectAsState(initial = "")
     val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
     val readingMode by prefs.readingMode.collectAsState(initial = "normal")
+    val pageTransition by prefs.pageTransition.collectAsState(initial = "scroll")
     val ttsSpeed by prefs.ttsSpeedIndex.collectAsState(initial = 1)
     val ttsVoice by prefs.ttsVoiceIndex.collectAsState(initial = 0)
     var cacheBytes by remember { mutableStateOf(cacheSize(context.cacheDir)) }
@@ -196,6 +197,16 @@ fun SettingsScreen(onBack: () -> Unit) {
                     label = option.second,
                     selected = readingMode == option.first,
                     onClick = { scope.launch { prefs.setReadingMode(option.first) } }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle("Page transition")
+            listOf("scroll" to "Continuous scroll", "snap" to "Page by page").forEach { option ->
+                OptionRow(
+                    label = option.second,
+                    selected = pageTransition == option.first,
+                    onClick = { scope.launch { prefs.setPageTransition(option.first) } }
                 )
             }
 

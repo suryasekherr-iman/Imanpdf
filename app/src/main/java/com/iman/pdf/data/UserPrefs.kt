@@ -18,6 +18,7 @@ class UserPrefs(private val context: Context) {
     private val photoKey = stringPreferencesKey("photo_path")
     private val hideRecentKey = booleanPreferencesKey("hide_recent_documents")
     private val readingModeKey = stringPreferencesKey("reading_mode")
+    private val pageTransitionKey = stringPreferencesKey("page_transition")
     private val ttsSpeedKey = androidx.datastore.preferences.core.intPreferencesKey("tts_speed_index")
     private val ttsVoiceKey = androidx.datastore.preferences.core.intPreferencesKey("tts_voice_index")
 
@@ -39,6 +40,10 @@ class UserPrefs(private val context: Context) {
     /** Default reading mode for the viewer: "normal", "night" or "sepia". */
     val readingMode: Flow<String> =
         context.dataStore.data.map { it[readingModeKey] ?: "normal" }
+
+    /** Page transition: "scroll" (continuous) or "snap" (page by page). */
+    val pageTransition: Flow<String> =
+        context.dataStore.data.map { it[pageTransitionKey] ?: "scroll" }
 
     val ttsSpeedIndex: Flow<Int> =
         context.dataStore.data.map { it[ttsSpeedKey] ?: 1 }
@@ -68,6 +73,10 @@ class UserPrefs(private val context: Context) {
 
     suspend fun setReadingMode(value: String) {
         context.dataStore.edit { it[readingModeKey] = value }
+    }
+
+    suspend fun setPageTransition(value: String) {
+        context.dataStore.edit { it[pageTransitionKey] = value }
     }
 
     suspend fun setTtsSpeedIndex(value: Int) {
