@@ -43,6 +43,7 @@ import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Gesture
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Style
 import androidx.compose.material.icons.outlined.VolumeUp
