@@ -52,6 +52,7 @@ import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.PdfProtectionService
 import com.iman.pdf.pdf.PdfTools
 import com.iman.pdf.pdf.Thumbnails
+import com.iman.pdf.pdf.UriActions
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -84,6 +85,9 @@ enum class Tab(val labelRes: Int, val icon: ImageVector) {
 }
 
 private fun fileNameOf(context: Context, uri: Uri): String {
+    if (uri.scheme == "file") {
+        return uri.lastPathSegment ?: "Document.pdf"
+    }
     var name: String? = null
     try {
         context.contentResolver.query(
@@ -106,6 +110,21 @@ private fun fileNameOf(context: Context, uri: Uri): String {
     return name ?: "Document.pdf"
 }
 
+/** Tries to keep access to [uri] after the app restarts. False when the grant is temporary. */
+private fun keepAccess(context: Context, uri: Uri): Boolean {
+    if (uri.scheme != "content") return false
+    val read = Intent.FLAG_GRANT_READ_URI_PERMISSION
+    for (flags in listOf(read or Intent.FLAG_GRANT_WRITE_URI_PERMISSION, read)) {
+        try {
+            context.contentResolver.takePersistableUriPermission(uri, flags)
+            return true
+        } catch (e: Exception) {
+            com.iman.pdf.logSwallowed("MainScreen:keepAccess", e)
+        }
+    }
+    return false
+}
+
 @Composable
 fun MainScreen(incomingUri: Uri? = null) {
     val context = LocalContext.current
@@ -123,6 +142,7 @@ fun MainScreen(incomingUri: Uri? = null) {
     var pendingMode by remember { mutableStateOf("") }
     var viewerMode by remember { mutableStateOf("") }
     var currentUri by remember { mutableStateOf<Uri?>(null) }
+    var canOverwrite by remember { mutableStateOf(false) }
     var requestedPage by remember { mutableIntStateOf(-1) }
     var addOpen by remember { mutableStateOf(false) }
     val tabs = Tab.entries
@@ -130,14 +150,7 @@ fun MainScreen(incomingUri: Uri? = null) {
     fun openUri(uri: Uri, unlocked: File? = null, startPage: Int? = null) {
         scope.launch {
             loading = true
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (e: Exception) {
-                com.iman.pdf.logSwallowed("MainScreen:136", e)
-            }
+            keepAccess(context, uri)
             val source = if (unlocked != null) Uri.fromFile(unlocked) else uri
             val opened = PdfEngine.open(context, source)
             if (opened == null) {
@@ -163,6 +176,9 @@ fun MainScreen(incomingUri: Uri? = null) {
                 pendingMode = ""
                 engine = opened
                 currentUri = uri
+                // Never "overwrite" a temporary cache file: it may be the working copy itself.
+                canOverwrite = unlocked == null &&
+                    !(uri.scheme == "file" && uri.path.orEmpty().startsWith(context.cacheDir.absolutePath))
                 requestedPage = startPage?.minus(1)?.coerceIn(0, (opened.pageCount - 1).coerceAtLeast(0)) ?: -1
                 title = displayName
             }
@@ -181,7 +197,14 @@ fun MainScreen(incomingUri: Uri? = null) {
 
     LaunchedEffect(incomingUri) {
         if (incomingUri != null) {
-            openUri(incomingUri)
+            // Apps such as WhatsApp grant access only for this launch. Keep our own copy then,
+            // so the PDF can still be opened later from Recent.
+            var target: Uri = incomingUri
+            if (incomingUri.scheme == "content" && !keepAccess(context, incomingUri)) {
+                val copy = UriActions.importCopy(context, incomingUri, fileNameOf(context, incomingUri))
+                if (copy != null) target = Uri.fromFile(copy)
+            }
+            openUri(target)
         }
     }
 
@@ -194,6 +217,7 @@ fun MainScreen(incomingUri: Uri? = null) {
             documentId = currentUri?.toString() ?: title,
             startMode = viewerMode,
             initialPage = requestedPage.takeIf { it >= 0 },
+            originalUri = currentUri?.takeIf { canOverwrite },
                         onOpenTool = { id ->
                 ToolSeed.uri = if (seedableTools.contains(id)) currentUri else null
                 current.close()

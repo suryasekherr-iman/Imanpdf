@@ -31,6 +31,9 @@ data class StrokeMark(
     val points: List<Pair<Float, Float>>
 ) : Mark()
 
+/** Page-relative rectangle (0..1). */
+data class MarkRect(val left: Float, val top: Float, val right: Float, val bottom: Float)
+
 data class HighlightMark(
     override val page: Int,
     val color: Int,
@@ -38,8 +41,12 @@ data class HighlightMark(
     val top: Float,
     val right: Float,
     val bottom: Float,
-    val kind: Int = 0
-) : Mark()
+    val kind: Int = 0,
+    /** One rectangle per selected text line; empty when the page has no selectable text. */
+    val rects: List<MarkRect> = emptyList()
+) : Mark() {
+    fun areas(): List<MarkRect> = rects.ifEmpty { listOf(MarkRect(left, top, right, bottom)) }
+}
 
 data class TextMark(
     override val page: Int,
@@ -60,6 +67,8 @@ data class SignMark(
     val signature: SignatureData
 ) : Mark()
 
+private data class MarkChange(val mark: Mark, val index: Int, val added: Boolean)
+
 data class PendingText(
     val page: Int,
     val x: Float,
@@ -76,7 +85,10 @@ class AnnotController {
     var signature by mutableStateOf<SignatureData?>(null)
     var needSignature by mutableStateOf(false)
     val marks = mutableStateListOf<Mark>()
-    val redoMarks = mutableStateListOf<Mark>()
+    private val undoStack = mutableStateListOf<MarkChange>()
+    private val redoStack = mutableStateListOf<MarkChange>()
+    val canUndo: Boolean get() = undoStack.isNotEmpty()
+    val canRedo: Boolean get() = redoStack.isNotEmpty()
 
     fun select(newTool: AnnotTool) {
         tool = newTool
@@ -134,30 +146,64 @@ class AnnotController {
 
     fun add(mark: Mark) {
         marks.add(mark)
-        redoMarks.clear()
+        undoStack.add(MarkChange(mark, marks.lastIndex, true))
+        redoStack.clear()
     }
 
     fun undo() {
-        if (marks.isNotEmpty()) {
-            redoMarks.add(marks.removeAt(marks.size - 1))
-        }
+        if (undoStack.isEmpty()) return
+        val change = undoStack.removeAt(undoStack.lastIndex)
+        applyChange(change, insert = !change.added)
+        redoStack.add(change)
     }
 
     fun redo() {
-        if (redoMarks.isNotEmpty()) {
-            marks.add(redoMarks.removeAt(redoMarks.size - 1))
+        if (redoStack.isEmpty()) return
+        val change = redoStack.removeAt(redoStack.lastIndex)
+        applyChange(change, insert = change.added)
+        undoStack.add(change)
+    }
+
+    private fun applyChange(change: MarkChange, insert: Boolean) {
+        if (insert) {
+            marks.add(change.index.coerceIn(0, marks.size), change.mark)
+        } else {
+            val at = marks.indexOfLast { it === change.mark }
+            if (at >= 0) marks.removeAt(at)
         }
+    }
+
+    /** True when (x, y) is within [tolerance] of the line from a to b. */
+    private fun nearSegment(
+        x: Float,
+        y: Float,
+        a: Pair<Float, Float>,
+        b: Pair<Float, Float>,
+        tolerance: Float
+    ): Boolean {
+        val dx = b.first - a.first
+        val dy = b.second - a.second
+        val lengthSquared = dx * dx + dy * dy
+        val t = if (lengthSquared == 0f) {
+            0f
+        } else {
+            (((x - a.first) * dx + (y - a.second) * dy) / lengthSquared).coerceIn(0f, 1f)
+        }
+        val px = a.first + t * dx - x
+        val py = a.second + t * dy - y
+        return px * px + py * py <= tolerance * tolerance
     }
 
     private fun hit(mark: Mark, x: Float, y: Float): Boolean {
         val tol = 0.03f
         return when (mark) {
-            is StrokeMark -> mark.points.any {
-                kotlin.math.abs(it.first - x) < tol && kotlin.math.abs(it.second - y) < tol
+            is StrokeMark -> mark.points.indices.any { i ->
+                nearSegment(x, y, mark.points[i], mark.points[maxOf(i - 1, 0)], tol)
             }
-            is HighlightMark ->
-                x >= mark.left - tol && x <= mark.right + tol &&
-                    y >= mark.top - tol && y <= mark.bottom + tol
+            is HighlightMark -> mark.areas().any {
+                x >= it.left - tol && x <= it.right + tol &&
+                    y >= it.top - tol && y <= it.bottom + tol
+            }
             is TextMark -> {
                 val lines = mark.text.split("\n")
                 val longest = lines.maxOf { it.length }
@@ -176,6 +222,8 @@ class AnnotController {
             val mark = marks[i]
             if (mark.page == page && hit(mark, x, y)) {
                 marks.removeAt(i)
+                undoStack.add(MarkChange(mark, i, false))
+                redoStack.clear()
                 return
             }
         }
@@ -183,7 +231,8 @@ class AnnotController {
 
     fun clearAll() {
         marks.clear()
-        redoMarks.clear()
+        undoStack.clear()
+        redoStack.clear()
         live = null
         pendingText = null
     }
@@ -246,23 +295,27 @@ object MarkPainter {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = maxOf(3f, 0.003f * width)
             paint.strokeCap = Paint.Cap.ROUND
-            val lineY = if (mark.kind == 1) {
-                mark.bottom * height
-            } else {
-                (mark.top + mark.bottom) / 2f * height
+            mark.areas().forEach { area ->
+                val lineY = if (mark.kind == 1) {
+                    area.bottom * height
+                } else {
+                    (area.top + area.bottom) / 2f * height
+                }
+                canvas.drawLine(area.left * width, lineY, area.right * width, lineY, paint)
             }
-            canvas.drawLine(mark.left * width, lineY, mark.right * width, lineY, paint)
             return
         }
         paint.alpha = 100
         paint.style = Paint.Style.FILL
-        canvas.drawRect(
-            mark.left * width,
-            mark.top * height,
-            mark.right * width,
-            mark.bottom * height,
-            paint
-        )
+        mark.areas().forEach { area ->
+            canvas.drawRect(
+                area.left * width,
+                area.top * height,
+                area.right * width,
+                area.bottom * height,
+                paint
+            )
+        }
     }
 
     private fun drawText(canvas: Canvas, width: Float, height: Float, mark: TextMark) {

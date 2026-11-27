@@ -2,7 +2,6 @@ package com.iman.pdf.pdf
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.PointF
 import android.graphics.RectF
 import android.net.Uri
 import com.iman.pdf.core.pdf.MuPdfEngine
@@ -42,8 +41,6 @@ class PdfEngine private constructor(
         mupdf.updateFormFields(updates)
 
     fun save(output: File, options: String = "garbage=compact"): Boolean = mupdf.save(output, options)
-    fun addHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
-        mupdf.addHighlightAnnotation(pageNumber, rects)
     fun getTextRectsForSelection(
         pageNum: Int,
         startX: Float,
@@ -51,16 +48,8 @@ class PdfEngine private constructor(
         endX: Float,
         endY: Float
     ): List<RectF> = mupdf.getTextRectsForSelection(pageNum, startX, startY, endX, endY)
-    fun addTextHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
-        mupdf.addTextHighlightAnnotation(pageNumber, rects)
-    fun addUnderlineAnnotation(pageNumber: Int, rects: List<RectF>): Boolean =
-        mupdf.addUnderlineAnnotation(pageNumber, rects)
-    fun addInkAnnotation(
-        pageNumber: Int,
-        paths: List<List<PointF>>,
-        color: Int,
-        thickness: Float
-    ): Boolean = mupdf.addInkAnnotation(pageNumber, paths, color, thickness)
+
+    fun replaceWith(newFile: File): Boolean = mupdf.replaceDocument(newFile)
 
     fun saveDocument(savePath: String): Boolean = mupdf.saveDocument(savePath)
     fun reloadDocument(filePath: String): Boolean = mupdf.reloadDocument(filePath)
@@ -74,7 +63,9 @@ class PdfEngine private constructor(
         suspend fun open(context: Context, uri: Uri): PdfEngine? = withContext(Dispatchers.IO) {
             var temp: File? = null
             try {
-                val copiedToCache = uri.scheme != "file"
+                // Always edit a temporary working copy; only files already in the cache are used directly.
+                val copiedToCache = uri.scheme != "file" ||
+                    !checkNotNull(uri.path).startsWith(context.cacheDir.absolutePath + File.separator)
                 val source = if (!copiedToCache) File(checkNotNull(uri.path)) else {
                     temp = File(context.cacheDir, "mupdf_${System.nanoTime()}.pdf")
                     val input = context.contentResolver.openInputStream(uri) ?: return@withContext null

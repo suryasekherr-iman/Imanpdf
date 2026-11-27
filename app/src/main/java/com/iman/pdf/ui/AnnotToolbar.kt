@@ -1,9 +1,5 @@
 package com.iman.pdf.ui
 
-import android.net.Uri
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,7 +31,6 @@ import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -49,7 +44,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,17 +52,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.iman.pdf.annot.AnnotBake
 import com.iman.pdf.annot.AnnotController
 import com.iman.pdf.annot.AnnotTool
 import com.iman.pdf.annot.SignatureStore
 import com.iman.pdf.annot.TextMark
-import com.iman.pdf.pdf.PdfActions
-import com.iman.pdf.pdf.PdfEngine
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
 
 private val palette = listOf(
     0xFF000000.toInt(),
@@ -83,45 +70,16 @@ private val palette = listOf(
 @Composable
 fun AnnotToolbar(
     annot: AnnotController,
-    engine: PdfEngine,
-    title: String,
     onSaveAnnotations: () -> Unit,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var busy by remember { mutableStateOf(false) }
-    var pending by remember { mutableStateOf<File?>(null) }
     var confirmClose by remember { mutableStateOf(false) }
     var typed by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         if (annot.signature == null) {
             annot.signature = SignatureStore.load(context)
-        }
-    }
-
-    val saver = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/pdf")
-    ) { destination: Uri? ->
-        val file = pending
-        if (destination != null && file != null) {
-            scope.launch {
-                val ok = withContext(Dispatchers.IO) {
-                    PdfActions.saveCopy(context, file, destination)
-                }
-                if (ok) {
-                    Toast.makeText(
-                        context,
-                        "Saved. Open it from Files or Home.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    annot.clearAll()
-                    annot.select(AnnotTool.NONE)
-                } else {
-                    Toast.makeText(context, "Could not save the PDF", Toast.LENGTH_SHORT).show()
-                }
-            }
         }
     }
 
@@ -180,7 +138,7 @@ fun AnnotToolbar(
             }
             IconButton(
                 onClick = { annot.redo() },
-                enabled = annot.redoMarks.isNotEmpty(),
+                enabled = annot.canRedo,
                 colors = IconButtonDefaults.iconButtonColors(
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -190,7 +148,7 @@ fun AnnotToolbar(
             }
             IconButton(
                 onClick = { annot.undo() },
-                enabled = annot.marks.isNotEmpty(),
+                enabled = annot.canUndo,
                 colors = IconButtonDefaults.iconButtonColors(
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -205,29 +163,7 @@ fun AnnotToolbar(
                     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             ) {
-                Icon(Icons.Outlined.Save, contentDescription = "Save PDF annotations")
-            }
-            if (busy) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            } else {
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            busy = true
-                            val result = AnnotBake.bake(context, engine.file, annot.marks.toList())
-                            busy = false
-                            if (result == null) {
-                                Toast.makeText(context, "Nothing to export yet", Toast.LENGTH_SHORT).show()
-                            } else {
-                                pending = result
-                                saver.launch(title.removeSuffix(".pdf") + "_annotated.pdf")
-                            }
-                        }
-                    },
-                    enabled = annot.marks.isNotEmpty()
-                ) {
-                    Icon(Icons.Outlined.Save, contentDescription = "Save a flattened annotated copy")
-                }
+                Icon(Icons.Outlined.Save, contentDescription = "Save PDF")
             }
             IconButton(
                 onClick = {
@@ -290,7 +226,7 @@ fun AnnotToolbar(
 
         if (annot.tool == AnnotTool.ERASE) {
             Text(
-                "Tap a mark to erase it",
+                "Tap an unsaved mark to erase it",
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
@@ -412,9 +348,19 @@ fun AnnotToolbar(
     if (confirmClose) {
         AlertDialog(
             onDismissRequest = { confirmClose = false },
-            title = { Text("Discard changes?") },
-            text = { Text("Your marks on this PDF have not been saved.") },
+            title = { Text("Unsaved marks") },
+            text = { Text("Save your marks on this PDF, or discard them?") },
             confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmClose = false
+                        onSaveAnnotations()
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
                 TextButton(
                     onClick = {
                         confirmClose = false
@@ -423,11 +369,6 @@ fun AnnotToolbar(
                     }
                 ) {
                     Text("Discard")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmClose = false }) {
-                    Text("Keep editing")
                 }
             }
         )

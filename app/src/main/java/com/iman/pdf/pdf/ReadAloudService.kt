@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.iman.pdf.MainActivity
@@ -22,7 +23,25 @@ import com.iman.pdf.MainActivity
  */
 class ReadAloudService : Service() {
 
+    private var wakeLock: PowerManager.WakeLock? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /** Keeps the CPU awake between pages while the screen is off. */
+    private fun keepCpuAwake() {
+        if (wakeLock?.isHeld == true) return
+        val power = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "iman:readAloud").apply {
+            setReferenceCounted(false)
+            acquire(WAKE_LOCK_LIMIT_MS)
+        }
+    }
+
+    override fun onDestroy() {
+        wakeLock?.takeIf { it.isHeld }?.release()
+        wakeLock = null
+        super.onDestroy()
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
@@ -43,6 +62,7 @@ class ReadAloudService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        keepCpuAwake()
         return START_NOT_STICKY
     }
 
@@ -78,6 +98,7 @@ class ReadAloudService : Service() {
     companion object {
         private const val CHANNEL_ID = "iman_read_aloud"
         private const val NOTIFICATION_ID = 4201
+        private const val WAKE_LOCK_LIMIT_MS = 3L * 60 * 60 * 1000
         private const val ACTION_STOP = "com.iman.pdf.READ_ALOUD_STOP"
         private const val EXTRA_TITLE = "title"
 

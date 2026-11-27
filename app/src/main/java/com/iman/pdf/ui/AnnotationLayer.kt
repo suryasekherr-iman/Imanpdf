@@ -1,7 +1,5 @@
 package com.iman.pdf.ui
 
-import android.graphics.PointF
-import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -23,9 +21,7 @@ fun AnnotationLayer(
     page: Int,
     annot: AnnotController,
     modifier: Modifier = Modifier,
-    onHighlight: ((Int, RectF, Float, Float) -> Unit)? = null,
-    onUnderline: ((Int, RectF, Float, Float) -> Unit)? = null,
-    onInk: ((Int, List<List<PointF>>, Int, Float) -> Unit)? = null
+    onTextMark: ((HighlightMark) -> Unit)? = null
 ) {
     val marks = annot.marks.filter { it.page == page }
     val live = annot.live?.takeIf { it.page == page }
@@ -62,15 +58,7 @@ fun AnnotationLayer(
                             )
                         },
                         onDragEnd = {
-                            val finished = annot.live
-                            if (finished != null) {
-                                if (onInk != null && finished is StrokeMark) {
-                                    val points = finished.points.map { PointF(it.first, it.second) }
-                                    onInk(page, listOf(points), finished.color, finished.width)
-                                } else {
-                                    annot.add(finished)
-                                }
-                            }
+                            annot.live?.let { annot.add(it) }
                             annot.live = null
                         },
                         onDragCancel = { annot.live = null }
@@ -115,22 +103,10 @@ fun AnnotationLayer(
                         },
                         onDragEnd = {
                             val finished = annot.live
-                            if (finished != null) {
-                                if (finished is HighlightMark) {
-                                    val rect = RectF(
-                                        finished.left,
-                                        finished.top,
-                                        finished.right,
-                                        finished.bottom
-                                    )
-                                    when {
-                                        kind == 0 && onHighlight != null -> onHighlight(page, rect, w, h)
-                                        kind == 1 && onUnderline != null -> onUnderline(page, rect, w, h)
-                                        else -> annot.add(finished)
-                                    }
-                                } else {
-                                    annot.add(finished)
-                                }
+                            if (finished is HighlightMark && onTextMark != null) {
+                                onTextMark(finished)
+                            } else if (finished != null) {
+                                annot.add(finished)
                             }
                             annot.live = null
                         },

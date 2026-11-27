@@ -23,7 +23,8 @@ object Comments {
         PDFAnnotation.TYPE_UNDERLINE to "Underline",
         PDFAnnotation.TYPE_STRIKE_OUT to "Strikethrough",
         PDFAnnotation.TYPE_SQUIGGLY to "Squiggly",
-        PDFAnnotation.TYPE_INK to "Drawing"
+        PDFAnnotation.TYPE_INK to "Drawing",
+        PDFAnnotation.TYPE_STAMP to "Text"
     )
 
     suspend fun load(context: Context, file: File): List<CommentItem> = withContext(Dispatchers.IO) {

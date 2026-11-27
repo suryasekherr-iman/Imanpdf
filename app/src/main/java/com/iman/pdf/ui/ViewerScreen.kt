@@ -1,8 +1,15 @@
 package com.iman.pdf.ui
 
-import android.graphics.PointF
-import android.graphics.RectF
+import android.net.Uri
 import android.widget.Toast
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.iman.pdf.annot.AnnotBake
+import com.iman.pdf.annot.HighlightMark
+import com.iman.pdf.annot.MarkRect
+import java.io.File
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,8 +34,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -58,7 +63,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -109,28 +113,7 @@ import androidx.compose.ui.unit.Constraints
 import kotlin.math.roundToInt
 
 private const val MAX_RENDER_WIDTH = 2400
-
-private fun screenToPdfCoordinates(
-    touchX: Float,
-    touchY: Float,
-    zoomScale: Float,
-    panOffset: Offset,
-    pageWidthPx: Float,
-    pageHeightPx: Float,
-    pageBounds: RectF
-): PointF {
-    // PointerInput positions are page-local: Compose has already inverted the parent graphicsLayer.
-    // Therefore callers pass 1x/zero-pan here to avoid applying the zoom transform twice.
-    val safeScale = zoomScale.coerceAtLeast(0.0001f)
-    val localX = (touchX - panOffset.x) / safeScale
-    val localY = (touchY - panOffset.y) / safeScale
-    val xFraction = (localX / pageWidthPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
-    val yFraction = (localY / pageHeightPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
-    return PointF(
-        pageBounds.left + xFraction * pageBounds.width(),
-        pageBounds.top + yFraction * pageBounds.height()
-    )
-}
+private const val MIN_HIGHLIGHT_HEIGHT = 0.016f
 
 private val speedValues = listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
 private val speedLabels = listOf("0.75x", "1x", "1.25x", "1.5x", "2x")
@@ -144,6 +127,8 @@ fun ViewerScreen(
     documentId: String,
     startMode: String = "",
     initialPage: Int? = null,
+    /** Where "Save to this PDF" writes; null when the original must not be overwritten. */
+    originalUri: Uri? = null,
     onOpenTool: (String) -> Unit = {},
     onBack: () -> Unit
 ) {
@@ -156,7 +141,6 @@ fun ViewerScreen(
     )
     val scope = rememberCoroutineScope()
     var barsVisible by remember { mutableStateOf(true) }
-    val annotationSnackbarHostState = remember { SnackbarHostState() }
     var annotationRevision by remember { mutableIntStateOf(0) }
     var isSavingPdf by remember { mutableStateOf(false) }
     var formDialogOpen by remember { mutableStateOf(false) }
@@ -242,21 +226,43 @@ fun ViewerScreen(
     var tocLoading by remember { mutableStateOf(false) }
 
     val fileName = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf"
+
+    // "unsaved" = the working copy differs from what the user has saved; pending marks count too.
+    var unsaved by remember { mutableStateOf(false) }
+    var saveDialogOpen by remember { mutableStateOf(false) }
+    var exitDialogOpen by remember { mutableStateOf(false) }
+    var pendingExit by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var afterSave by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    fun finishSave() {
+        unsaved = false
+        val next = afterSave
+        afterSave = null
+        next?.invoke()
+    }
+
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri ->
-        if (uri != null) {
+        if (uri == null) {
+            afterSave = null
+        } else {
             scope.launch {
                 isSavingPdf = true
                 val ok = withContext(Dispatchers.IO) {
-                    try { PdfActions.saveCopy(context, engine.file, uri) } catch (e: Exception) { com.iman.pdf.logSwallowed("ViewerScreen:252", e); false }
+                    PdfActions.saveCopy(context, engine.file, uri)
                 }
                 isSavingPdf = false
                 Toast.makeText(
                     context,
-                    if (ok) "Saved successfully." else "Could not save the annotated PDF.",
+                    if (ok) "Saved successfully." else "Could not save the PDF.",
                     Toast.LENGTH_SHORT
                 ).show()
+                if (ok) {
+                    finishSave()
+                } else {
+                    afterSave = null
+                }
             }
         }
     }
@@ -277,21 +283,128 @@ fun ViewerScreen(
         }
     }
 
-    fun saveAnnotatedPdf() {
+    /** Writes pending marks into the working copy. */
+    suspend fun commitMarks(): Boolean {
+        val pending = annot.marks.toList()
+        if (pending.isEmpty()) return true
+        val baked = AnnotBake.bake(context, engine.file, pending) ?: return false
+        val replaced = withContext(Dispatchers.IO) { engine.replaceWith(baked) }
+        baked.delete()
+        if (replaced) {
+            annot.clearAll()
+            unsaved = true
+            annotationRevision++
+        }
+        return replaced
+    }
+
+    fun savePdf(overwrite: Boolean) {
         if (isSavingPdf) return
         scope.launch {
             isSavingPdf = true
-            val filePath = engine.file.absolutePath
-            val saved = withContext(Dispatchers.IO) {
-                try { engine.saveDocument(filePath) } catch (e: Exception) { com.iman.pdf.logSwallowed("ViewerScreen:286", e); false }
+            if (!commitMarks()) {
+                isSavingPdf = false
+                afterSave = null
+                Toast.makeText(context, "Could not save your edits.", Toast.LENGTH_LONG).show()
+                return@launch
             }
-            isSavingPdf = false
-            if (saved) {
-                annotationRevision++
-                saveLauncher.launch(fileName)
+            val target = originalUri
+            if (overwrite && target != null) {
+                val ok = withContext(Dispatchers.IO) {
+                    PdfActions.saveCopyToUri(context, engine.file, target)
+                }
+                isSavingPdf = false
+                if (ok) {
+                    Toast.makeText(context, "Saved to this PDF.", Toast.LENGTH_SHORT).show()
+                    finishSave()
+                } else {
+                    Toast.makeText(
+                        context,
+                        "This PDF cannot be changed here. Save a new copy.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    saveLauncher.launch(fileName)
+                }
             } else {
-                Toast.makeText(context, "Could not save PDF.", Toast.LENGTH_SHORT).show()
+                isSavingPdf = false
+                saveLauncher.launch(fileName)
             }
+        }
+    }
+
+    fun requestSave() {
+        afterSave = null
+        saveDialogOpen = true
+    }
+
+    /** Runs [action] (which leaves the viewer), asking first if changes would be lost. */
+    fun requestExit(action: () -> Unit) {
+        if (unsaved || annot.marks.isNotEmpty()) {
+            pendingExit = action
+            exitDialogOpen = true
+        } else {
+            action()
+        }
+    }
+
+    /** Gives [use] a file that includes marks not saved yet (for Share and Print). */
+    fun withCurrentPdf(use: (File) -> Unit) {
+        val pending = annot.marks.toList()
+        if (pending.isEmpty()) {
+            use(engine.file)
+            return
+        }
+        scope.launch {
+            isSavingPdf = true
+            val baked = AnnotBake.bake(context, engine.file, pending)
+            isSavingPdf = false
+            if (baked == null) {
+                Toast.makeText(context, "Could not include your edits.", Toast.LENGTH_LONG).show()
+            } else {
+                use(baked)
+            }
+        }
+    }
+
+    /** Snaps a dragged highlight/underline/strikethrough to the text lines under it. */
+    fun addTextMark(mark: HighlightMark) {
+        scope.launch {
+            val areas = withContext(Dispatchers.IO) {
+                val bounds = engine.pageBounds(mark.page) ?: return@withContext emptyList<MarkRect>()
+                val width = bounds.width().coerceAtLeast(1f)
+                val height = bounds.height().coerceAtLeast(1f)
+                engine.getTextRectsForSelection(
+                    mark.page,
+                    bounds.left + mark.left * width,
+                    bounds.top + mark.top * height,
+                    bounds.left + mark.right * width,
+                    bounds.top + mark.bottom * height
+                ).map {
+                    MarkRect(
+                        (it.left - bounds.left) / width,
+                        (it.top - bounds.top) / height,
+                        (it.right - bounds.left) / width,
+                        (it.bottom - bounds.top) / height
+                    )
+                }
+            }
+            annot.add(
+                when {
+                    areas.isNotEmpty() -> mark.copy(
+                        left = areas.minOf { it.left },
+                        top = areas.minOf { it.top },
+                        right = areas.maxOf { it.right },
+                        bottom = areas.maxOf { it.bottom },
+                        rects = areas
+                    )
+                    // Scanned page: keep the dragged box, tall enough to be visible.
+                    mark.kind == 0 && mark.bottom - mark.top < MIN_HIGHLIGHT_HEIGHT -> mark.copy(
+                        top = (mark.top - MIN_HIGHLIGHT_HEIGHT / 2f).coerceAtLeast(0f),
+                        bottom = (mark.bottom + MIN_HIGHLIGHT_HEIGHT / 2f).coerceAtMost(1f)
+                    )
+                    else -> mark
+                }
+            )
         }
     }
 
@@ -319,7 +432,18 @@ fun ViewerScreen(
             scope.launch {
                 Toast.makeText(context, "Exporting pages...", Toast.LENGTH_SHORT).show()
                 val saved = try {
-                    PdfExport.writeImages(context, engine, uri, baseName)
+                    val pending = annot.marks.toList()
+                    if (pending.isEmpty()) {
+                        PdfExport.writeImages(context, engine, uri, baseName)
+                    } else {
+                        val baked = checkNotNull(AnnotBake.bake(context, engine.file, pending))
+                        val marked = checkNotNull(PdfEngine.open(context, Uri.fromFile(baked)))
+                        try {
+                            PdfExport.writeImages(context, marked, uri, baseName)
+                        } finally {
+                            marked.close()
+                        }
+                    }
                 } catch (e: Exception) {
                     com.iman.pdf.logSwallowed("ViewerScreen:323", e)
                     0
@@ -343,6 +467,17 @@ fun ViewerScreen(
             ReadAloudService.stop(context)
             ReadAloudService.onStopRequested = null
         }
+    }
+
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START && reading) {
+                scope.launch { listState.scrollToItem(readPage) }
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
     }
 
     fun closeSearch() {
@@ -460,68 +595,6 @@ fun ViewerScreen(
         runOcr(page..page)
     }
 
-    fun persistPdfAnnotations(pageNumber: Int, apply: () -> Boolean) {
-        scope.launch {
-            val filePath = engine.file.absolutePath
-            val saved = withContext(Dispatchers.IO) {
-                try {
-                    apply() && engine.saveDocument(filePath)
-                } catch (e: Exception) {
-                    com.iman.pdf.logSwallowed("ViewerScreen:469", e)
-                    false
-                }
-            }
-            if (saved) {
-                // saveDocument closes, replaces and reopens the PDF itself.
-                annotationRevision++
-                annotationSnackbarHostState.showSnackbar("Annotation applied and saved.")
-            } else {
-                annotationSnackbarHostState.showSnackbar("Could not save PDF annotations")
-            }
-        }
-    }
-
-    fun applyHighlight(pageNumber: Int, rect: RectF, pageWidthPx: Float, pageHeightPx: Float) {
-        persistPdfAnnotations(pageNumber) {
-            val bounds = engine.pageBounds(pageNumber)
-            if (bounds == null) {
-                false
-            } else {
-                val start = screenToPdfCoordinates(
-                    rect.left * pageWidthPx, rect.top * pageHeightPx,
-                    1f, Offset.Zero, pageWidthPx, pageHeightPx, bounds
-                )
-                val end = screenToPdfCoordinates(
-                    rect.right * pageWidthPx, rect.bottom * pageHeightPx,
-                    1f, Offset.Zero, pageWidthPx, pageHeightPx, bounds
-                )
-                val textRects = engine.getTextRectsForSelection(
-                    pageNumber, start.x, start.y, end.x, end.y
-                )
-                engine.addTextHighlightAnnotation(pageNumber, textRects)
-            }
-        }
-    }
-
-    fun applyUnderline(pageNumber: Int, rects: List<RectF>) {
-        if (rects.isEmpty()) return
-        persistPdfAnnotations(pageNumber) {
-            engine.addUnderlineAnnotation(pageNumber, rects)
-        }
-    }
-
-    fun applyInk(
-        pageNumber: Int,
-        paths: List<List<PointF>>,
-        color: Int,
-        thickness: Float
-    ) {
-        if (paths.isEmpty()) return
-        persistPdfAnnotations(pageNumber) {
-            engine.addInkAnnotation(pageNumber, paths, color, thickness)
-        }
-    }
-
     fun speakPage(page: Int) {
         scope.launch {
             if (!reading) {
@@ -534,7 +607,11 @@ fun ViewerScreen(
                 return@launch
             }
             readPage = page
-            listState.animateScrollToItem(page)
+            // Scrolling waits for screen frames, which never come with the screen off,
+            // so never let speech wait for it.
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                scope.launch { listState.animateScrollToItem(page) }
+            }
             // PdfText uses MuPDF text first, then the saved OCR text for scanned pages.
             val storedText = PdfText.pageText(context, engine.file, page, documentId)
             val text = storedText.ifBlank {
@@ -606,21 +683,13 @@ fun ViewerScreen(
         onBack = {
             if (searchOpen) {
                 closeSearch()
-            } else if (annotOpen) {
-                if (annot.marks.isEmpty()) {
-                    annot.select(AnnotTool.NONE)
-                    annotOpen = false
-                } else {
-                    Toast.makeText(
-                        context,
-                        "Tap the X on the toolbar to close editing",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            } else if (readerOpen) {
+            } else if (annotOpen && annot.marks.isEmpty()) {
+                annot.select(AnnotTool.NONE)
+                annotOpen = false
+            } else if (readerOpen && !annotOpen) {
                 closeReader()
             } else {
-                onBack()
+                requestExit(onBack)
             }
         }
     )
@@ -750,10 +819,10 @@ fun ViewerScreen(
                     searched = false
                     activeHit = -1
                 },
-                onBack = onBack,
+                onBack = { requestExit(onBack) },
                 onCloseSearch = { closeSearch() },
                 onOpenSearch = { searchOpen = true },
-                onTool = { id -> onOpenTool(id) },
+                onTool = { id -> requestExit { onOpenTool(id) } },
                 onViewSettings = { viewSettingsOpen = true },
                 onExport = { exportOpen = true },
                 onOcrPage = { runOcrOnCurrentPage() },
@@ -801,9 +870,9 @@ fun ViewerScreen(
                         readerOpen = true
                     }
                 },
-                onShare = { PdfActions.share(context, engine.file, title) },
-                onPrint = { PdfActions.print(context, engine.file, title) },
-                onSave = { saveAnnotatedPdf() }
+                onShare = { withCurrentPdf { PdfActions.share(context, it, title) } },
+                onPrint = { withCurrentPdf { PdfActions.print(context, it, title) } },
+                onSave = { requestSave() }
             )
             }
 
@@ -866,11 +935,7 @@ fun ViewerScreen(
                                 documentId = documentId,
                                 ocrRevision = ocrRevision,
                                 annotationRevision = annotationRevision,
-                                onHighlight = { page, rect, pageWidth, pageHeight -> applyHighlight(page, rect, pageWidth, pageHeight) },
-                                onUnderline = { page, rect, _, _ -> applyUnderline(page, listOf(rect)) },
-                                onInk = { page, paths, color, thickness ->
-                                    applyInk(page, paths, color, thickness)
-                                }
+                                onTextMark = { addTextMark(it) }
                             )
                         }
                     }
@@ -958,9 +1023,9 @@ fun ViewerScreen(
                             liquidOpen = true
                         },
                         onSearch = { searchOpen = true },
-                        onShare = { PdfActions.share(context, engine.file, title) },
-                        onPrint = { PdfActions.print(context, engine.file, title) },
-                        onSave = { saveAnnotatedPdf() },
+                        onShare = { withCurrentPdf { PdfActions.share(context, it, title) } },
+                        onPrint = { withCurrentPdf { PdfActions.print(context, it, title) } },
+                        onSave = { requestSave() },
                         onOcrPage = { runOcrOnCurrentPage() },
                         onOcrDocument = { runOcr(0 until engine.pageCount) },
                         onFillForm = { openFormFill() }
@@ -970,9 +1035,7 @@ fun ViewerScreen(
             if (annotOpen) {
                 AnnotToolbar(
                     annot = annot,
-                    engine = engine,
-                    title = title,
-                    onSaveAnnotations = { saveAnnotatedPdf() },
+                    onSaveAnnotations = { requestSave() },
                     onClose = {
                         annot.select(AnnotTool.NONE)
                         annotOpen = false
@@ -1089,13 +1152,70 @@ fun ViewerScreen(
                             }
                             formSaving = false
                             if (saved) {
+                                unsaved = true
                                 annotationRevision++
                                 formDialogOpen = false
-                                Toast.makeText(context, "PDF form saved.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Form updated. Tap Save to keep it.", Toast.LENGTH_LONG).show()
                             } else {
                                 Toast.makeText(context, "Could not save form values. Check that the PDF allows editing.", Toast.LENGTH_LONG).show()
                             }
                         }
+                    }
+                }
+            )
+        }
+        if (exitDialogOpen) {
+            AlertDialog(
+                onDismissRequest = { exitDialogOpen = false },
+                title = { Text("Save changes?") },
+                text = { Text("This PDF has changes that are not saved.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        exitDialogOpen = false
+                        afterSave = pendingExit
+                        saveDialogOpen = true
+                    }) { Text("Save") }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        exitDialogOpen = false
+                        annot.clearAll()
+                        unsaved = false
+                        pendingExit?.invoke()
+                    }) { Text("Discard") }
+                }
+            )
+        }
+        if (saveDialogOpen) {
+            val dismiss = {
+                saveDialogOpen = false
+                afterSave = null
+            }
+            AlertDialog(
+                onDismissRequest = dismiss,
+                title = { Text("Save PDF") },
+                text = {
+                    Text(
+                        if (originalUri != null) {
+                            "Save into this PDF, or keep it unchanged and save a new copy."
+                        } else {
+                            "This PDF was unlocked with a password. The new copy will not have a password."
+                        }
+                    )
+                },
+                confirmButton = {
+                    Column(horizontalAlignment = Alignment.End) {
+                        if (originalUri != null) {
+                            TextButton(onClick = {
+                                saveDialogOpen = false
+                                savePdf(overwrite = true)
+                            }) { Text("Save to this PDF") }
+                        }
+                        TextButton(onClick = {
+                            saveDialogOpen = false
+                            savePdf(overwrite = false)
+                        }) { Text("Save as new copy") }
+                        TextButton(onClick = dismiss) { Text("Cancel") }
                     }
                 }
             )
@@ -1203,10 +1323,6 @@ fun ViewerScreen(
                 }
             }
         }
-        SnackbarHost(
-            hostState = annotationSnackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
     }
 }
 

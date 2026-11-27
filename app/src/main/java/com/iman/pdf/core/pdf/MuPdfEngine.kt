@@ -1,7 +1,6 @@
 package com.iman.pdf.core.pdf
 
 import android.graphics.Bitmap
-import android.graphics.PointF
 import android.graphics.RectF
 import com.artifex.mupdf.fitz.ColorSpace
 import com.artifex.mupdf.fitz.Document
@@ -9,9 +8,6 @@ import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.PDFDocument
 import com.artifex.mupdf.fitz.PDFPage
 import com.artifex.mupdf.fitz.PDFWidget
-import com.artifex.mupdf.fitz.PDFAnnotation
-import com.artifex.mupdf.fitz.Point
-import com.artifex.mupdf.fitz.Quad
 import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.Pixmap
 import java.io.File
@@ -195,7 +191,7 @@ class MuPdfEngine {
     }
 
     /**
-     * Returns exact glyph rectangles intersecting a drag selection.
+     * Returns one rectangle per text line, covering the glyphs inside a drag selection.
      * Input and output coordinates are in MuPDF page-space points.
      */
     @Synchronized
@@ -231,14 +227,23 @@ class MuPdfEngine {
             buildList {
                 loadedText.blocks.forEach { block ->
                     block.lines.forEach { line ->
+                        var lineRect: RectF? = null
                         line.chars.forEach { character ->
                             val glyph = character.quad.toRect()
                             val glyphRect = RectF(glyph.x0, glyph.y0, glyph.x1, glyph.y1)
                             if (glyphRect.width() > 0f && glyphRect.height() > 0f &&
                                 glyphRect.left < selection.right && glyphRect.right > selection.left &&
                                 glyphRect.top < selection.bottom && glyphRect.bottom > selection.top
-                            ) add(glyphRect)
+                            ) {
+                                val current = lineRect
+                                if (current == null) {
+                                    lineRect = glyphRect
+                                } else {
+                                    current.union(glyphRect)
+                                }
+                            }
                         }
+                        lineRect?.let { add(it) }
                     }
                 }
             }
@@ -248,175 +253,6 @@ class MuPdfEngine {
         } finally {
             try { structuredText?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:249", e) }
             try { page?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:250", e) }
-        }
-    }
-
-    /** Adds exact MuPDF page-space glyph rectangles as a native highlight. */
-    @Synchronized
-    fun addTextHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
-        val doc = document ?: return false
-        if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
-        var pageToDestroy: PDFPage? = null
-        return try {
-            val loadedPage = doc.loadPage(pageNumber) as? PDFPage ?: return false
-            pageToDestroy = loadedPage
-            rects.forEach { input ->
-                if (input.width() > 0f && input.height() > 0f) {
-                    val rect = Rect(input.left, input.top, input.right, input.bottom)
-                    val annotation = loadedPage.createAnnotation(PDFAnnotation.TYPE_HIGHLIGHT)
-                    annotation.setQuadPoints(arrayOf(Quad(rect)))
-                    annotation.setRect(rect)
-                    annotation.setColor(floatArrayOf(1f, 0.92f, 0.20f))
-                    annotation.setOpacity(0.42f)
-                    check(annotation.update()) { "MuPDF could not update highlight annotation." }
-                }
-            }
-            loadedPage.update()
-        } catch (e: Exception) {
-            com.iman.pdf.logSwallowed("MuPdfEngine:275", e)
-            false
-        } finally {
-            try { pageToDestroy?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:279", e) }
-        }
-    }
-
-    /**
-     * Adds normalized page-relative rectangles (0..1) as real PDF highlight annotations.
-     */
-    @Synchronized
-    fun addHighlightAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
-        val doc = document ?: return false
-        if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
-        var pageToDestroy: PDFPage? = null
-        return try {
-            val page = doc.loadPage(pageNumber) as? PDFPage ?: return false
-            pageToDestroy = page
-            val bounds = page.bounds
-            val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
-            val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
-            rects.forEach { input ->
-                val left = input.left.coerceIn(0f, 1f)
-                val top = input.top.coerceIn(0f, 1f)
-                val right = input.right.coerceIn(0f, 1f)
-                val bottom = input.bottom.coerceIn(0f, 1f)
-                if (right - left > 0.001f && bottom - top > 0.001f) {
-                    val rect = Rect(
-                        bounds.x0 + left * width,
-                        bounds.y0 + top * height,
-                        bounds.x0 + right * width,
-                        bounds.y0 + bottom * height
-                    )
-                    val annotation = page.createAnnotation(PDFAnnotation.TYPE_HIGHLIGHT)
-                    annotation.setQuadPoints(arrayOf(Quad(rect)))
-                    annotation.setRect(rect)
-                    annotation.setColor(floatArrayOf(1f, 0.92f, 0.20f))
-                    annotation.setOpacity(0.42f)
-                    check(annotation.update()) { "MuPDF could not update highlight annotation." }
-                }
-            }
-            page.update()
-        } catch (e: Exception) {
-            com.iman.pdf.logSwallowed("MuPdfEngine:318", e)
-            false
-        } finally {
-            pageToDestroy?.destroy()
-        }
-    }
-
-    @Synchronized
-    fun addUnderlineAnnotation(pageNumber: Int, rects: List<RectF>): Boolean {
-        val doc = document ?: return false
-        if (pageNumber !in 0 until doc.countPages() || rects.isEmpty()) return false
-        var pageToDestroy: PDFPage? = null
-        return try {
-            val page = doc.loadPage(pageNumber) as? PDFPage ?: return false
-            pageToDestroy = page
-            val bounds = page.bounds
-            val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
-            val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
-            rects.forEach { input ->
-                val left = input.left.coerceIn(0f, 1f)
-                val top = input.top.coerceIn(0f, 1f)
-                val right = input.right.coerceIn(0f, 1f)
-                val bottom = input.bottom.coerceIn(0f, 1f)
-                if (right - left > 0.001f && bottom - top > 0.001f) {
-                    val rect = Rect(
-                        bounds.x0 + left * width,
-                        bounds.y0 + top * height,
-                        bounds.x0 + right * width,
-                        bounds.y0 + bottom * height
-                    )
-                    val annotation = page.createAnnotation(PDFAnnotation.TYPE_UNDERLINE)
-                    annotation.setQuadPoints(arrayOf(Quad(rect)))
-                    annotation.setRect(rect)
-                    annotation.setColor(floatArrayOf(0.90f, 0.18f, 0.18f))
-                    annotation.setOpacity(1f)
-                    check(annotation.update()) { "MuPDF could not update underline annotation." }
-                }
-            }
-            page.update()
-        } catch (e: Exception) {
-            com.iman.pdf.logSwallowed("MuPdfEngine:358", e)
-            false
-        } finally {
-            pageToDestroy?.destroy()
-        }
-    }
-
-    /**
-     * Adds normalized page-relative paths (0..1) as real PDF ink annotations.
-     */
-    @Synchronized
-    fun addInkAnnotation(
-        pageNumber: Int,
-        paths: List<List<PointF>>,
-        color: Int,
-        thickness: Float
-    ): Boolean {
-        val doc = document ?: return false
-        if (pageNumber !in 0 until doc.countPages() || paths.isEmpty()) return false
-        var pageToDestroy: PDFPage? = null
-        return try {
-            val page = doc.loadPage(pageNumber) as? PDFPage ?: return false
-            pageToDestroy = page
-            val bounds = page.bounds
-            val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
-            val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
-            val annotation = page.createAnnotation(PDFAnnotation.TYPE_INK)
-            val ink = paths.mapNotNull { path ->
-                path.map { point ->
-                    Point(
-                        bounds.x0 + point.x.coerceIn(0f, 1f) * width,
-                        bounds.y0 + point.y.coerceIn(0f, 1f) * height
-                    )
-                }.takeIf { it.isNotEmpty() }?.toTypedArray()
-            }.toTypedArray()
-            if (ink.isEmpty()) return false
-            annotation.setInkList(ink)
-            val red = ((color shr 16) and 0xff) / 255f
-            val green = ((color shr 8) and 0xff) / 255f
-            val blue = (color and 0xff) / 255f
-            val alpha = ((color ushr 24) and 0xff) / 255f
-            annotation.setColor(floatArrayOf(red, green, blue))
-            annotation.setOpacity(alpha)
-            annotation.setBorderWidth((thickness * width).coerceAtLeast(0.5f))
-            val allPoints = ink.flatMap { it.toList() }
-            val pad = (thickness * width).coerceAtLeast(0.5f)
-            annotation.setRect(
-                Rect(
-                    allPoints.minOf { it.x } - pad,
-                    allPoints.minOf { it.y } - pad,
-                    allPoints.maxOf { it.x } + pad,
-                    allPoints.maxOf { it.y } + pad
-                )
-            )
-            check(annotation.update()) { "MuPDF could not update ink annotation." }
-            page.update()
-        } catch (e: Exception) {
-            com.iman.pdf.logSwallowed("MuPdfEngine:415", e)
-            false
-        } finally {
-            pageToDestroy?.destroy()
         }
     }
 
@@ -526,6 +362,30 @@ class MuPdfEngine {
                 }
             } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:527", e) }
         }
+    }
+
+    /** Swaps the open file for [newFile] (for example one with annotations written in) and reopens it. */
+    @Synchronized
+    fun replaceDocument(newFile: File): Boolean {
+        val target = source ?: return false
+        if (!newFile.isFile || newFile.length() == 0L) return false
+        val backup = File(target.absolutePath + ".bak")
+        backup.delete()
+        closeDocument()
+        if (!target.renameTo(backup)) {
+            openDocument(target.absolutePath)
+            return false
+        }
+        val installed = newFile.renameTo(target) ||
+            runCatching { newFile.copyTo(target, overwrite = true) }.isSuccess
+        if (installed && openDocument(target.absolutePath)) {
+            backup.delete()
+            return true
+        }
+        target.delete()
+        backup.renameTo(target)
+        openDocument(target.absolutePath)
+        return false
     }
 
     @Synchronized
