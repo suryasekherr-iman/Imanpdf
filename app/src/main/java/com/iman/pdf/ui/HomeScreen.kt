@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -88,6 +89,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.iman.pdf.R
@@ -127,6 +129,12 @@ fun HomeScreen(
     val store = remember { FileStore(context) }
     val name by prefs.userName.collectAsState(initial = "Indrajit")
     val photo by prefs.photoPath.collectAsState(initial = "")
+    val themeName by prefs.themeMode.collectAsState(initial = "SYSTEM")
+    val isDarkTheme = when (themeName) {
+        "DARK" -> true
+        "LIGHT" -> false
+        else -> isSystemInDarkTheme()
+    }
     val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
     val entries by store.entries.collectAsState(initial = emptyList())
     val tabs = listOf("Recent", "Starred", "On device")
@@ -283,6 +291,29 @@ fun HomeScreen(
                         .padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Home toolbar order: Profile, Search, Theme toggle, ImAn brand logo.
+                    Avatar(
+                        path = photo,
+                        size = 36.dp,
+                        modifier = Modifier.clickable { onOpenSettings() }
+                    )
+                    IconButton(onClick = { searching = true }) {
+                        Icon(Icons.Outlined.Search, contentDescription = "Search")
+                    }
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                prefs.setThemeMode(if (isDarkTheme) "LIGHT" else "DARK")
+                            }
+                        }
+                    ) {
+                        Text(
+                            text = if (isDarkTheme) "☀" else "☾",
+                            fontSize = 22.sp,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -291,22 +322,13 @@ fun HomeScreen(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.iman_logo),
-                            contentDescription = "Iman",
+                            contentDescription = "ImAn brand logo",
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer(scaleX = 1.65f, scaleY = 1.65f),
                             contentScale = ContentScale.Fit
                         )
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { searching = true }) {
-                        Icon(Icons.Outlined.Search, contentDescription = "Search")
-                    }
-                    Avatar(
-                        path = photo,
-                        size = 36.dp,
-                        modifier = Modifier.clickable { onOpenSettings() }
-                    )
                 }
             }
 
