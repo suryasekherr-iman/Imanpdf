@@ -14,7 +14,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,8 +39,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.Edit
@@ -130,9 +127,6 @@ fun HomeScreen(
     val store = remember { FileStore(context) }
     val name by prefs.userName.collectAsState(initial = "Indrajit")
     val photo by prefs.photoPath.collectAsState(initial = "")
-    val themeMode by prefs.themeMode.collectAsState(initial = "SYSTEM")
-    val systemDark = isSystemInDarkTheme()
-    val isDarkTheme = when (themeMode) { "DARK" -> true; "LIGHT" -> false; else -> systemDark }
     val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
     val entries by store.entries.collectAsState(initial = emptyList())
     val tabs = listOf("Recent", "Starred", "On device")
@@ -305,36 +299,14 @@ fun HomeScreen(
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = { searching = true }) {
+                        Icon(Icons.Outlined.Search, contentDescription = "Search")
+                    }
                     Avatar(
                         path = photo,
                         size = 36.dp,
                         modifier = Modifier.clickable { onOpenSettings() }
                     )
-                    IconButton(onClick = { searching = true }) {
-                        Icon(
-                            Icons.Outlined.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                prefs.setThemeMode(if (isDarkTheme) "LIGHT" else "DARK")
-                            }
-                        },
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    ) {
-                        Icon(
-                            imageVector = if (isDarkTheme) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
-                            contentDescription = if (isDarkTheme) "Switch to light mode" else "Switch to dark mode",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
                 }
             }
 

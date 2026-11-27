@@ -81,7 +81,7 @@ fun ReaderBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onClose, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                Icon(Icons.Filled.Close, contentDescription = "Close player")
+                Icon(Icons.Filled.Close, contentDescription = "Close player", tint = MaterialTheme.colorScheme.onSurface)
             }
             Column(
                 modifier = Modifier
@@ -103,17 +103,17 @@ fun ReaderBar(
                 )
             }
             IconButton(onClick = onPrev, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous page")
+                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous page", tint = MaterialTheme.colorScheme.onSurface)
             }
             PlayButton(reading = reading, size = 48.dp, onClick = onToggle)
             IconButton(onClick = onStop, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                Icon(Icons.Filled.Stop, contentDescription = "Stop reading")
+                Icon(Icons.Filled.Stop, contentDescription = "Stop reading", tint = MaterialTheme.colorScheme.onSurface)
             }
             IconButton(onClick = onNext, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Next page")
+                Icon(Icons.Filled.SkipNext, contentDescription = "Next page", tint = MaterialTheme.colorScheme.onSurface)
             }
             IconButton(onClick = { expanded = true }, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Open player")
+                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Open player", tint = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
