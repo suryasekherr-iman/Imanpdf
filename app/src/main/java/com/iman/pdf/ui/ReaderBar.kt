@@ -208,19 +208,21 @@ private fun ReaderSheet(
                     Icon(
                         Icons.Filled.SkipPrevious,
                         contentDescription = "Previous page",
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(32.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 PlayButton(reading = reading, size = 64.dp, onClick = onToggle)
                 IconButton(onClick = onStop) {
-                    Icon(Icons.Filled.Stop, contentDescription = "Stop reading", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Filled.Stop, contentDescription = "Stop reading", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(32.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 IconButton(onClick = onNext) {
                     Icon(
                         Icons.Filled.SkipNext,
                         contentDescription = "Next page",
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(32.dp)
                     )
                 }
