@@ -14,7 +14,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,8 +52,6 @@ import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -91,7 +88,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.iman.pdf.R
@@ -131,12 +127,6 @@ fun HomeScreen(
     val store = remember { FileStore(context) }
     val name by prefs.userName.collectAsState(initial = "Indrajit")
     val photo by prefs.photoPath.collectAsState(initial = "")
-    val themeName by prefs.themeMode.collectAsState(initial = "SYSTEM")
-    val isDarkTheme = when (themeName) {
-        "DARK" -> true
-        "LIGHT" -> false
-        else -> isSystemInDarkTheme()
-    }
     val hideRecent by prefs.hideRecentDocuments.collectAsState(initial = false)
     val entries by store.entries.collectAsState(initial = emptyList())
     val tabs = listOf("Recent", "Starred", "On device")
@@ -293,16 +283,15 @@ fun HomeScreen(
                         .padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Brand stays at the far left; profile, search and theme controls align right.
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.iman_logo),
-                            contentDescription = "ImAn brand logo",
+                            contentDescription = "Iman",
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer(scaleX = 1.65f, scaleY = 1.65f),
@@ -310,37 +299,14 @@ fun HomeScreen(
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = { searching = true }) {
+                        Icon(Icons.Outlined.Search, contentDescription = "Search")
+                    }
                     Avatar(
                         path = photo,
                         size = 36.dp,
                         modifier = Modifier.clickable { onOpenSettings() }
                     )
-                    IconButton(onClick = { searching = true }) {
-                        Icon(
-                            Icons.Outlined.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable {
-                                scope.launch {
-                                    prefs.setThemeMode(if (isDarkTheme) "LIGHT" else "DARK")
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isDarkTheme) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
-                            contentDescription = if (isDarkTheme) "Switch to light mode" else "Switch to dark mode",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(21.dp)
-                        )
-                    }
                 }
             }
 

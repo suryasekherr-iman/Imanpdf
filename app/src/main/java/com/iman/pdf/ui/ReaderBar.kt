@@ -1,7 +1,6 @@
 package com.iman.pdf.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -41,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -70,8 +67,7 @@ fun ReaderBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
+            .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
     ) {
         LinearProgressIndicator(
@@ -84,8 +80,8 @@ fun ReaderBar(
                 .padding(horizontal = 4.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            PlayerIconButton(onClick = onClose, description = "Close player") {
-                Icon(Icons.Filled.Close, contentDescription = "Close player", tint = MaterialTheme.colorScheme.onSurface)
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Close, contentDescription = "Close player")
             }
             Column(
                 modifier = Modifier
@@ -106,18 +102,18 @@ fun ReaderBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            PlayerIconButton(onClick = onPrev, description = "Previous page") {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous page", tint = MaterialTheme.colorScheme.onSurface)
+            IconButton(onClick = onPrev) {
+                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous page")
             }
             PlayButton(reading = reading, size = 48.dp, onClick = onToggle)
-            PlayerIconButton(onClick = onStop, description = "Stop reading") {
-                Icon(Icons.Filled.Stop, contentDescription = "Stop reading", tint = MaterialTheme.colorScheme.onSurface)
+            IconButton(onClick = onStop) {
+                Icon(Icons.Filled.Stop, contentDescription = "Stop reading")
             }
-            PlayerIconButton(onClick = onNext, description = "Next page") {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Next page", tint = MaterialTheme.colorScheme.onSurface)
+            IconButton(onClick = onNext) {
+                Icon(Icons.Filled.SkipNext, contentDescription = "Next page")
             }
-            PlayerIconButton(onClick = { expanded = true }, description = "Open player") {
-                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Open player", tint = MaterialTheme.colorScheme.onSurface)
+            IconButton(onClick = { expanded = true }) {
+                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Open player")
             }
         }
     }
@@ -143,23 +139,6 @@ fun ReaderBar(
 }
 
 @Composable
-private fun PlayerIconButton(
-    onClick: () -> Unit,
-    description: String,
-    content: @Composable () -> Unit
-) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
-        content = content
-    )
-}
-
-@Composable
 private fun PlayButton(
     reading: Boolean,
     size: Dp,
@@ -171,7 +150,6 @@ private fun PlayButton(
             .size(size)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primary)
-            .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
     ) {
         Icon(
             imageVector = if (reading) Icons.Filled.Pause else Icons.Filled.PlayArrow,
