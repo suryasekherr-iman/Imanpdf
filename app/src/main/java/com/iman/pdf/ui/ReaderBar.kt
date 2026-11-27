@@ -80,7 +80,7 @@ fun ReaderBar(
                 .padding(horizontal = 4.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onClose) {
+            IconButton(onClick = onClose, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                 Icon(Icons.Filled.Close, contentDescription = "Close player")
             }
             Column(
@@ -102,17 +102,17 @@ fun ReaderBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = onPrev) {
+            IconButton(onClick = onPrev, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                 Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous page")
             }
             PlayButton(reading = reading, size = 48.dp, onClick = onToggle)
-            IconButton(onClick = onStop) {
+            IconButton(onClick = onStop, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                 Icon(Icons.Filled.Stop, contentDescription = "Stop reading")
             }
-            IconButton(onClick = onNext) {
+            IconButton(onClick = onNext, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "Next page")
             }
-            IconButton(onClick = { expanded = true }) {
+            IconButton(onClick = { expanded = true }, modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                 Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Open player")
             }
         }
