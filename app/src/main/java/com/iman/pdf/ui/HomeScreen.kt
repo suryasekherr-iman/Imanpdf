@@ -53,6 +53,8 @@ import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -291,33 +293,11 @@ fun HomeScreen(
                         .padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Home toolbar order: Profile, Search, Theme toggle, ImAn brand logo.
-                    Avatar(
-                        path = photo,
-                        size = 36.dp,
-                        modifier = Modifier.clickable { onOpenSettings() }
-                    )
-                    IconButton(onClick = { searching = true }) {
-                        Icon(Icons.Outlined.Search, contentDescription = "Search")
-                    }
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                prefs.setThemeMode(if (isDarkTheme) "LIGHT" else "DARK")
-                            }
-                        }
-                    ) {
-                        Text(
-                            text = if (isDarkTheme) "☀" else "☾",
-                            fontSize = 22.sp,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
+                    // Brand stays at the far left; profile, search and theme controls align right.
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(10.dp)),
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -327,6 +307,38 @@ fun HomeScreen(
                                 .fillMaxSize()
                                 .graphicsLayer(scaleX = 1.65f, scaleY = 1.65f),
                             contentScale = ContentScale.Fit
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Avatar(
+                        path = photo,
+                        size = 36.dp,
+                        modifier = Modifier.clickable { onOpenSettings() }
+                    )
+                    IconButton(onClick = { searching = true }) {
+                        Icon(
+                            Icons.Outlined.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable {
+                                scope.launch {
+                                    prefs.setThemeMode(if (isDarkTheme) "LIGHT" else "DARK")
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isDarkTheme) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+                            contentDescription = if (isDarkTheme) "Switch to light mode" else "Switch to dark mode",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(21.dp)
                         )
                     }
                 }
