@@ -202,8 +202,7 @@ fun ViewerScreen(
                     search = search,
                     documentId = documentId,
                     ocrRevision = ocr.revision,
-                    annotationRevision = saving.annotationRevision,
-                    onTextMark = { mark -> scope.launch { annot.add(snapToText(engine, mark)) } }
+                    annotationRevision = saving.annotationRevision
                 )
 
                 ViewerPagePill(engine.pageCount, listState, zoom.height, drawing)

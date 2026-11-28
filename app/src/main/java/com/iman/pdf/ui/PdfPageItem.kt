@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import com.iman.pdf.annot.AnnotController
-import com.iman.pdf.annot.HighlightMark
 import com.iman.pdf.pdf.PdfEngine
 import com.iman.pdf.pdf.SearchHit
 import com.iman.pdf.pdf.OcrStore
@@ -75,8 +74,7 @@ fun PdfPageItem(
     activeSearchHit: SearchHit? = null,
     documentId: String = engine.file.absolutePath,
     ocrRevision: Int = 0,
-    annotationRevision: Int = 0,
-    onTextMark: ((HighlightMark) -> Unit)? = null
+    annotationRevision: Int = 0
 ) {
     val context = LocalContext.current
     var ocrLines by remember(index, documentId) { mutableStateOf<List<OcrLine>>(emptyList()) }
@@ -174,7 +172,7 @@ fun PdfPageItem(
                 page = index,
                 annot = annot,
                 modifier = Modifier.fillMaxSize(),
-                onTextMark = onTextMark
+                loadText = { withContext(Dispatchers.IO) { engine.textGlyphLines(it) } }
             )
         }
     }
