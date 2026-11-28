@@ -26,17 +26,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.iman.pdf.annot.AnnotController
-import com.iman.pdf.annot.HighlightMark
-import com.iman.pdf.annot.MarkRect
 import com.iman.pdf.pdf.LastPage
 import com.iman.pdf.pdf.PdfEngine
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 private const val MAX_RENDER_WIDTH = 2400
-private const val MIN_HIGHLIGHT_HEIGHT = 0.016f
 
 /** The zoomable list of pages. */
 @Composable
@@ -49,8 +44,7 @@ internal fun ViewerPages(
     search: ViewerSearch,
     documentId: String,
     ocrRevision: Int,
-    annotationRevision: Int,
-    onTextMark: (HighlightMark) -> Unit
+    annotationRevision: Int
 ) {
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
@@ -102,8 +96,7 @@ internal fun ViewerPages(
                 activeSearchHit = search.hits.getOrNull(search.activeHit)?.takeIf { it.page == index },
                 documentId = documentId,
                 ocrRevision = ocrRevision,
-                annotationRevision = annotationRevision,
-                onTextMark = onTextMark
+                annotationRevision = annotationRevision
             )
         }
     }
@@ -199,43 +192,5 @@ internal fun ViewerPositionMemory(
             )
             LastPage.saveZoom(context, documentId, zoom.scale)
         }
-    }
-}
-
-/** Snaps a dragged highlight/underline/strikethrough to the text lines under it. */
-internal suspend fun snapToText(engine: PdfEngine, mark: HighlightMark): HighlightMark {
-    val areas = withContext(Dispatchers.IO) {
-        val bounds = engine.pageBounds(mark.page) ?: return@withContext emptyList<MarkRect>()
-        val width = bounds.width().coerceAtLeast(1f)
-        val height = bounds.height().coerceAtLeast(1f)
-        engine.getTextRectsForSelection(
-            mark.page,
-            bounds.left + mark.left * width,
-            bounds.top + mark.top * height,
-            bounds.left + mark.right * width,
-            bounds.top + mark.bottom * height
-        ).map {
-            MarkRect(
-                (it.left - bounds.left) / width,
-                (it.top - bounds.top) / height,
-                (it.right - bounds.left) / width,
-                (it.bottom - bounds.top) / height
-            )
-        }
-    }
-    return when {
-        areas.isNotEmpty() -> mark.copy(
-            left = areas.minOf { it.left },
-            top = areas.minOf { it.top },
-            right = areas.maxOf { it.right },
-            bottom = areas.maxOf { it.bottom },
-            rects = areas
-        )
-        // Scanned page: keep the dragged box, tall enough to be visible.
-        mark.kind == 0 && mark.bottom - mark.top < MIN_HIGHLIGHT_HEIGHT -> mark.copy(
-            top = (mark.top - MIN_HIGHLIGHT_HEIGHT / 2f).coerceAtLeast(0f),
-            bottom = (mark.bottom + MIN_HIGHLIGHT_HEIGHT / 2f).coerceAtMost(1f)
-        )
-        else -> mark
     }
 }

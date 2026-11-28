@@ -10,6 +10,7 @@ import com.artifex.mupdf.fitz.PDFPage
 import com.artifex.mupdf.fitz.PDFWidget
 import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.Pixmap
+import com.iman.pdf.pdf.TextGlyph
 import java.io.File
 
 /** MuPDF-backed PDF document owner. Native resources are always explicitly released. */
@@ -190,70 +191,36 @@ class MuPdfEngine {
         } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:194", e); emptyList() }
     }
 
-    /**
-     * Returns one rectangle per text line, covering the glyphs inside a drag selection.
-     * Input and output coordinates are in MuPDF page-space points.
-     */
+    /** Glyphs of one page, line by line in reading order, in page-relative coordinates. */
     @Synchronized
-    fun getTextRectsForSelection(
-        pageNum: Int,
-        startX: Float,
-        startY: Float,
-        endX: Float,
-        endY: Float
-    ): List<RectF> {
+    fun textGlyphLines(index: Int): List<List<TextGlyph>> {
         val doc = document ?: return emptyList()
-        if (pageNum !in 0 until doc.countPages()) return emptyList()
-        var page: com.artifex.mupdf.fitz.Page? = null
-        var structuredText: com.artifex.mupdf.fitz.StructuredText? = null
+        if (index !in 0 until doc.countPages()) return emptyList()
         return try {
-            val loadedPage = doc.loadPage(pageNum)
-            page = loadedPage
-            val loadedText = loadedPage.toStructuredText()
-            structuredText = loadedText
-            val rawLeft = minOf(startX, endX)
-            val rawTop = minOf(startY, endY)
-            val rawRight = maxOf(startX, endX)
-            val rawBottom = maxOf(startY, endY)
-            // A normal finger drag is often almost horizontal/vertical. A zero-height
-            // selection would intersect no glyphs, so give the narrow axis a small
-            // page-space tolerance while retaining exact glyph bounds in the result.
-            val selection = RectF(
-                if (rawRight - rawLeft < 4f) (rawLeft + rawRight) / 2f - 2f else rawLeft,
-                if (rawBottom - rawTop < 6f) (rawTop + rawBottom) / 2f - 3f else rawTop,
-                if (rawRight - rawLeft < 4f) (rawLeft + rawRight) / 2f + 2f else rawRight,
-                if (rawBottom - rawTop < 6f) (rawTop + rawBottom) / 2f + 3f else rawBottom
-            )
-            buildList {
-                loadedText.blocks.forEach { block ->
-                    block.lines.forEach { line ->
-                        var lineRect: RectF? = null
-                        line.chars.forEach { character ->
-                            val glyph = character.quad.toRect()
-                            val glyphRect = RectF(glyph.x0, glyph.y0, glyph.x1, glyph.y1)
-                            if (glyphRect.width() > 0f && glyphRect.height() > 0f &&
-                                glyphRect.left < selection.right && glyphRect.right > selection.left &&
-                                glyphRect.top < selection.bottom && glyphRect.bottom > selection.top
-                            ) {
-                                val current = lineRect
-                                if (current == null) {
-                                    lineRect = glyphRect
-                                } else {
-                                    current.union(glyphRect)
-                                }
+            val page = doc.loadPage(index)
+            try {
+                val bounds = page.bounds
+                val width = (bounds.x1 - bounds.x0).coerceAtLeast(1f)
+                val height = (bounds.y1 - bounds.y0).coerceAtLeast(1f)
+                val text = page.toStructuredText()
+                try {
+                    text.blocks.flatMap { block ->
+                        block.lines.map { line ->
+                            line.chars.map { character ->
+                                val glyph = character.quad.toRect()
+                                TextGlyph(
+                                    character.c,
+                                    (glyph.x0 - bounds.x0) / width,
+                                    (glyph.y0 - bounds.y0) / height,
+                                    (glyph.x1 - bounds.x0) / width,
+                                    (glyph.y1 - bounds.y0) / height
+                                )
                             }
                         }
-                        lineRect?.let { add(it) }
                     }
-                }
-            }
-        } catch (e: Exception) {
-            com.iman.pdf.logSwallowed("MuPdfEngine:245", e)
-            emptyList()
-        } finally {
-            try { structuredText?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:249", e) }
-            try { page?.destroy() } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:250", e) }
-        }
+                } finally { text.destroy() }
+            } finally { page.destroy() }
+        } catch (e: Exception) { com.iman.pdf.logSwallowed("MuPdfEngine:glyphs", e); emptyList() }
     }
 
     /** Applies supported AcroForm values without saving or replacing the source file. */

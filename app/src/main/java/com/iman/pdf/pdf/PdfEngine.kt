@@ -41,13 +41,7 @@ class PdfEngine private constructor(
         mupdf.updateFormFields(updates)
 
     fun save(output: File, options: String = "garbage=compact"): Boolean = mupdf.save(output, options)
-    fun getTextRectsForSelection(
-        pageNum: Int,
-        startX: Float,
-        startY: Float,
-        endX: Float,
-        endY: Float
-    ): List<RectF> = mupdf.getTextRectsForSelection(pageNum, startX, startY, endX, endY)
+    fun textGlyphLines(index: Int): List<List<TextGlyph>> = mupdf.textGlyphLines(index)
 
     fun replaceWith(newFile: File): Boolean = mupdf.replaceDocument(newFile)
 
